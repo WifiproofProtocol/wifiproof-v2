@@ -1,0 +1,84 @@
+# ============================================
+# WiFiProof V2 - Global .gitignore
+# ============================================
+
+# ===== OS Generated Files =====
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ===== IDE & Editors =====
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ===== Environment & Secrets =====
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+secrets/
+
+# ===== Logs =====
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===== Dependencies =====
+node_modules/
+.pnpm-store/
+
+# ===== Build Outputs =====
+dist/
+build/
+out/
+.next/
+
+# ===== Noir / ZK Circuits =====
+circuits/target/
+circuits/proofs/
+*.proof
+Prover.toml
+Verifier.toml
+
+# ===== Foundry / Smart Contracts =====
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+contracts/cache_forge/
+
+# ===== Test Coverage =====
+coverage/
+*.lcov
+.nyc_output/
+
+# ===== Temporary Files =====
+tmp/
+temp/
+*.tmp
+
+# ===== TypeScript =====
+*.tsbuildinfo
+
+# ===== Vercel =====
+.vercel/
+
+# ===== Playwright =====
+playwright-report/
+playwright/.cache/
+test-results/
