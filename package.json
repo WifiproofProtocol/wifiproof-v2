@@ -1,0 +1,33 @@
+{
+  "name": "wifiproof-v2",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Zero-Knowledge proof-of-attendance protocol with contextual verification",
+  "author": "Xiaomao <https://github.com/wamimi>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WifiproofProtocol/wifiproof-v2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "packageManager": "pnpm@10.12.4",
+  "scripts": {
+    "dev": "pnpm --filter @wifiproof/web dev",
+    "build": "pnpm --filter @wifiproof/web build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "clean": "pnpm -r clean",
+    "circuits:compile": "cd packages/circuits && nargo compile",
+    "circuits:prove": "cd packages/circuits && nargo prove",
+    "circuits:verify": "cd packages/circuits && nargo verify",
+    "contracts:build": "cd packages/contracts && forge build",
+    "contracts:test": "cd packages/contracts && forge test -vvv",
+    "contracts:deploy:testnet": "cd packages/contracts && forge script script/Deploy.s.sol --rpc-url base-sepolia --broadcast --verify"
+  },
+  "workspaces": [
+    "packages/*"
+  ]
+}
