@@ -1,5 +1,5 @@
 import { Noir, CompiledCircuit, InputMap } from '@noir-lang/noir_js';
-import { UltraHonkBackend, ProofData } from '@aztec/bb.js';
+import { Barretenberg, UltraHonkBackend, ProofData } from '@aztec/bb.js';
 
 // GPS coordinate scaling factor (10^6 for 6 decimal places)
 export const GPS_SCALE = 1_000_000;
@@ -64,10 +64,12 @@ export function buildInputs(
 export class WiFiProofProver {
   private noir: Noir | null = null;
   private backend: UltraHonkBackend | null = null;
+  private api: Barretenberg | null = null;
 
   async init(circuit: CompiledCircuit): Promise<void> {
     this.noir = new Noir(circuit);
-    this.backend = new UltraHonkBackend(circuit.bytecode);
+    this.api = await Barretenberg.new({ threads: 1 });
+    this.backend = new UltraHonkBackend(circuit.bytecode, this.api);
   }
 
   async generateProof(inputs: CircuitInputs): Promise<ProofResult> {
@@ -76,7 +78,7 @@ export class WiFiProofProver {
     }
 
     const { witness } = await this.noir.execute(inputs as unknown as InputMap);
-    const proof = await this.backend.generateProof(witness, { keccak: true });
+    const proof = await this.backend.generateProof(witness, { verifierTarget: 'evm' });
 
     return {
       proof: proof.proof,
@@ -89,11 +91,14 @@ export class WiFiProofProver {
       throw new Error('Prover not initialized. Call init() first.');
     }
 
-    return this.backend.verifyProof(proofData, { keccak: true });
+    return this.backend.verifyProof(proofData, { verifierTarget: 'evm' });
   }
 
-  destroy(): void {
-    this.backend?.destroy();
+  async destroy(): Promise<void> {
+    if (this.api) {
+      await this.api.destroy();
+    }
+    this.api = null;
     this.backend = null;
     this.noir = null;
   }
