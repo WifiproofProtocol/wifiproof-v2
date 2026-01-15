@@ -17,7 +17,9 @@ WiFiProof is a Zero-Knowledge proof-of-attendance protocol that uses contextual 
 ```
 wifiproof-v2/
 ├── packages/
-│   ├── circuits/       # Noir ZK circuits (nargo)
+│   ├── proof-app/      # Noir circuit + TypeScript proving library
+│   │   ├── circuit/    # Noir ZK geolocation circuit
+│   │   └── src/        # Browser proof generation (NoirJS + bb.js)
 │   ├── contracts/      # Foundry smart contracts
 │   ├── web/            # Next.js 14 frontend
 │   └── common/         # Shared types & constants
@@ -32,7 +34,8 @@ wifiproof-v2/
 
 | Component | Technology | Version |
 |-----------|------------|---------|
-| **Circuits** | Noir (Barretenberg UltraPlonk) | v0.30.0+ |
+| **Circuits** | Noir (Barretenberg UltraHonk) | 1.0.0-beta.18 |
+| **Proving Backend** | Barretenberg (bb.js) | 0.87.0 |
 | **Contracts** | Foundry (Solidity) | 0.8.24 |
 | **Frontend** | Next.js, TypeScript, Tailwind | 14.x |
 | **Wallet** | wagmi, viem | 2.x |
@@ -52,12 +55,8 @@ pnpm install
 ### 2. Initialize Packages
 
 ```bash
-# Noir circuits
-cd packages/circuits
-nargo init --name wifiproof
-
 # Foundry contracts
-cd ../contracts
+cd packages/contracts
 forge init --no-commit
 forge install ethereum-attestation-service/eas-contracts --no-commit
 
@@ -71,7 +70,8 @@ pnpm create next-app@latest . --typescript --tailwind --eslint --app --src-dir -
 ```bash
 # From root directory
 pnpm dev                    # Run web app
-pnpm circuits:compile       # Compile Noir circuits
+pnpm circuit:compile        # Compile Noir circuit
+pnpm circuit:test           # Test Noir circuit
 pnpm contracts:test         # Run Foundry tests
 ```
 
@@ -79,7 +79,7 @@ pnpm contracts:test         # Run Foundry tests
 
 | Package | Description | Docs |
 |---------|-------------|------|
-| `@wifiproof/circuits` | ZK geolocation prover | [README](./packages/circuits/README.md) |
+| `@wifiproof/proof-app` | ZK circuit + browser proving | [README](./packages/proof-app/README.md) |
 | `@wifiproof/contracts` | EAS attestation minting | [README](./packages/contracts/README.md) |
 | `@wifiproof/web` | User-facing application | [README](./packages/web/README.md) |
 | `@wifiproof/common` | Shared types & utilities | [README](./packages/common/README.md) |
