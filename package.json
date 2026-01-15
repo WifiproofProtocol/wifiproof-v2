@@ -16,13 +16,13 @@
   "packageManager": "pnpm@10.12.4",
   "scripts": {
     "dev": "pnpm --filter @wifiproof/web dev",
-    "build": "pnpm --filter @wifiproof/web build",
+    "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
     "clean": "pnpm -r clean",
-    "circuits:compile": "cd packages/circuits && nargo compile",
-    "circuits:prove": "cd packages/circuits && nargo prove",
-    "circuits:verify": "cd packages/circuits && nargo verify",
+    "circuit:compile": "cd packages/proof-app/circuit && nargo compile",
+    "circuit:test": "cd packages/proof-app/circuit && nargo test",
+    "circuit:execute": "cd packages/proof-app/circuit && nargo execute",
     "contracts:build": "cd packages/contracts && forge build",
     "contracts:test": "cd packages/contracts && forge test -vvv",
     "contracts:deploy:testnet": "cd packages/contracts && forge script script/Deploy.s.sol --rpc-url base-sepolia --broadcast --verify"
