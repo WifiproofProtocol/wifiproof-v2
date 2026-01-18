@@ -74,46 +74,115 @@ export default function Hero() {
           className="relative lg:block hidden"
         >
           <div className="glass-card p-8 rounded-3xl relative overflow-hidden group">
-            <div className="flex items-center justify-between mb-8">
+            {/* Animated border glow */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-blue-600/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+            <div className="flex items-center justify-between mb-8 relative z-10">
               <div className="flex gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-500/50" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
-                <div className="w-3 h-3 rounded-full bg-green-500/50" />
+                <motion.div
+                  className="w-3 h-3 rounded-full bg-red-500"
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                />
+                <motion.div
+                  className="w-3 h-3 rounded-full bg-yellow-500"
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ repeat: Infinity, duration: 2, delay: 0.3 }}
+                />
+                <motion.div
+                  className="w-3 h-3 rounded-full bg-green-500"
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ repeat: Infinity, duration: 2, delay: 0.6 }}
+                />
               </div>
-              <div className="text-xs font-mono text-gray-500 tracking-widest">
+              <motion.div
+                className="text-xs font-mono text-gray-500 tracking-widest"
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ repeat: Infinity, duration: 3 }}
+              >
                 NOIR_CIRCUIT_V2
-              </div>
+              </motion.div>
             </div>
 
-            <div className="space-y-4 font-mono text-sm">
-              <div className="flex justify-between text-blue-400">
+            <div className="space-y-4 font-mono text-sm relative z-10">
+              <motion.div
+                className="flex justify-between text-blue-400"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 }}
+              >
                 <span>Inputs:</span>
                 <span>[lat, lon, threshold_sq]</span>
-              </div>
-              <div className="h-[1px] w-full bg-white/5" />
-              <div className="text-gray-500 py-4">
-                {`> Initializing Barretenberg...`} <br />
-                {`> Constraint System: 108 ACIR opcodes`} <br />
-                {`> Generating Witness...`}
+              </motion.div>
+              <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+              <div className="text-gray-500 py-4 space-y-1">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8 }}
+                >
+                  {`> Initializing Barretenberg...`}
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1.2 }}
+                >
+                  {`> Constraint System: 108 ACIR opcodes`}
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1.6 }}
+                >
+                  {`> Generating Witness...`}
+                </motion.div>
               </div>
 
               {/* Animated Proof Bar */}
               <div className="relative h-12 bg-white/5 rounded-lg border border-white/10 flex items-center px-4 overflow-hidden">
                 <motion.div
-                  className="absolute inset-0 bg-blue-600/20"
+                  className="absolute inset-0 bg-gradient-to-r from-blue-600/30 via-purple-600/30 to-blue-600/30"
                   initial={{ x: "-100%" }}
                   animate={{ x: "100%" }}
                   transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                />
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+                  animate={{ x: ["-100%", "100%"] }}
+                  transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
                 />
                 <span className="relative z-10 text-blue-400 animate-pulse">
                   PROVING PHYSICAL PRESENCE...
                 </span>
               </div>
 
-              <div className="text-green-500">
-                {`> Proof Generated: 0x72a...f92`} <br />
-                {`> Verifying on Base... SUCCESS`}
-              </div>
+              <motion.div
+                className="text-green-500 space-y-1"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 2 }}
+              >
+                <div className="flex items-center gap-2">
+                  <motion.span
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ repeat: Infinity, duration: 1 }}
+                  >
+                    ✓
+                  </motion.span>
+                  {`Proof Generated: 0x72a...f92`}
+                </div>
+                <div className="flex items-center gap-2">
+                  <motion.span
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ repeat: Infinity, duration: 1, delay: 0.5 }}
+                  >
+                    ✓
+                  </motion.span>
+                  {`Verifying on Base... SUCCESS`}
+                </div>
+              </motion.div>
             </div>
           </div>
         </motion.div>
