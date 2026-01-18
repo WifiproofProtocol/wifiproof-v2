@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, CheckCircle2, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function Waitlist() {
   const [email, setEmail] = useState("");
@@ -14,10 +15,27 @@ export default function Waitlist() {
     e.preventDefault();
     setStatus("loading");
 
-    // For now, just simulate success (will connect to Supabase later)
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setStatus("success");
-    setEmail("");
+    try {
+      const { error } = await supabase
+        .from("waitlist")
+        .insert([{ email, created_at: new Date().toISOString() }]);
+
+      if (error) {
+        if (error.code === "23505") {
+          setMessage("You're already on the waitlist!");
+        } else {
+          setMessage("Something went wrong. Please try again.");
+        }
+        setStatus("error");
+        return;
+      }
+
+      setStatus("success");
+      setEmail("");
+    } catch {
+      setMessage("Something went wrong. Please try again.");
+      setStatus("error");
+    }
   };
 
   return (
