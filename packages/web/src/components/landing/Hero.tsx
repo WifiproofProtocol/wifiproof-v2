@@ -48,11 +48,11 @@ export default function Hero() {
           </p>
 
           <div className="flex flex-wrap gap-4">
-            <a
-              href="#waitlist"
-              className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold transition-all blue-glow"
-            >
-              Join Waitlist
+            <a href="#waitlist" className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 rounded-lg blur opacity-60 group-hover:opacity-100 transition duration-500 animate-gradient-x" />
+              <div className="relative px-8 py-4 bg-[#0a0a0a] text-white rounded-lg font-bold transition-all">
+                Join Waitlist
+              </div>
             </a>
             <a
               href="https://github.com/AztecProtocol/wifiproof-v2"
