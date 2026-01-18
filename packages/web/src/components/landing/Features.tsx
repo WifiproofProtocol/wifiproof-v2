@@ -47,14 +47,27 @@ export default function Features() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              whileHover={{ y: -10 }}
-              className="p-8 rounded-2xl glass-card hover:border-white/10 transition-all"
+              whileHover={{ y: -8, scale: 1.02 }}
+              className="group relative p-8 rounded-2xl glass-card transition-all duration-300 cursor-pointer"
             >
-              <div className="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center mb-6">
+              {/* Hover glow effect */}
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              {/* Gradient border on hover */}
+              <div className="absolute inset-0 rounded-2xl border border-white/5 group-hover:border-blue-500/30 transition-colors duration-300" />
+
+              <motion.div
+                className="relative z-10 w-12 h-12 rounded-lg bg-white/5 group-hover:bg-white/10 flex items-center justify-center mb-6 transition-colors duration-300"
+                whileHover={{ rotate: [0, -10, 10, 0] }}
+                transition={{ duration: 0.5 }}
+              >
                 {f.icon}
-              </div>
-              <h3 className="text-xl font-bold text-white mb-3">{f.title}</h3>
-              <p className="text-gray-400 leading-relaxed">{f.desc}</p>
+              </motion.div>
+              <h3 className="relative z-10 text-xl font-bold text-white mb-3 group-hover:text-blue-100 transition-colors duration-300">
+                {f.title}
+              </h3>
+              <p className="relative z-10 text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors duration-300">
+                {f.desc}
+              </p>
             </motion.div>
           ))}
         </div>
