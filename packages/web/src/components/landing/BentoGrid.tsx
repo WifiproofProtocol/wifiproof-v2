@@ -52,15 +52,45 @@ export default function BentoGrid() {
           {cards.map((card, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className={`glass-card p-8 rounded-2xl hover:border-white/20 transition-all ${card.className}`}
+              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{
+                delay: i * 0.15,
+                duration: 0.5,
+                ease: [0.25, 0.46, 0.45, 0.94],
+              }}
+              whileHover={{ y: -5, scale: 1.01 }}
+              className={`group relative glass-card p-8 rounded-2xl transition-all duration-300 cursor-pointer overflow-hidden ${card.className}`}
             >
-              <div className="mb-4">{card.icon}</div>
-              <h3 className="text-xl font-bold mb-2">{card.title}</h3>
-              <p className="text-gray-400">{card.desc}</p>
+              {/* Animated gradient background on hover */}
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-purple-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                initial={false}
+              />
+              {/* Shine effect on scroll */}
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full"
+                whileInView={{ translateX: ["100%", "-100%"] }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15 + 0.3, duration: 0.8 }}
+              />
+              {/* Border glow */}
+              <div className="absolute inset-0 rounded-2xl border border-white/5 group-hover:border-blue-500/20 transition-colors duration-300" />
+
+              <motion.div
+                className="relative z-10 mb-4"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                transition={{ type: "spring", stiffness: 400 }}
+              >
+                {card.icon}
+              </motion.div>
+              <h3 className="relative z-10 text-xl font-bold mb-2 group-hover:text-blue-100 transition-colors duration-300">
+                {card.title}
+              </h3>
+              <p className="relative z-10 text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
+                {card.desc}
+              </p>
             </motion.div>
           ))}
         </div>
