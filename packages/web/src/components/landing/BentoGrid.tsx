@@ -5,7 +5,7 @@ import { Globe, Shield, Zap, Users } from "lucide-react";
 const cards = [
   {
     title: "Conferences & Events",
-    desc: "Issue non-transferable POAPs that actually require physical attendance. No more QR code farming from Twitter.",
+    desc: "Issue non-transferable attestations that actually require physical attendance. No more QR code farming from Twitter.",
     icon: <Users className="w-6 h-6 text-blue-500" />,
     className: "md:col-span-2",
   },
