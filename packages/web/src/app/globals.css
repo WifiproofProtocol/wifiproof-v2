@@ -17,6 +17,37 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Better selection color */
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+  color: white;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 .glass-card {
@@ -25,15 +56,30 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
 .blue-glow {
   box-shadow: 0 0 50px -12px rgba(59, 130, 246, 0.5);
 }
 
 .gradient-text {
-  background: linear-gradient(to right, #0052FF, #7C3AED);
+  background: linear-gradient(135deg, #0052FF 0%, #7C3AED 50%, #0052FF 100%);
+  background-size: 200% 200%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  animation: gradient-shift 5s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 @keyframes gradient-x {
