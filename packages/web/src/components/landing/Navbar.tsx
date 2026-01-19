@@ -58,45 +58,55 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Navigation */}
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="md:hidden py-4 border-t border-white/5"
-          >
-            <div className="flex flex-col gap-4">
-              <a
-                href="#features"
-                className="text-gray-400 hover:text-white transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                Features
-              </a>
-              <a
-                href="#use-cases"
-                className="text-gray-400 hover:text-white transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                Use Cases
-              </a>
-              <a
+        <motion.div
+          initial={false}
+          animate={isOpen ? { height: "auto", opacity: 1 } : { height: 0, opacity: 0 }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          className="md:hidden overflow-hidden"
+        >
+          <div className="py-4 border-t border-white/5">
+            <div className="flex flex-col gap-2">
+              {[
+                { href: "#features", label: "Features" },
+                { href: "#use-cases", label: "Use Cases" },
+              ].map((link, i) => (
+                <motion.a
+                  key={link.href}
+                  href={link.href}
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={isOpen ? { x: 0, opacity: 1 } : { x: -20, opacity: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                  onClick={() => setIsOpen(false)}
+                >
+                  {link.label}
+                </motion.a>
+              ))}
+              <motion.a
                 href="https://github.com/WifiproofProtocol"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-white transition-colors"
+                initial={{ x: -20, opacity: 0 }}
+                animate={isOpen ? { x: 0, opacity: 1 } : { x: -20, opacity: 0 }}
+                transition={{ delay: 0.2 }}
+                className="px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all flex items-center gap-2"
               >
+                <Github className="w-4 h-4" />
                 GitHub
-              </a>
-              <a
+              </motion.a>
+              <motion.a
                 href="#waitlist"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium text-center"
+                initial={{ x: -20, opacity: 0 }}
+                animate={isOpen ? { x: 0, opacity: 1 } : { x: -20, opacity: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mx-4 mt-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg text-sm font-medium text-center"
                 onClick={() => setIsOpen(false)}
               >
                 Join Waitlist
-              </a>
+              </motion.a>
             </div>
-          </motion.div>
-        )}
+          </div>
+        </motion.div>
       </div>
     </nav>
   );
