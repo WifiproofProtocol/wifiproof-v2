@@ -82,3 +82,5 @@ temp/
 playwright-report/
 playwright/.cache/
 test-results/
+.vercel
+.env*.local
