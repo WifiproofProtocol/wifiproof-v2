@@ -1,5 +1,6 @@
 "use client";
 import { Github } from "lucide-react";
+import Image from "next/image";
 
 // X Icon Component
 const XIcon = ({ className }: { className?: string }) => (
@@ -20,8 +21,13 @@ export default function Footer() {
           {/* Brand */}
           <div className="text-center md:text-left">
             <a href="/" className="flex items-center gap-2 justify-center md:justify-start mb-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg">
-                W
+              <div className="relative w-8 h-8 rounded-lg overflow-hidden">
+                <Image
+                  src="/WifiProofLogo.png"
+                  alt="WiFiProof Logo"
+                  fill
+                  className="object-contain"
+                />
               </div>
               <span className="font-bold text-xl text-white">WiFiProof</span>
             </a>

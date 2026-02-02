@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Menu, X, Github } from "lucide-react";
+import Image from "next/image";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,8 +13,13 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <a href="/" className="flex items-center gap-3 group">
-            <div className="relative w-10 h-10 overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform duration-300 shadow-lg shadow-blue-500/20">
-              <span className="font-bold text-white text-lg">W</span>
+            <div className="relative w-10 h-10 group-hover:scale-105 transition-transform duration-300">
+              <Image
+                src="/WifiProofLogo.png"
+                alt="WiFiProof Logo"
+                fill
+                className="object-contain"
+              />
             </div>
             <span className="font-bold text-xl text-white tracking-tight group-hover:text-blue-200 transition-colors">
               WiFiProof
@@ -45,12 +51,7 @@ export default function Navbar() {
               </a>
             </div>
 
-            <a href="#waitlist" className="relative group overflow-hidden rounded-full p-[1px]">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 animate-[spin_4s_linear_infinite] opacity-70" />
-              <div className="relative px-6 py-2.5 bg-[#0a0a0a] rounded-full text-white text-sm font-bold hover:bg-black/80 transition-all flex items-center gap-2">
-                Connect Wallet
-              </div>
-            </a>
+
           </div>
 
           {/* Mobile Menu Button */}
@@ -86,15 +87,7 @@ export default function Navbar() {
                 {link.label}
               </motion.a>
             ))}
-            <motion.button
-              initial={{ x: -20, opacity: 0 }}
-              animate={isOpen ? { x: 0, opacity: 1 } : { x: -20, opacity: 0 }}
-              transition={{ delay: 0.2 }}
-              className="w-full mt-4 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg text-white font-bold"
-              onClick={() => setIsOpen(false)}
-            >
-              Connect Wallet
-            </motion.button>
+
           </div>
         </motion.div>
       </div>
