@@ -1,99 +1,105 @@
 @import "tailwindcss";
 
 :root {
-  --background: #050505;
+  --background: #020412;
+  /* Deep midnight blue/purple base */
   --foreground: #ffffff;
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --border-color: rgba(255, 255, 255, 0.1);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card-bg);
+  --color-border: var(--border-color);
+
+  --font-sans: var(--font-geist-sans), "SF Pro Display", -apple-system, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), "SF Mono", monospace;
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-glow: glow 4s ease-in-out infinite alternate;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Better selection color */
+/* Custom Selection */
 ::selection {
-  background: rgba(59, 130, 246, 0.3);
-  color: white;
+  background: rgba(124, 58, 237, 0.5);
+  /* Purple tint */
+  color: #fff;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #0a0a0a;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-.glass-card {
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.glass-card:hover {
+/* Vibrant Utilities */
+.glass-panel {
   background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
-.blue-glow {
-  box-shadow: 0 0 50px -12px rgba(59, 130, 246, 0.5);
+.glass-panel:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.15);
+  /* Purple glow */
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #0052FF 0%, #7C3AED 50%, #0052FF 100%);
-  background-size: 200% 200%;
+  background: linear-gradient(135deg, #fff 0%, #a78bfa 50%, #3b82f6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  background-size: 200% 200%;
   animation: gradient-shift 5s ease infinite;
 }
 
 @keyframes gradient-shift {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
 
-@keyframes gradient-x {
   0%,
   100% {
     background-position: 0% 50%;
-    background-size: 200% 200%;
   }
+
   50% {
     background-position: 100% 50%;
-    background-size: 200% 200%;
   }
 }
 
-.animate-gradient-x {
-  animation: gradient-x 3s ease infinite;
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.1);
+  }
+
+  to {
+    box-shadow: 0 0 30px rgba(124, 58, 237, 0.4);
+  }
+}
+
+/* Grid Background - Fainter/Magical */
+.bg-grid-magical {
+  background-size: 50px 50px;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
 }
