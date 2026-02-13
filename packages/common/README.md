@@ -55,6 +55,23 @@ import {
 } from '@wifiproof/common';
 ```
 
+## Venue Hash Helper
+
+Use this helper to compute the on-chain `venueHash` exactly as the contract expects.
+
+```ts
+import { computeVenueHashFromScaled } from "@wifiproof/common";
+import { keccak256 } from "ethereum-cryptography/keccak";
+
+const venueHash = computeVenueHashFromScaled(
+  37.7749,     // lat
+  -122.4194,   // lon
+  100,         // radius meters
+  "0x1234...", // eventId (bytes32)
+  (data) => "0x" + Buffer.from(keccak256(data)).toString("hex")
+);
+```
+
 ## Key Constants
 
 ### Contract Addresses
