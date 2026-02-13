@@ -46,6 +46,7 @@ Constraint: Distance² < Threshold²
 | `venue_lat` | Public | Venue latitude (scaled by 10^6) |
 | `venue_lon` | Public | Venue longitude (scaled by 10^6) |
 | `threshold_sq` | Public | Squared distance threshold |
+| `event_id` | Public | Event identifier (bytes32 reduced to field) |
 
 ## Development
 
@@ -87,6 +88,7 @@ const { proof, publicInputs } = await generateGeolocationProof({
   userLocation,
   venueLocation,
   radiusMeters: 100,
+  eventId: "0x1234...abcd",
 });
 
 // Verify proof

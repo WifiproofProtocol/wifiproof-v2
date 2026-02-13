@@ -15,12 +15,15 @@ export interface CircuitInputs {
   venue_lat: string;
   venue_lon: string;
   threshold_sq: string;
+  event_id: string;
 }
 
 export interface GPSCoordinate {
   lat: number;
   lon: number;
 }
+
+export type EventIdInput = string | bigint;
 
 export interface ProofResult {
   proof: Uint8Array;
@@ -46,11 +49,19 @@ export function calculateThresholdSq(radiusMeters: number): string {
   return Math.round(radiusScaled * radiusScaled).toString();
 }
 
+// Convert eventId (bytes32 hex or bigint) into BN254 field element
+export function eventIdToField(eventId: EventIdInput): string {
+  const value = typeof eventId === 'string' ? BigInt(eventId) : eventId;
+  const modded = value % FIELD_MODULUS;
+  return modded.toString();
+}
+
 // Build circuit inputs from GPS coordinates
 export function buildInputs(
   userLocation: GPSCoordinate,
   venueLocation: GPSCoordinate,
-  radiusMeters: number
+  radiusMeters: number,
+  eventId: EventIdInput
 ): CircuitInputs {
   return {
     user_lat: scaleGPS(userLocation.lat),
@@ -58,6 +69,7 @@ export function buildInputs(
     venue_lat: scaleGPS(venueLocation.lat),
     venue_lon: scaleGPS(venueLocation.lon),
     threshold_sq: calculateThresholdSq(radiusMeters),
+    event_id: eventIdToField(eventId),
   };
 }
 
