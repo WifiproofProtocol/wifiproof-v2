@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import {Script, console2} from "forge-std/Script.sol";
+
+import {WiFiProof} from "../src/WiFiProof.sol";
+import {HonkVerifier} from "../src/Verifier.sol";
+
+/// @title Deploy WiFiProof V2
+/// @notice Deploys the Honk verifier + WiFiProof gatekeeper contract
+contract Deploy is Script {
+    function run() external {
+        uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+
+        address eas = vm.envAddress("EAS_ADDRESS");
+        address cbIndexer = vm.envAddress("CB_INDEXER_ADDRESS");
+        address ipSigner = vm.envAddress("IP_SIGNER_ADDRESS");
+
+        address owner = vm.envOr("OWNER_ADDRESS", vm.addr(deployerKey));
+        bytes32 schema = vm.envOr("WIFIPROOF_SCHEMA", bytes32(0));
+
+        vm.startBroadcast(deployerKey);
+
+        HonkVerifier verifier = new HonkVerifier();
+        WiFiProof wifiproof = new WiFiProof(eas, address(verifier), cbIndexer, ipSigner, owner);
+
+        if (schema != bytes32(0)) {
+            if (owner == vm.addr(deployerKey)) {
+                wifiproof.setSchema(schema);
+            } else {
+                console2.log("Skipping setSchema: OWNER_ADDRESS is not deployer.");
+                console2.log("Set schema later from owner:", owner);
+            }
+        }
+
+        vm.stopBroadcast();
+
+        console2.log("HonkVerifier:", address(verifier));
+        console2.log("WiFiProof:", address(wifiproof));
+    }
+}
