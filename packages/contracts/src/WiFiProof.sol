@@ -40,13 +40,6 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
     //                          CONSTANTS
     // ═══════════════════════════════════════════════════════════════════
 
-    /// @notice Coinbase Verified Account schema UID
-    bytes32 public constant CB_VERIFIED_ACCOUNT_SCHEMA =
-        0xf8b05c79f090979bf4a80270aba232dff11a10d9ca55c4f88de95317970f0de9;
-
-    /// @notice Coinbase official attester address
-    address public constant CB_ATTESTER = 0x357458739F90461b99789350868CD7CF330Dd7EE;
-
     /// @notice EIP-712 typehash for IP verification signatures
     bytes32 public constant IP_VERIFICATION_TYPEHASH = keccak256(
         "IPVerification(address wallet,bytes32 eventId,bytes32 venueHash,uint64 deadline)"
@@ -63,6 +56,12 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
     /// @notice Index of event_id in the public inputs array
     /// @dev Public inputs layout: [venue_lat, venue_lon, threshold_sq, event_id]
     uint256 public constant EVENT_ID_PUBLIC_INPUT_INDEX = 3;
+
+    /// @notice Coinbase Verified Account schema UID (network-specific)
+    bytes32 public immutable cbVerifiedAccountSchema;
+
+    /// @notice Coinbase official attester address (network-specific)
+    address public immutable cbAttester;
 
     // ═══════════════════════════════════════════════════════════════════
     //                            STATE
@@ -129,6 +128,7 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
     error InvalidPublicInputs();
     error InvalidVenueHash();
     error VenueHashMismatch();
+    error InvalidSchema();
 
     // ═══════════════════════════════════════════════════════════════════
     //                         CONSTRUCTOR
@@ -137,23 +137,36 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
     /// @param _eas EAS contract address (0x4200000000000000000000000000000000000021 on Base)
     /// @param _verifier Deployed HonkVerifier contract address
     /// @param _cbIndexer Coinbase Attestation Indexer (0x2c7eE1E5f416dfF40054c27A62f7B357C4E8619C on Base)
+    /// @param _cbAttester Coinbase official attester address (network-specific)
+    /// @param _cbVerifiedAccountSchema Coinbase Verified Account schema UID (network-specific)
     /// @param _ipSigner Server signer address for IP verification
     /// @param _owner Contract owner (can create events, update ipSigner and schema)
     constructor(
         address _eas,
         address _verifier,
         address _cbIndexer,
+        address _cbAttester,
+        bytes32 _cbVerifiedAccountSchema,
         address _ipSigner,
         address _owner
     ) Ownable(_owner) EIP712("WiFiProof", "2") {
-        if (_eas == address(0) || _verifier == address(0) || _cbIndexer == address(0) || _ipSigner == address(0)) {
+        if (
+            _eas == address(0)
+            || _verifier == address(0)
+            || _cbIndexer == address(0)
+            || _cbAttester == address(0)
+            || _ipSigner == address(0)
+        ) {
             revert ZeroAddress();
         }
+        if (_cbVerifiedAccountSchema == bytes32(0)) revert InvalidSchema();
 
         eas = IEAS(_eas);
         verifier = IHonkVerifier(_verifier);
         cbIndexer = IAttestationIndexer(_cbIndexer);
         ipSigner = _ipSigner;
+        cbAttester = _cbAttester;
+        cbVerifiedAccountSchema = _cbVerifiedAccountSchema;
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -328,12 +341,12 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
     /// @param wallet The wallet address to verify
     /// @return True if the wallet has a non-revoked Coinbase Verified Account attestation
     function _hasValidKYC(address wallet) internal view returns (bool) {
-        bytes32 uid = cbIndexer.getAttestationUid(wallet, CB_VERIFIED_ACCOUNT_SCHEMA);
+        bytes32 uid = cbIndexer.getAttestationUid(wallet, cbVerifiedAccountSchema);
         if (uid == bytes32(0)) return false;
 
         Attestation memory attestation = eas.getAttestation(uid);
         return attestation.recipient == wallet
-            && attestation.attester == CB_ATTESTER
+            && attestation.attester == cbAttester
             && attestation.revocationTime == 0
             && (attestation.expirationTime == 0 || attestation.expirationTime > block.timestamp);
     }
