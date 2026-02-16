@@ -10,14 +10,17 @@ import {ISchemaResolver} from "@ethereum-attestation-service/eas-contracts/contr
 /// @notice Registers the WiFiProof EAS schema on-chain
 contract RegisterSchema is Script {
     function run() external {
-        uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
-
         address registryAddress = vm.envAddress("SCHEMA_REGISTRY_ADDRESS");
         string memory schema = vm.envString("WIFIPROOF_SCHEMA_STRING");
         bool revocable = vm.envOr("SCHEMA_REVOCABLE", true);
         address resolver = vm.envOr("SCHEMA_RESOLVER", address(0));
 
-        vm.startBroadcast(deployerKey);
+        uint256 deployerKey = vm.envOr("DEPLOYER_PRIVATE_KEY", uint256(0));
+        if (deployerKey != 0) {
+            vm.startBroadcast(deployerKey);
+        } else {
+            vm.startBroadcast();
+        }
 
         bytes32 schemaUid = ISchemaRegistry(registryAddress).register(
             schema,
