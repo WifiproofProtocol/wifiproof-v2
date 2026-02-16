@@ -9,8 +9,6 @@ import {WiFiProof} from "../src/WiFiProof.sol";
 /// @notice Computes venueHash and creates an event on-chain
 contract CreateEvent is Script {
     function run() external {
-        uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
-
         address wifiproofAddress = vm.envAddress("WIFIPROOF_ADDRESS");
         bytes32 eventId = vm.envBytes32("EVENT_ID");
 
@@ -22,11 +20,22 @@ contract CreateEvent is Script {
         uint64 endTime = uint64(vm.envUint("EVENT_END_TIME"));
         string memory venueName = vm.envString("VENUE_NAME");
 
+        uint256 deployerKey = vm.envOr("DEPLOYER_PRIVATE_KEY", uint256(0));
+        address deployer;
+        if (deployerKey != 0) {
+            deployer = vm.addr(deployerKey);
+            vm.startBroadcast(deployerKey);
+        } else {
+            vm.startBroadcast();
+            deployer = msg.sender;
+        }
+
         WiFiProof wifiproof = WiFiProof(wifiproofAddress);
         address owner = wifiproof.owner();
-        if (owner != vm.addr(deployerKey)) {
+        if (owner != deployer) {
             console2.log("Skipping createEvent: caller is not owner.");
             console2.log("Owner:", owner);
+            vm.stopBroadcast();
             return;
         }
 
@@ -37,7 +46,6 @@ contract CreateEvent is Script {
             eventId
         );
 
-        vm.startBroadcast(deployerKey);
         wifiproof.createEvent(eventId, venueHash, startTime, endTime, venueName);
         vm.stopBroadcast();
 
