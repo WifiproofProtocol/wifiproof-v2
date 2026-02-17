@@ -30,6 +30,7 @@ contract RegisterSchema is Script {
 
         vm.stopBroadcast();
 
-        console2.log("Schema UID:", schemaUid);
+        console2.log("Schema UID:");
+        console2.logBytes32(schemaUid);
     }
 }
