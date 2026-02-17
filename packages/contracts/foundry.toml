@@ -3,11 +3,15 @@ src = "src"
 out = "out"
 libs = ["lib"]
 solc = "0.8.28"
+optimizer = true
+optimizer_runs = 1
 
 remappings = [
     "@ethereum-attestation-service/eas-contracts/=lib/eas-contracts/",
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
     "forge-std/=lib/forge-std/src/",
 ]
+
+fs_permissions = [{ access = "read", path = "./" }]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
