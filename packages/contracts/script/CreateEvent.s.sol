@@ -9,48 +9,40 @@ import {WiFiProof} from "../src/WiFiProof.sol";
 /// @notice Computes venueHash and creates an event on-chain
 contract CreateEvent is Script {
     function run() external {
-        address wifiproofAddress = vm.envAddress("WIFIPROOF_ADDRESS");
+        WiFiProof wifiproof = WiFiProof(vm.envAddress("WIFIPROOF_ADDRESS"));
         bytes32 eventId = vm.envBytes32("EVENT_ID");
 
-        int256 venueLatScaled = vm.envInt("VENUE_LAT_SCALED");
-        int256 venueLonScaled = vm.envInt("VENUE_LON_SCALED");
-        uint256 radiusMeters = vm.envUint("RADIUS_METERS");
-
-        uint64 startTime = uint64(vm.envUint("EVENT_START_TIME"));
-        uint64 endTime = uint64(vm.envUint("EVENT_END_TIME"));
-        string memory venueName = vm.envString("VENUE_NAME");
-
         uint256 deployerKey = vm.envOr("DEPLOYER_PRIVATE_KEY", uint256(0));
-        address deployer;
         if (deployerKey != 0) {
-            deployer = vm.addr(deployerKey);
+            if (wifiproof.owner() != vm.addr(deployerKey)) {
+                console2.log("Skipping createEvent: caller is not owner.");
+                return;
+            }
             vm.startBroadcast(deployerKey);
         } else {
             vm.startBroadcast();
-            deployer = msg.sender;
-        }
-
-        WiFiProof wifiproof = WiFiProof(wifiproofAddress);
-        address owner = wifiproof.owner();
-        if (owner != deployer) {
-            console2.log("Skipping createEvent: caller is not owner.");
-            console2.log("Owner:", owner);
-            vm.stopBroadcast();
-            return;
         }
 
         bytes32 venueHash = wifiproof.computeVenueHashFromScaled(
-            venueLatScaled,
-            venueLonScaled,
-            _thresholdSqScaled(radiusMeters),
+            vm.envInt("VENUE_LAT_SCALED"),
+            vm.envInt("VENUE_LON_SCALED"),
+            _thresholdSqScaled(vm.envUint("RADIUS_METERS")),
             eventId
         );
 
-        wifiproof.createEvent(eventId, venueHash, startTime, endTime, venueName);
+        wifiproof.createEvent(
+            eventId,
+            venueHash,
+            uint64(vm.envUint("EVENT_START_TIME")),
+            uint64(vm.envUint("EVENT_END_TIME")),
+            vm.envString("VENUE_NAME")
+        );
         vm.stopBroadcast();
 
-        console2.log("Event created:", eventId);
-        console2.log("Venue hash:", venueHash);
+        console2.log("Event created:");
+        console2.logBytes32(eventId);
+        console2.log("Venue hash:");
+        console2.logBytes32(venueHash);
     }
 
     function _thresholdSqScaled(uint256 radiusMeters) internal pure returns (uint256) {
