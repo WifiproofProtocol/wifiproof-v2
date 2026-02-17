@@ -44,9 +44,10 @@ export function scaleGPS(coord: number): string {
 // At equator: 1 degree ≈ 111,320 meters
 // threshold_sq = (radius_scaled)^2 where radius_scaled = radius_m * GPS_SCALE / 111320
 export function calculateThresholdSq(radiusMeters: number): string {
-  const metersPerDegree = 111_320;
-  const radiusScaled = (radiusMeters * GPS_SCALE) / metersPerDegree;
-  return Math.round(radiusScaled * radiusScaled).toString();
+  // Must match Solidity integer division: (radius * 1e6) / 111320, then square
+  const metersPerDegree = 111_320n;
+  const radiusScaled = (BigInt(radiusMeters) * BigInt(GPS_SCALE)) / metersPerDegree;
+  return (radiusScaled * radiusScaled).toString();
 }
 
 // Convert eventId (bytes32 hex or bigint) into BN254 field element
