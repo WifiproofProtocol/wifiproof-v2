@@ -21,6 +21,7 @@
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
     "lint": "eslint src/",
     "clean": "rm -rf dist",
+    "generate:claim": "node scripts/generate-claim-input.mjs",
     "circuit:compile": "cd circuit && nargo compile",
     "circuit:test": "cd circuit && nargo test",
     "circuit:prove": "cd circuit && nargo execute"
