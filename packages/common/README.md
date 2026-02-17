@@ -72,6 +72,14 @@ const venueHash = computeVenueHashFromScaled(
 );
 ```
 
+## Passkey Schema Design
+
+This schema can be used to attest a passkey binding (optional, off-chain verification):
+
+```
+bytes32 credentialIdHash,address wallet,uint64 createdAt
+```
+
 ## Key Constants
 
 ### Contract Addresses
