@@ -73,6 +73,9 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
     /// @notice WiFiProof EAS schema UID (set post-deployment after schema registration)
     bytes32 public wifiproofSchema;
 
+    /// @notice If true, Coinbase KYC attestation is required to claim
+    bool public kycRequired;
+
     /// @notice Prevents double-claiming: eventId => wallet => claimed
     mapping(bytes32 => mapping(address => bool)) public hasClaimed;
 
@@ -109,6 +112,7 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
 
     event IpSignerUpdated(address indexed oldSigner, address indexed newSigner);
     event SchemaUpdated(bytes32 indexed oldSchema, bytes32 indexed newSchema);
+    event KycRequiredUpdated(bool oldValue, bool newValue);
 
     // ═══════════════════════════════════════════════════════════════════
     //                           ERRORS
@@ -148,7 +152,8 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
         address _cbAttester,
         bytes32 _cbVerifiedAccountSchema,
         address _ipSigner,
-        address _owner
+        address _owner,
+        bool _kycRequired
     ) Ownable(_owner) EIP712("WiFiProof", "2") {
         if (
             _eas == address(0)
@@ -167,6 +172,7 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
         ipSigner = _ipSigner;
         cbAttester = _cbAttester;
         cbVerifiedAccountSchema = _cbVerifiedAccountSchema;
+        kycRequired = _kycRequired;
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -239,7 +245,7 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
         if (computedVenueHash != evt.venueHash) revert VenueHashMismatch();
 
         // --- Layer 1: Coinbase KYC (unique human) ---
-        if (!_hasValidKYC(msg.sender)) revert NoKYCAttestation();
+        if (kycRequired && !_hasValidKYC(msg.sender)) revert NoKYCAttestation();
 
         // --- Layer 2: ZK Geolocation (physical presence) ---
         if (!verifier.verify(proof, publicInputs)) revert InvalidZKProof();
@@ -394,5 +400,12 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
     function setSchema(bytes32 _schema) external onlyOwner {
         emit SchemaUpdated(wifiproofSchema, _schema);
         wifiproofSchema = _schema;
+    }
+
+    /// @notice Toggle Coinbase KYC requirement for claiming
+    /// @param _required Whether KYC is required
+    function setKycRequired(bool _required) external onlyOwner {
+        emit KycRequiredUpdated(kycRequired, _required);
+        kycRequired = _required;
     }
 }
