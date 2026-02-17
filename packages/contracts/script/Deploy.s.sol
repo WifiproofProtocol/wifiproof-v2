@@ -15,6 +15,7 @@ contract Deploy is Script {
         address cbAttester = vm.envAddress("CB_ATTESTER");
         bytes32 cbVerifiedAccountSchema = vm.envBytes32("CB_VERIFIED_ACCOUNT_SCHEMA");
         address ipSigner = vm.envAddress("IP_SIGNER_ADDRESS");
+        bool kycRequired = vm.envOr("KYC_REQUIRED", false);
 
         uint256 deployerKey = vm.envOr("DEPLOYER_PRIVATE_KEY", uint256(0));
         address owner = vm.envOr("OWNER_ADDRESS", address(0));
@@ -43,7 +44,8 @@ contract Deploy is Script {
             cbAttester,
             cbVerifiedAccountSchema,
             ipSigner,
-            owner
+            owner,
+            kycRequired
         );
 
         if (schema != bytes32(0)) {
