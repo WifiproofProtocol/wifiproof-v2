@@ -52,6 +52,7 @@ out/
 # ===== Noir / ZK Circuits =====
 circuits/target/
 circuits/proofs/
+packages/proof-app/circuit/target/
 *.proof
 Prover.toml
 Verifier.toml
@@ -61,6 +62,9 @@ contracts/out/
 contracts/cache/
 contracts/broadcast/
 contracts/cache_forge/
+packages/contracts/out/
+packages/contracts/cache/
+packages/contracts/broadcast/**
 
 # ===== Test Coverage =====
 coverage/
