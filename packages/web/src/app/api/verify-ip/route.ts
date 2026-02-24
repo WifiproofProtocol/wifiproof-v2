@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { privateKeyToAccount } from "viem/accounts";
-import { hexToBytes } from "viem";
+
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +32,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
+    const rateKey = `${wallet.toLowerCase()}:${getClientIp(request) ?? "unknown"}`;
+    const rateWindowSeconds = Number(process.env.RATE_LIMIT_WINDOW_SECONDS ?? 120);
+    const rateMax = Number(process.env.RATE_LIMIT_MAX ?? 5);
+    const rateResult = checkRateLimit(rateKey, rateMax, rateWindowSeconds * 1000);
+    if (!rateResult.ok) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+    }
+
     const privateKey = process.env.IP_SIGNER_PRIVATE_KEY as
       | `0x${string}`
       | undefined;
@@ -37,14 +47,46 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Signer not configured" }, { status: 500 });
     }
 
-    const expectedSubnet = process.env.VENUE_SUBNET_PREFIX; // e.g. "192.168.1"
     const clientIp = getClientIp(request);
-    if (!clientIp || !expectedSubnet) {
+    if (!clientIp) {
       return NextResponse.json({ error: "IP validation unavailable" }, { status: 400 });
     }
 
-    if (!clientIp.startsWith(expectedSubnet)) {
+    const supabase = getSupabaseAdmin();
+    const { data: eventRecord, error } = await supabase
+      .from("events")
+      .select("event_id, venue_hash, subnet_prefix, start_time, end_time")
+      .eq("event_id", eventId.toLowerCase())
+      .maybeSingle();
+
+    if (error) {
+      return NextResponse.json({ error: "Event lookup failed" }, { status: 500 });
+    }
+    if (!eventRecord) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    const storedVenueHash = String(eventRecord.venue_hash || "").toLowerCase();
+    if (storedVenueHash !== venueHash.toLowerCase()) {
+      return NextResponse.json({ error: "Venue hash mismatch" }, { status: 403 });
+    }
+
+    const expectedSubnet = String(eventRecord.subnet_prefix || "");
+    if (!expectedSubnet || !clientIp.startsWith(expectedSubnet)) {
       return NextResponse.json({ error: "Not on venue subnet" }, { status: 403 });
+    }
+
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const maxDeadline = nowSeconds + 120;
+    if (deadline < nowSeconds || deadline > maxDeadline) {
+      return NextResponse.json({ error: "Invalid deadline" }, { status: 400 });
+    }
+
+    if (eventRecord.start_time && nowSeconds < Number(eventRecord.start_time)) {
+      return NextResponse.json({ error: "Event not active" }, { status: 403 });
+    }
+    if (eventRecord.end_time && nowSeconds > Number(eventRecord.end_time)) {
+      return NextResponse.json({ error: "Event not active" }, { status: 403 });
     }
 
     const chainId = Number(process.env.CHAIN_ID ?? 84532);
