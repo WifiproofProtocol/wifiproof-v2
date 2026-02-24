@@ -23,9 +23,7 @@ fn main(
 
     // Prove user is within allowed radius
     assert(lt(distance_sq, threshold_sq), "User is outside the allowed radius");
-
-    // Bind proof to event_id so it cannot be reused across events
-    assert(event_id == event_id, "Event ID binding failed");
+    // event_id is committed to as a public input; binding enforced on-chain.
 }
 
 #[test]
