@@ -45,6 +45,11 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
         "IPVerification(address wallet,bytes32 eventId,bytes32 venueHash,uint64 deadline)"
     );
 
+    /// @notice EIP-712 typehash for organizer event creation signatures
+    bytes32 public constant EVENT_AUTHORIZATION_TYPEHASH = keccak256(
+        "EventAuthorization(address organizer,bytes32 eventId,bytes32 venueHash,uint64 startTime,uint64 endTime,bytes32 venueNameHash,uint64 deadline)"
+    );
+
     /// @notice Number of public inputs expected from the Noir circuit
     /// @dev Derived from the generated verifier (excludes pairing points)
     uint256 public constant EXPECTED_PUBLIC_INPUTS = NUMBER_OF_PUBLIC_INPUTS - PAIRING_POINTS_SIZE;
@@ -75,6 +80,9 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
 
     /// @notice If true, Coinbase KYC attestation is required to claim
     bool public kycRequired;
+
+    /// @notice Organizer allowlist
+    mapping(address => bool) public isOrganizer;
 
     /// @notice Prevents double-claiming: eventId => wallet => claimed
     mapping(bytes32 => mapping(address => bool)) public hasClaimed;
@@ -113,6 +121,7 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
     event IpSignerUpdated(address indexed oldSigner, address indexed newSigner);
     event SchemaUpdated(bytes32 indexed oldSchema, bytes32 indexed newSchema);
     event KycRequiredUpdated(bool oldValue, bool newValue);
+    event OrganizerUpdated(address indexed organizer, bool allowed);
 
     // ═══════════════════════════════════════════════════════════════════
     //                           ERRORS
@@ -133,6 +142,9 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
     error InvalidVenueHash();
     error VenueHashMismatch();
     error InvalidSchema();
+    error NotOrganizer(address wallet);
+    error InvalidEventSignature();
+    error EventSignatureExpired();
 
     // ═══════════════════════════════════════════════════════════════════
     //                         CONSTRUCTOR
@@ -191,20 +203,54 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
         uint64 startTime,
         uint64 endTime,
         string calldata venueName
-    ) external onlyOwner {
-        if (events[eventId].exists) revert EventAlreadyExists();
-        if (venueHash == bytes32(0)) revert InvalidVenueHash();
-        if (startTime >= endTime) revert InvalidEventTimes();
+    ) external {
+        if (msg.sender != owner() && !isOrganizer[msg.sender]) {
+            revert NotOrganizer(msg.sender);
+        }
+        _createEvent(eventId, venueHash, startTime, endTime, venueName);
+    }
 
-        events[eventId] = EventData({
-            venueHash: venueHash,
-            startTime: startTime,
-            endTime: endTime,
-            venueName: venueName,
-            exists: true
-        });
+    /// @notice Register a new event with a server-signed authorization
+    /// @param organizer Wallet authorized by the server
+    /// @param eventId Unique event identifier
+    /// @param venueHash keccak256(abi.encode(venue_lat, venue_lon, threshold_sq, event_id_field)) using BN254 field values
+    /// @param startTime Event start timestamp (unix)
+    /// @param endTime Event end timestamp (unix)
+    /// @param venueName Human-readable event name
+    /// @param deadline Expiry timestamp for the server signature
+    /// @param signature Server EIP-712 signature authorizing event creation
+    function createEventWithSig(
+        address organizer,
+        bytes32 eventId,
+        bytes32 venueHash,
+        uint64 startTime,
+        uint64 endTime,
+        string calldata venueName,
+        uint64 deadline,
+        bytes calldata signature
+    ) external {
+        if (organizer == address(0)) revert ZeroAddress();
+        if (msg.sender != organizer) revert NotOrganizer(msg.sender);
+        if (block.timestamp > deadline) revert EventSignatureExpired();
 
-        emit EventCreated(eventId, venueHash, startTime, endTime, venueName);
+        bytes32 venueNameHash = keccak256(bytes(venueName));
+        bytes32 structHash = keccak256(
+            abi.encode(
+                EVENT_AUTHORIZATION_TYPEHASH,
+                organizer,
+                eventId,
+                venueHash,
+                startTime,
+                endTime,
+                venueNameHash,
+                deadline
+            )
+        );
+        bytes32 digest = _hashTypedDataV4(structHash);
+        address recovered = ECDSA.recover(digest, signature);
+        if (recovered != ipSigner) revert InvalidEventSignature();
+
+        _createEvent(eventId, venueHash, startTime, endTime, venueName);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -279,6 +325,28 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
     // ═══════════════════════════════════════════════════════════════════
     //                      INTERNAL FUNCTIONS
     // ═══════════════════════════════════════════════════════════════════
+
+    function _createEvent(
+        bytes32 eventId,
+        bytes32 venueHash,
+        uint64 startTime,
+        uint64 endTime,
+        string calldata venueName
+    ) internal {
+        if (events[eventId].exists) revert EventAlreadyExists();
+        if (venueHash == bytes32(0)) revert InvalidVenueHash();
+        if (startTime >= endTime) revert InvalidEventTimes();
+
+        events[eventId] = EventData({
+            venueHash: venueHash,
+            startTime: startTime,
+            endTime: endTime,
+            venueName: venueName,
+            exists: true
+        });
+
+        emit EventCreated(eventId, venueHash, startTime, endTime, venueName);
+    }
 
     /// @dev Hash the venue-related public inputs for comparison against the registered venueHash
     /// @param publicInputs The full array of public inputs from the circuit
@@ -386,6 +454,15 @@ contract WiFiProof is Ownable2Step, ReentrancyGuard, EIP712 {
     // ═══════════════════════════════════════════════════════════════════
     //                       ADMIN FUNCTIONS
     // ═══════════════════════════════════════════════════════════════════
+
+    /// @notice Allowlist or remove an organizer wallet
+    /// @param organizer Wallet to update
+    /// @param allowed Whether the wallet can call createEvent
+    function setOrganizer(address organizer, bool allowed) external onlyOwner {
+        if (organizer == address(0)) revert ZeroAddress();
+        isOrganizer[organizer] = allowed;
+        emit OrganizerUpdated(organizer, allowed);
+    }
 
     /// @notice Update the IP verification signer address
     /// @param _newSigner New server signer address
