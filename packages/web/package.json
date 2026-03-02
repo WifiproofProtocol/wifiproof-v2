@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "insert-event": "tsx scripts/insert-event.ts"
   },
   "dependencies": {
     "@wifiproof/common": "workspace:*",
