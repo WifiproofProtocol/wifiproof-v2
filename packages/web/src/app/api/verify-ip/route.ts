@@ -60,6 +60,7 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (error) {
+      console.error("[verify-ip] Supabase event lookup error:", error);
       return NextResponse.json({ error: "Event lookup failed" }, { status: 500 });
     }
     if (!eventRecord) {
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
         wallet,
         eventId,
         venueHash,
-        deadline,
+        deadline: BigInt(deadline),
       },
     });
 
