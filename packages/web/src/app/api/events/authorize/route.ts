@@ -193,6 +193,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ signature });
   } catch (error) {
-    return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("[authorize] unexpected error:", msg, error);
+    return NextResponse.json({ error: "Unexpected error", detail: msg }, { status: 500 });
   }
 }
