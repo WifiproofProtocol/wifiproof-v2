@@ -184,10 +184,10 @@ export async function POST(request: Request) {
         organizer,
         eventId,
         venueHash,
-        startTime,
-        endTime,
+        startTime: BigInt(startTime),
+        endTime: BigInt(endTime),
         venueNameHash,
-        deadline,
+        deadline: BigInt(deadline),
       },
     });
 

@@ -4,10 +4,11 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export async function GET(
   _request: Request,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   try {
-    const eventId = params.eventId?.toLowerCase();
+    const { eventId: rawEventId } = await params;
+    const eventId = rawEventId?.toLowerCase();
     if (!eventId) {
       return NextResponse.json({ error: "Missing eventId" }, { status: 400 });
     }
