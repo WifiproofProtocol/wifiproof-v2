@@ -20,7 +20,11 @@ function getClientIp(request: Request): string | null {
     return forwardedFor.split(",")[0].trim();
   }
   const realIp = request.headers.get("x-real-ip");
-  return realIp ? realIp.trim() : null;
+  if (realIp) {
+    return realIp.trim();
+  }
+
+  return null;
 }
 
 export async function POST(request: Request) {
