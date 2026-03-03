@@ -129,9 +129,13 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
       setStatus("Requesting IP signature...");
       const deadline = Math.floor(Date.now() / 1000) + 90;
+      const devHeaders: Record<string, string> =
+        process.env.NODE_ENV === "development" && event.subnet_prefix
+          ? { "x-forwarded-for": String(event.subnet_prefix) + "1" }
+          : {};
       const ipRes = await fetch("/api/verify-ip", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", ...devHeaders },
         body: JSON.stringify({
           wallet: account,
           eventId,
