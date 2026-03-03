@@ -253,9 +253,13 @@ export default function OrganizerClient() {
 
       setStatus("Requesting organizer authorization...");
       const deadline = Math.floor(Date.now() / 1000) + 120;
+      const devHeaders: Record<string, string> =
+        process.env.NODE_ENV === "development"
+          ? { "x-forwarded-for": subnetPrefix + "1" }
+          : {};
       const authorizeResponse = await fetch("/api/events/authorize", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", ...devHeaders },
         body: JSON.stringify({
           organizer: account,
           eventId: derivedEventId,
