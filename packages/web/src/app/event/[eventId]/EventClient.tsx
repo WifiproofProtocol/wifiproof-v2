@@ -158,7 +158,8 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
       setStatus("Generating zero-knowledge proof...");
       const { WiFiProofProver, buildInputs } = await import("@wifiproof/proof-app");
-      const circuit = await loadCircuit();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const circuit = await loadCircuit() as any;
       const prover = new WiFiProofProver();
       await prover.init(circuit);
 
@@ -176,6 +177,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
       const publicInputsBytes32 = publicInputs.map(toBytes32Hex);
 
       setStatus("Submitting on-chain claim...");
+      if (!window.ethereum) throw new Error("Wallet not found");
       const walletClient = createWalletClient({
         chain: baseSepolia,
         transport: custom(window.ethereum),
@@ -185,7 +187,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
         address: wifiproofAddress as `0x${string}`,
         abi: WIFI_PROOF_ABI,
         functionName: "claimAttendance",
-        account,
+        account: account as `0x${string}`,
         args: [
           proofHex,
           publicInputsBytes32,

@@ -1,9 +1,10 @@
 import EventClient from "./EventClient";
 
-export default function EventPage({ params }: { params: { eventId: string } }) {
+export default async function EventPage({ params }: { params: Promise<{ eventId: string }> }) {
+  const { eventId } = await params;
   return (
     <main className="min-h-screen px-6 py-10">
-      <EventClient eventId={params.eventId} />
+      <EventClient eventId={eventId} />
     </main>
   );
 }

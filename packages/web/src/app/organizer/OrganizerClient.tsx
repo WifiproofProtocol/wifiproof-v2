@@ -230,7 +230,8 @@ export default function OrganizerClient() {
       const userLon = position.coords.longitude;
 
       const { WiFiProofProver, buildInputs } = await import("@wifiproof/proof-app");
-      const circuit = await loadCircuit();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const circuit = await loadCircuit() as any;
       const prover = new WiFiProofProver();
       await prover.init(circuit);
 
