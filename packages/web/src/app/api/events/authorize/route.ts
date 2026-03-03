@@ -93,7 +93,7 @@ export async function POST(request: Request) {
     }
 
     const now = Math.floor(Date.now() / 1000);
-    if (deadline < now || deadline > now + 180) {
+    if (deadline < now || deadline > now + 600) {
       return NextResponse.json({ error: "Invalid deadline" }, { status: 400 });
     }
 

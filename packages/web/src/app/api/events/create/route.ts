@@ -65,7 +65,8 @@ export async function POST(request: Request) {
     });
 
     if (error) {
-      return NextResponse.json({ error: "Failed to save event" }, { status: 500 });
+      console.error("[events/create] Supabase upsert error:", error);
+      return NextResponse.json({ error: "Failed to save event", detail: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });
