@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   createPublicClient,
-  decodeFunctionResult,
   encodeAbiParameters,
-  encodeFunctionData,
   keccak256,
   toBytes,
   http,
@@ -46,7 +44,11 @@ function getClientIp(request: Request): string | null {
     return forwardedFor.split(",")[0].trim();
   }
   const realIp = request.headers.get("x-real-ip");
-  return realIp ? realIp.trim() : null;
+  if (realIp) {
+    return realIp.trim();
+  }
+
+  return null;
 }
 
 function eventIdToField(eventId: `0x${string}`) {
@@ -95,7 +97,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid deadline" }, { status: 400 });
     }
 
-    if (publicInputs.length < 4) {
+    if (publicInputs.length !== 4) {
       return NextResponse.json({ error: "Invalid public inputs" }, { status: 400 });
     }
 
@@ -123,26 +125,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing VERIFIER_ADDRESS" }, { status: 500 });
     }
 
-    const rpcUrl = process.env.BASE_RPC_URL ?? "https://sepolia.base.org";
-    const publicClient = createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) });
-    const data = encodeFunctionData({
-      abi: VERIFIER_ABI,
-      functionName: "verify",
-      args: [proof, publicInputs],
-    });
-
-    const callResult = await publicClient.call({ to: verifierAddress, data });
-    if (!callResult.data) {
-      return NextResponse.json({ error: "Proof verification failed" }, { status: 400 });
+    const rpcUrl = process.env.BASE_RPC_URL;
+    if (!rpcUrl) {
+      return NextResponse.json({ error: "Missing BASE_RPC_URL" }, { status: 500 });
     }
 
-    const isValid = decodeFunctionResult({
-      abi: VERIFIER_ABI,
-      functionName: "verify",
-      data: callResult.data,
-    }) as boolean;
-    if (!isValid) {
-      return NextResponse.json({ error: "Invalid proof" }, { status: 403 });
+    try {
+      const publicClient = createPublicClient({
+        chain: baseSepolia,
+        transport: http(rpcUrl),
+      });
+
+      const isValid = await publicClient.readContract({
+        address: verifierAddress,
+        abi: VERIFIER_ABI,
+        functionName: "verify",
+        args: [proof, publicInputs],
+      });
+
+      if (!isValid) {
+        return NextResponse.json({ error: "Invalid proof" }, { status: 403 });
+      }
+    } catch (err) {
+      const verifyError = err instanceof Error ? err.message : String(err);
+      return NextResponse.json(
+        { error: "Proof verification failed", detail: verifyError },
+        { status: 400 }
+      );
     }
 
     const privateKey =
