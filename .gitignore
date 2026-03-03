@@ -52,7 +52,8 @@ out/
 # ===== Noir / ZK Circuits =====
 circuits/target/
 circuits/proofs/
-packages/proof-app/circuit/target/
+packages/proof-app/circuit/target/*
+!packages/proof-app/circuit/target/circuit.json
 *.proof
 Prover.toml
 Verifier.toml

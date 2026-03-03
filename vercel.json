@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm --filter web build",
+  "buildCommand": "pnpm --filter @wifiproof/proof-app build && pnpm --filter web build",
   "outputDirectory": "packages/web/.next",
   "installCommand": "pnpm install"
 }
