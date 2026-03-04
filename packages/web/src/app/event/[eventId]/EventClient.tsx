@@ -75,9 +75,10 @@ export default function EventClient({ eventId }: { eventId: string }) {
   const [feedbackNotes, setFeedbackNotes] = useState<string>("");
   const [feedbackSent, setFeedbackSent] = useState<boolean>(false);
 
-  const wifiproofAddress =
+  const wifiproofAddress = (
     process.env.NEXT_PUBLIC_WIFIPROOF_ADDRESS ??
-    "0xbcEfE9B5a2f1C0FA6f0E02c8c678CF41884e3f7C";
+    "0xbcEfE9B5a2f1C0FA6f0E02c8c678CF41884e3f7C"
+  ).trim();
 
   const rpcUrl =
     process.env.NEXT_PUBLIC_BASE_RPC_URL ?? "https://sepolia.base.org";
