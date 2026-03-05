@@ -475,6 +475,14 @@ export default function OrganizerClient() {
               <div className="rounded-2xl bg-white p-4 shadow-xl">
                 <img src={qrDataUrl} alt="Event Check-in QR code" className="h-48 w-48" />
               </div>
+              <a
+                href={`/event/${eventId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-sm text-cyan-400 underline underline-offset-4 hover:text-cyan-300"
+              >
+                {typeof window !== "undefined" ? window.location.origin : ""}/event/{eventId}
+              </a>
             </div>
           )}
         </div>
