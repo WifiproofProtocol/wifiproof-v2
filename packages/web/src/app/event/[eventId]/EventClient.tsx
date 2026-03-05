@@ -8,7 +8,17 @@ import {
   decodeEventLog,
   http,
 } from "viem";
+import type { EIP1193Provider } from "viem";
 import { baseSepolia } from "viem/chains";
+import {
+  AlertCircle,
+  CheckCircle2,
+  MapPin,
+  ShieldCheck,
+  Wifi,
+} from "lucide-react";
+
+import WalletCard from "@/components/wallet/WalletCard";
 
 const WIFI_PROOF_ABI = [
   {
@@ -67,78 +77,77 @@ async function loadCircuit() {
   return mod.default ?? mod;
 }
 
+function getEthereum() {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+  return ((
+    window as Window & {
+      ethereum?: EIP1193Provider;
+    }
+  ).ethereum);
+}
+
 export default function EventClient({ eventId }: { eventId: string }) {
+  const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
+  const [walletAddress, setWalletAddress] = useState("");
+
   const [event, setEvent] = useState<EventRecord | null>(null);
-  const [status, setStatus] = useState<string>("");
-  const [wallet, setWallet] = useState<string>("");
-  const [attestationUid, setAttestationUid] = useState<string>("");
-  const [feedbackNotes, setFeedbackNotes] = useState<string>("");
-  const [feedbackSent, setFeedbackSent] = useState<boolean>(false);
+  const [statusMsg, setStatusMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [attestationUid, setAttestationUid] = useState("");
 
   const wifiproofAddress = (
     process.env.NEXT_PUBLIC_WIFIPROOF_ADDRESS ??
     "0xbcEfE9B5a2f1C0FA6f0E02c8c678CF41884e3f7C"
   ).trim();
 
-  const rpcUrl =
-    process.env.NEXT_PUBLIC_BASE_RPC_URL ?? "https://sepolia.base.org";
+  const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL ?? "https://sepolia.base.org";
 
-  const publicClient = useMemo(() => {
-    return createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) });
-  }, [rpcUrl]);
+  const publicClient = useMemo(
+    () => createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) }),
+    [rpcUrl]
+  );
 
   const fetchEvent = useCallback(async () => {
-    const res = await fetch(`/api/events/${eventId}`);
-    if (!res.ok) {
-      throw new Error("Event not found");
+    try {
+      const res = await fetch(`/api/events/${eventId}`);
+      if (!res.ok) {
+        throw new Error("Event not found or invalid event ID.");
+      }
+      const json = (await res.json()) as { event: EventRecord };
+      setEvent(json.event);
+    } catch (error) {
+      setErrorMsg((error as Error).message);
     }
-    const json = await res.json();
-    setEvent(json.event);
   }, [eventId]);
 
   useEffect(() => {
-    fetchEvent().catch((err) => setStatus(err.message));
+    void fetchEvent();
   }, [fetchEvent]);
-
-  async function connectWallet() {
-    if (!window.ethereum) {
-      setStatus("Wallet not found. Install a wallet like Coinbase Wallet or MetaMask.");
-      return "";
-    }
-
-    const walletClient = createWalletClient({
-      chain: baseSepolia,
-      transport: custom(window.ethereum),
-    });
-    const [account] = await walletClient.requestAddresses();
-    setWallet(account);
-    setStatus("");
-    return account;
-  }
 
   async function handleClaim() {
     try {
-      if (!event) {
-        setStatus("Event not loaded.");
-        return;
-      }
+      setErrorMsg("");
+      setStatusMsg("Connecting secure environment...");
+      setStep(2);
 
-      const account = wallet || (await connectWallet());
-      if (!account) {
-        return;
-      }
+      if (!event) throw new Error("Event data not loaded.");
+      if (!walletAddress) throw new Error("Wallet not connected.");
+      if (!getEthereum()) throw new Error("Wallet connection lost.");
 
-      setStatus("Requesting IP signature...");
+      setStatusMsg("Verifying venue subnet...");
       const deadline = Math.floor(Date.now() / 1000) + 90;
       const devHeaders: Record<string, string> =
         process.env.NODE_ENV === "development" && event.subnet_prefix
-          ? { "x-forwarded-for": String(event.subnet_prefix) + "1" }
+          ? { "x-forwarded-for": `${event.subnet_prefix}1` }
           : {};
+
       const ipRes = await fetch("/api/verify-ip", {
         method: "POST",
         headers: { "content-type": "application/json", ...devHeaders },
         body: JSON.stringify({
-          wallet: account,
+          wallet: walletAddress,
           eventId,
           venueHash: event.venue_hash,
           deadline,
@@ -146,30 +155,26 @@ export default function EventClient({ eventId }: { eventId: string }) {
       });
 
       if (!ipRes.ok) {
-        const text = await ipRes.text();
-        throw new Error(`IP verification failed: ${text}`);
+        throw new Error(`IP verification failed: ${await ipRes.text()}`);
       }
+      const { signature: ipSignature } = (await ipRes.json()) as {
+        signature: `0x${string}`;
+      };
 
-      const ipJson = await ipRes.json();
-      const ipSignature = ipJson.signature as `0x${string}`;
-
-      setStatus("Getting GPS location...");
+      setStatusMsg("Getting GPS location...");
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject);
       });
 
-      const userLat = position.coords.latitude;
-      const userLon = position.coords.longitude;
-
-      setStatus("Generating zero-knowledge proof...");
+      setStatusMsg("Generating zero-knowledge proof...");
       const { WiFiProofProver, buildInputs } = await import("@wifiproof/proof-app");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const circuit = await loadCircuit() as any;
+      const circuit = (await loadCircuit()) as any;
       const prover = new WiFiProofProver();
       await prover.init(circuit);
 
       const inputs = buildInputs(
-        { lat: userLat, lon: userLon },
+        { lat: position.coords.latitude, lon: position.coords.longitude },
         { lat: Number(event.venue_lat), lon: Number(event.venue_lon) },
         Number(event.radius_meters),
         eventId
@@ -181,18 +186,19 @@ export default function EventClient({ eventId }: { eventId: string }) {
       const proofHex = uint8ArrayToHex(proof);
       const publicInputsBytes32 = publicInputs.map(toBytes32Hex);
 
-      setStatus("Submitting on-chain claim...");
-      if (!window.ethereum) throw new Error("Wallet not found");
+      setStatusMsg("Minting attestation on Base Sepolia...");
+      const ethereum = getEthereum();
+      if (!ethereum) throw new Error("Wallet connection lost.");
       const walletClient = createWalletClient({
         chain: baseSepolia,
-        transport: custom(window.ethereum),
+        transport: custom(ethereum),
       });
 
       const txHash = await walletClient.writeContract({
         address: wifiproofAddress as `0x${string}`,
         abi: WIFI_PROOF_ABI,
         functionName: "claimAttendance",
-        account: account as `0x${string}`,
+        account: walletAddress as `0x${string}`,
         args: [
           proofHex,
           publicInputsBytes32,
@@ -202,7 +208,10 @@ export default function EventClient({ eventId }: { eventId: string }) {
         ],
       });
 
+      setStatusMsg("Waiting for confirmation...");
       const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+      let foundUid = "";
       for (const log of receipt.logs) {
         if (log.address.toLowerCase() !== wifiproofAddress.toLowerCase()) {
           continue;
@@ -214,112 +223,134 @@ export default function EventClient({ eventId }: { eventId: string }) {
             topics: log.topics,
           });
           if (decoded.eventName === "AttendanceClaimed") {
-            setAttestationUid(decoded.args.attestationUid as string);
+            foundUid = decoded.args.attestationUid as string;
             break;
           }
-        } catch (_err) {
+        } catch {
           continue;
         }
       }
 
-      setStatus("Claim complete.");
+      setAttestationUid(foundUid || "Pending indexer sync...");
+      setStatusMsg("");
+      setStep(3);
     } catch (error) {
-      setStatus(`Error: ${(error as Error).message}`);
+      setErrorMsg((error as Error).message);
+      setStep(1);
     }
-  }
-
-  async function handleFeedback(worked: boolean) {
-    const account = wallet || (await connectWallet());
-    if (!account) {
-      return;
-    }
-
-    await fetch("/api/feedback", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        eventId,
-        wallet: account,
-        worked,
-        notes: feedbackNotes,
-      }),
-    });
-    setFeedbackSent(true);
   }
 
   return (
-    <section className="mx-auto max-w-3xl space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-semibold">Event Check-In</h1>
-        <p className="text-white/70">Event ID: {eventId}</p>
-      </div>
+    <section className="relative min-h-[100dvh] overflow-x-hidden bg-[#02040A] pb-12 pt-16 text-slate-200">
+      <div
+        className="pointer-events-none absolute inset-0 z-0 opacity-20 mix-blend-screen"
+        style={{
+          backgroundImage: "url('/brand/event-proof-visual.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "top center",
+        }}
+      />
+      <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-transparent via-[#02040A]/80 to-[#02040A]" />
 
-      {event && (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-2">
-          <h2 className="text-xl font-semibold">{event.venue_name}</h2>
-          <p className="text-sm text-white/70">
-            {new Date(Number(event.start_time) * 1000).toLocaleString()} —{" "}
-            {new Date(Number(event.end_time) * 1000).toLocaleString()}
-          </p>
-        </div>
-      )}
-
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={connectWallet}
-            className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white/80 hover:bg-white/10"
-          >
-            {wallet ? `Wallet: ${wallet.slice(0, 6)}...` : "Connect wallet"}
-          </button>
-          <button
-            type="button"
-            onClick={handleClaim}
-            className="rounded-lg bg-white px-4 py-2 font-semibold text-black hover:bg-white/90"
-          >
-            Prove & Mint
-          </button>
+      <div className="container relative z-10 mx-auto mt-12 max-w-2xl space-y-8 px-4">
+        <div className="space-y-4 text-center">
+          <div className="mb-2 inline-flex h-16 w-16 items-center justify-center rounded-full border border-cyan-500/50 bg-cyan-900/30 text-cyan-400">
+            <ShieldCheck className="h-8 w-8" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            {event ? event.venue_name : "Loading event..."}
+          </h1>
+          {event && (
+            <div className="flex flex-wrap items-center justify-center gap-4 text-sm font-medium text-slate-400">
+              <span className="flex items-center gap-1.5">
+                <MapPin className="h-4 w-4" /> Proximity required
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Wifi className="h-4 w-4" /> Subnet check
+              </span>
+            </div>
+          )}
         </div>
 
-        {status && <p className="text-sm text-white/70">{status}</p>}
-        {attestationUid && (
-          <p className="break-all text-sm text-white/70">
-            Attestation UID: {attestationUid}
-          </p>
+        {errorMsg && (
+          <div className="flex items-start gap-3 rounded-xl border border-red-900/50 bg-red-950/30 p-4 text-red-400">
+            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+            <p className="text-sm font-medium leading-relaxed">{errorMsg}</p>
+          </div>
         )}
-      </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-3">
-        <h3 className="text-lg font-semibold">Feedback</h3>
-        {feedbackSent ? (
-          <p className="text-sm text-white/70">Thanks — feedback received.</p>
-        ) : (
-          <>
-            <textarea
-              className="min-h-[100px] w-full rounded-lg bg-black/40 p-3 text-white"
-              placeholder="Any issues or notes?"
-              value={feedbackNotes}
-              onChange={(e) => setFeedbackNotes(e.target.value)}
-            />
-            <div className="flex gap-3">
+        <div className="rounded-3xl border border-cyan-900/30 bg-slate-900/60 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
+          {step === 0 && (
+            <div className="space-y-6">
+              <p className="mb-6 text-center text-sm text-slate-400">
+                Connect your wallet to generate a proof of physical presence.
+              </p>
+              <WalletCard
+                walletAddress={walletAddress}
+                setWalletAddress={setWalletAddress}
+                onReady={() => setStep(1)}
+              />
+            </div>
+          )}
+
+          {step === 1 && (
+            <div className="space-y-8 text-center">
+              <div className="grid grid-cols-2 gap-4 text-left">
+                <div className="rounded-xl border border-cyan-900/30 bg-[#02040A] p-4">
+                  <span className="mb-1 block font-mono text-xs text-slate-500">NETWORK</span>
+                  <span className="block truncate text-sm font-medium text-cyan-400">
+                    Base Sepolia
+                  </span>
+                </div>
+                <div className="rounded-xl border border-cyan-900/30 bg-[#02040A] p-4">
+                  <span className="mb-1 block font-mono text-xs text-slate-500">WALLET</span>
+                  <span className="block truncate font-mono text-sm text-cyan-400">
+                    {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                  </span>
+                </div>
+              </div>
+
               <button
-                type="button"
-                onClick={() => handleFeedback(true)}
-                className="rounded-lg bg-white px-4 py-2 font-semibold text-black"
+                onClick={handleClaim}
+                className="w-full rounded-xl bg-cyan-500 py-4 text-lg font-bold text-slate-900 transition-all hover:bg-cyan-400 active:scale-[0.98]"
               >
-                Worked
-              </button>
-              <button
-                type="button"
-                onClick={() => handleFeedback(false)}
-                className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white/80 hover:bg-white/10"
-              >
-                Had issues
+                Prove Presence & Mint
               </button>
             </div>
-          </>
-        )}
+          )}
+
+          {step === 2 && (
+            <div className="space-y-6 py-8 text-center">
+              <div className="relative mx-auto h-16 w-16">
+                <div className="absolute inset-0 rounded-full border-2 border-cyan-900/30" />
+                <div className="absolute inset-0 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />
+              </div>
+              <div>
+                <h3 className="mb-2 text-xl font-bold text-white">Generating Proof</h3>
+                <p className="h-6 font-mono text-sm text-cyan-400">{statusMsg}</p>
+              </div>
+              <p className="mt-4 text-xs text-slate-500">
+                This runs on your device. Coordinates are not sent to a server.
+              </p>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-6 py-6 text-center">
+              <CheckCircle2 className="mx-auto h-16 w-16 text-green-400" />
+              <div>
+                <h3 className="mb-2 text-2xl font-bold text-white">Presence Verified</h3>
+                <p className="text-slate-400">Your attendance attestation has been minted.</p>
+              </div>
+              <div className="rounded-xl border border-green-500/20 bg-[#02040A] p-4 text-left">
+                <span className="mb-1 block font-mono text-xs text-slate-500">ATTESTATION UID</span>
+                <span className="block break-all font-mono text-sm leading-relaxed text-green-400">
+                  {attestationUid}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );
