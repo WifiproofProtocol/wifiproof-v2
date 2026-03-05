@@ -7,35 +7,35 @@ const cards = [
     title: "Conferences & Events",
     desc: "Issue non-transferable attestations that actually require physical attendance. No more QR code farming from Twitter.",
     icon: <Users className="w-8 h-8 text-white" />,
-    gradient: "from-blue-500 to-cyan-400",
+    gradient: "from-cyan-600 to-blue-500",
     className: "md:col-span-2",
   },
   {
     title: "Sybil Guard",
     desc: "Gated by Coinbase KYC for 1-person-1-proof integrity.",
     icon: <Shield className="w-8 h-8 text-white" />,
-    gradient: "from-purple-500 to-pink-500",
+    gradient: "from-slate-600 to-cyan-800",
     className: "md:col-span-1",
   },
   {
     title: "Instant Verification",
     desc: "Proofs verified in seconds on Base L2.",
     icon: <Zap className="w-8 h-8 text-white" />,
-    gradient: "from-yellow-400 to-orange-500",
+    gradient: "from-blue-800 to-slate-700",
     className: "md:col-span-1",
   },
   {
     title: "Privacy Protocol",
     desc: "Your coordinates never leave your device. The protocol only sees a 'True/False' verification of your proximity.",
     icon: <Globe className="w-8 h-8 text-white" />,
-    gradient: "from-green-400 to-emerald-600",
+    gradient: "from-cyan-500 to-slate-600",
     className: "md:col-span-2",
   },
 ];
 
 export default function BentoGrid() {
   return (
-    <section className="py-24 relative bg-[#020412]">
+    <section id="use-cases" className="py-24 relative bg-[#02040A]">
       <div className="container mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -43,8 +43,8 @@ export default function BentoGrid() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            Built for the <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">Onchain Future</span>
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white tracking-tight">
+            Built for the <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Onchain Future</span>
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
             From conferences to retail, WiFiProof enables privacy-preserving
