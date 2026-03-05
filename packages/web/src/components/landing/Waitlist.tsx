@@ -1,113 +1,41 @@
 "use client";
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, CheckCircle2, Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { motion } from "framer-motion";
+import { ArrowRight, QrCode } from "lucide-react";
 
-export default function Waitlist() {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<
-    "idle" | "loading" | "success" | "error"
-  >("idle");
-  const [message, setMessage] = useState("");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setStatus("loading");
-
-    try {
-      const { error } = await supabase
-        .from("waitlist")
-        .insert([{ email, created_at: new Date().toISOString() }]);
-
-      if (error) {
-        if (error.code === "23505") {
-          setMessage("You're already on the waitlist!");
-        } else {
-          setMessage("Something went wrong. Please try again.");
-        }
-        setStatus("error");
-        return;
-      }
-
-      setStatus("success");
-      setEmail("");
-    } catch {
-      setMessage("Something went wrong. Please try again.");
-      setStatus("error");
-    }
-  };
-
+export default function FinalCTA() {
   return (
-    <section id="waitlist" className="py-24 relative overflow-hidden">
+    <section className="py-32 relative overflow-hidden bg-[#010614]">
       {/* Background radial glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-900/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="container mx-auto px-6 relative z-10">
-        <div className="max-w-3xl mx-auto glass-card p-12 rounded-[2rem] border-white/10 text-center">
+        <div className="max-w-4xl mx-auto bg-[#02040A] border border-cyan-900/30 p-12 md:p-16 rounded-[2rem] text-center shadow-[0_0_80px_rgba(0,229,255,0.05)]">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Be the first to prove <br />
-              <span className="gradient-text">you were there.</span>
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-white tracking-tighter">
+              Ready to secure <br className="hidden md:block" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">your next event?</span>
             </h2>
-            <p className="text-gray-400 text-lg mb-10">
-              We are currently in private beta for event organizers. Join the
-              waitlist for early access to the V2 mainnet launch.
+            <p className="text-slate-400 text-lg md:text-xl mb-12 max-w-2xl mx-auto leading-relaxed">
+              Stop relying on easily forged sign-in sheets and remote QR code farming. Guarantee physical presence starting today.
             </p>
 
-            <form onSubmit={handleSubmit} className="relative max-w-md mx-auto">
-              <div className="relative group">
-                <input
-                  type="email"
-                  required
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={status === "success" || status === "loading"}
-                  className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-blue-500/50 transition-all text-white placeholder:text-gray-600 disabled:opacity-50"
-                />
-                <button
-                  type="submit"
-                  disabled={status === "success" || status === "loading"}
-                  className="absolute right-2 top-2 bottom-2 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all flex items-center gap-2 disabled:bg-gray-800 cursor-pointer disabled:cursor-not-allowed"
-                >
-                  {status === "loading" ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <span>Join</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+              <a href="/organizer" className="w-full sm:w-auto px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-900 rounded-lg font-bold text-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98]">
+                I'm an Organizer <ArrowRight className="w-5 h-5" />
+              </a>
 
-              <AnimatePresence>
-                {status === "success" && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center justify-center gap-2 mt-4 text-green-400 font-medium"
-                  >
-                    <CheckCircle2 className="w-5 h-5" />
-                    <span>You&apos;re in. Stay tuned for the ZK revolution.</span>
-                  </motion.div>
-                )}
-                {status === "error" && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="mt-4 text-red-400 text-sm"
-                  >
-                    {message}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </form>
+              <div className="w-full sm:w-auto px-8 py-4 border border-cyan-900/50 bg-slate-900/50 backdrop-blur-md rounded-lg flex items-center justify-center gap-4">
+                <QrCode className="w-6 h-6 text-cyan-400 flex-shrink-0" />
+                <div className="flex flex-col text-left">
+                  <span className="font-bold text-white text-sm">I'm Attending</span>
+                  <span className="text-xs text-slate-400">Scan QR at the venue</span>
+                </div>
+              </div>
+            </div>
           </motion.div>
         </div>
       </div>
