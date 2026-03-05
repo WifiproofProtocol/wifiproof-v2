@@ -348,6 +348,16 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   {attestationUid}
                 </span>
               </div>
+              {attestationUid && attestationUid.startsWith("0x") && (
+                <a
+                  href={`https://base-sepolia.easscan.org/attestation/view/${attestationUid}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block rounded-xl border border-green-500/30 bg-green-950/20 px-4 py-2 text-sm font-medium text-green-400 transition-colors hover:bg-green-950/40 hover:text-green-300"
+                >
+                  View on EASScan →
+                </a>
+              )}
             </div>
           )}
         </div>
