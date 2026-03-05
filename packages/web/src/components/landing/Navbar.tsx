@@ -8,7 +8,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#020412]/60 backdrop-blur-xl border-b border-white/5 transition-all duration-300">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#02040A]/80 backdrop-blur-xl border-b border-cyan-900/20 transition-all duration-300">
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
@@ -21,7 +21,7 @@ export default function Navbar() {
                 className="object-contain"
               />
             </div>
-            <span className="font-bold text-xl text-white tracking-tight group-hover:text-blue-200 transition-colors">
+            <span className="font-bold text-xl text-white tracking-tight group-hover:text-cyan-400 transition-colors">
               WiFiProof
             </span>
           </a>
@@ -31,13 +31,13 @@ export default function Navbar() {
             <div className="flex items-center gap-8 text-sm font-medium text-gray-300">
               <a
                 href="#features"
-                className="hover:text-white transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+                className="hover:text-cyan-400 transition-colors hover:drop-shadow-[0_0_8px_rgba(0,229,255,0.3)]"
               >
                 Features
               </a>
               <a
                 href="#use-cases"
-                className="hover:text-white transition-colors hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+                className="hover:text-cyan-400 transition-colors hover:drop-shadow-[0_0_8px_rgba(0,229,255,0.3)]"
               >
                 Use Cases
               </a>
@@ -45,18 +45,16 @@ export default function Navbar() {
                 href="https://github.com/WifiproofProtocol"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-white transition-colors"
+                className="hover:text-cyan-400 transition-colors"
               >
                 <Github className="w-5 h-5" />
               </a>
             </div>
-
-
           </div>
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden text-white hover:text-gray-300 transition-colors"
+            className="md:hidden text-white hover:text-cyan-400 transition-colors"
             onClick={() => setIsOpen(!isOpen)}
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -68,7 +66,7 @@ export default function Navbar() {
           initial={false}
           animate={isOpen ? { height: "auto", opacity: 1 } : { height: 0, opacity: 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="md:hidden overflow-hidden bg-[#020412]/95 border-b border-white/10 backdrop-blur-xl"
+          className="md:hidden overflow-hidden bg-[#02040A]/95 border-b border-cyan-900/30 backdrop-blur-xl"
         >
           <div className="py-6 px-4 space-y-4">
             {[
@@ -81,13 +79,12 @@ export default function Navbar() {
                 initial={{ x: -20, opacity: 0 }}
                 animate={isOpen ? { x: 0, opacity: 1 } : { x: -20, opacity: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="block text-lg font-medium text-gray-300 hover:text-white"
+                className="block text-lg font-medium text-gray-300 hover:text-cyan-400"
                 onClick={() => setIsOpen(false)}
               >
                 {link.label}
               </motion.a>
             ))}
-
           </div>
         </motion.div>
       </div>
