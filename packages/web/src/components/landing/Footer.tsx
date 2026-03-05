@@ -11,9 +11,9 @@ const XIcon = ({ className }: { className?: string }) => (
 
 export default function Footer() {
   return (
-    <footer className="bg-[#020412] border-t border-white/5 py-12 relative overflow-hidden">
+    <footer className="bg-[#02040A] border-t border-cyan-900/20 py-12 relative overflow-hidden">
       {/* Background Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-600/5 rounded-full blur-[100px]" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-cyan-900/10 rounded-full blur-[100px]" />
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-center gap-8">
@@ -31,7 +31,7 @@ export default function Footer() {
               </div>
               <span className="font-bold text-xl text-white">WiFiProof</span>
             </a>
-            <p className="text-gray-500 text-sm">
+            <p className="text-slate-500 text-sm">
               The Protocol for Presence. Built on Base.
             </p>
           </div>
@@ -42,7 +42,7 @@ export default function Footer() {
               href="https://twitter.com/WiFiProof"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-slate-400 hover:text-cyan-400 transition-colors"
             >
               <span className="sr-only">X (Twitter)</span>
               <XIcon className="w-5 h-5" />
@@ -51,7 +51,7 @@ export default function Footer() {
               href="https://github.com/WifiproofProtocol"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-slate-400 hover:text-cyan-400 transition-colors"
             >
               <span className="sr-only">GitHub</span>
               <Github className="w-5 h-5" />
@@ -59,11 +59,11 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-600">
+        <div className="mt-12 pt-8 border-t border-cyan-900/20 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-500">
           <p>© 2026 WiFiProof Protocol. All rights reserved.</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-gray-400 transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-gray-400 transition-colors">Terms of Service</a>
+            <a href="#" className="hover:text-cyan-400 transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-cyan-400 transition-colors">Terms of Service</a>
           </div>
         </div>
       </div>
