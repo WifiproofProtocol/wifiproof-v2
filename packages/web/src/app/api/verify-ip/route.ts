@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
     }
 
-    const privateKey = process.env.IP_SIGNER_PRIVATE_KEY as
+    const privateKey = process.env.IP_SIGNER_PRIVATE_KEY?.trim() as
       | `0x${string}`
       | undefined;
     if (!privateKey) {
@@ -94,8 +94,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Event not active" }, { status: 403 });
     }
 
-    const chainId = Number(process.env.CHAIN_ID ?? 84532);
-    const verifyingContract = process.env.WIFIPROOF_ADDRESS as `0x${string}` | undefined;
+    const chainId = Number(process.env.CHAIN_ID?.trim() ?? 84532);
+    const verifyingContract = process.env.WIFIPROOF_ADDRESS?.trim() as `0x${string}` | undefined;
     if (!verifyingContract) {
       return NextResponse.json({ error: "Missing WIFIPROOF_ADDRESS" }, { status: 500 });
     }
