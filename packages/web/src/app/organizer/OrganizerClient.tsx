@@ -10,7 +10,17 @@ import {
   keccak256,
   toBytes,
 } from "viem";
+import type { EIP1193Provider } from "viem";
 import { baseSepolia } from "viem/chains";
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronRight,
+  Loader2,
+  MapPin,
+} from "lucide-react";
+
+import WalletCard from "@/components/wallet/WalletCard";
 
 const WIFI_PROOF_ABI = [
   {
@@ -85,7 +95,21 @@ async function loadCircuit() {
   return mod.default ?? mod;
 }
 
+function getEthereum() {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+  return ((
+    window as Window & {
+      ethereum?: EIP1193Provider;
+    }
+  ).ethereum);
+}
+
 export default function OrganizerClient() {
+  const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
+  const [walletAddress, setWalletAddress] = useState("");
+
   const [venueName, setVenueName] = useState("");
   const [venueLat, setVenueLat] = useState("");
   const [venueLon, setVenueLon] = useState("");
@@ -93,100 +117,49 @@ export default function OrganizerClient() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [subnetPrefix, setSubnetPrefix] = useState("");
-  const [status, setStatus] = useState<string>("");
-  const [eventId, setEventId] = useState<string>("");
-  const [venueHash, setVenueHash] = useState<string>("");
-  const [qrDataUrl, setQrDataUrl] = useState<string>("");
+
+  const [statusMsg, setStatusMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [eventId, setEventId] = useState("");
+  const [venueHash, setVenueHash] = useState("");
+  const [qrDataUrl, setQrDataUrl] = useState("");
 
   const wifiproofAddress = (
     process.env.NEXT_PUBLIC_WIFIPROOF_ADDRESS ??
     "0xbcEfE9B5a2f1C0FA6f0E02c8c678CF41884e3f7C"
   ).trim();
 
-  const rpcUrl =
-    process.env.NEXT_PUBLIC_BASE_RPC_URL ?? "https://sepolia.base.org";
+  const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL ?? "https://sepolia.base.org";
 
-  const publicClient = useMemo(() => {
-    return createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) });
-  }, [rpcUrl]);
-
-  async function ensureBaseSepolia() {
-    if (!window.ethereum) {
-      return false;
-    }
-
-    const chainIdHex = (await window.ethereum.request({
-      method: "eth_chainId",
-    })) as string;
-
-    if (chainIdHex?.toLowerCase() === "0x14a34") {
-      return true;
-    }
-
-    try {
-      await window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0x14A34" }],
-      });
-      return true;
-    } catch (error) {
-      const err = error as { code?: number; message?: string };
-      if (err.code === 4902) {
-        await window.ethereum.request({
-          method: "wallet_addEthereumChain",
-          params: [
-            {
-              chainId: "0x14A34",
-              chainName: "Base Sepolia",
-              rpcUrls: ["https://sepolia.base.org"],
-              nativeCurrency: {
-                name: "Sepolia ETH",
-                symbol: "ETH",
-                decimals: 18,
-              },
-              blockExplorerUrls: ["https://sepolia.basescan.org"],
-            },
-          ],
-        });
-        return true;
-      }
-      setStatus(err.message ?? "Failed to switch network.");
-      return false;
-    }
-  }
+  const publicClient = useMemo(
+    () => createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) }),
+    [rpcUrl]
+  );
 
   async function handleUseCurrentLocation() {
-    setStatus("Fetching GPS location...");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setVenueLat(pos.coords.latitude.toString());
-        setVenueLon(pos.coords.longitude.toString());
-        setStatus("");
+        setVenueLat(pos.coords.latitude.toFixed(6));
+        setVenueLon(pos.coords.longitude.toFixed(6));
       },
-      (err) => {
-        setStatus(`Location error: ${err.message}`);
-      }
+      (err) => setErrorMsg(`Location error: ${err.message}`)
     );
   }
 
   async function handleCreateEvent() {
     try {
-      setStatus("Preparing event...");
+      setErrorMsg("");
+      setStatusMsg("Preparing event payload...");
+      setStep(2);
 
       if (!venueName || !venueLat || !venueLon || !startTime || !endTime || !subnetPrefix) {
-        setStatus("Missing required fields.");
-        return;
+        throw new Error("Missing required fields.");
       }
-
-      if (!window.ethereum) {
-        setStatus("Wallet not found. Install a wallet like Coinbase Wallet or MetaMask.");
-        return;
+      if (!walletAddress) {
+        throw new Error("Wallet not connected.");
       }
-
-      setStatus("Switching to Base Sepolia...");
-      const switched = await ensureBaseSepolia();
-      if (!switched) {
-        return;
+      if (!getEthereum()) {
+        throw new Error("Wallet connection lost.");
       }
 
       const lat = Number(venueLat);
@@ -196,17 +169,19 @@ export default function OrganizerClient() {
       const end = Math.floor(new Date(endTime).getTime() / 1000);
 
       if (Number.isNaN(lat) || Number.isNaN(lon) || Number.isNaN(radius)) {
-        setStatus("Invalid coordinates or radius.");
-        return;
+        throw new Error("Invalid coordinates or radius.");
+      }
+      if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end) {
+        throw new Error("Invalid event times.");
       }
 
       const eventSeed = `${venueName}:${start}:${end}`;
       const derivedEventId = keccak256(toBytes(eventSeed));
-
       const scaledLat = BigInt(toScaled(lat));
       const scaledLon = BigInt(toScaled(lon));
       const thresholdSq = thresholdSqScaled(radius);
 
+      setStatusMsg("Computing venue hash...");
       const computedVenueHash = await publicClient.readContract({
         address: wifiproofAddress as `0x${string}`,
         abi: WIFI_PROOF_ABI,
@@ -214,30 +189,19 @@ export default function OrganizerClient() {
         args: [scaledLat, scaledLon, thresholdSq, derivedEventId],
       });
 
-      setStatus("Requesting wallet signature...");
-      const walletClient = createWalletClient({
-        chain: baseSepolia,
-        transport: custom(window.ethereum),
-      });
-
-      const [account] = await walletClient.requestAddresses();
-
-      setStatus("Generating organizer proof...");
+      setStatusMsg("Generating organizer proof...");
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject);
       });
 
-      const userLat = position.coords.latitude;
-      const userLon = position.coords.longitude;
-
       const { WiFiProofProver, buildInputs } = await import("@wifiproof/proof-app");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const circuit = await loadCircuit() as any;
+      const circuit = (await loadCircuit()) as any;
       const prover = new WiFiProofProver();
       await prover.init(circuit);
 
       const inputs = buildInputs(
-        { lat: userLat, lon: userLon },
+        { lat: position.coords.latitude, lon: position.coords.longitude },
         { lat, lon },
         radius,
         derivedEventId
@@ -250,19 +214,20 @@ export default function OrganizerClient() {
       const publicInputsBytes32 = publicInputs.map((value) => {
         const hex = BigInt(value).toString(16).padStart(64, "0");
         return `0x${hex}`;
-      });
+      }) as `0x${string}`[];
 
-      setStatus("Requesting organizer authorization...");
-      const deadline = Math.floor(Date.now() / 1000) + 600;
+      setStatusMsg("Requesting organizer authorization...");
+      const deadline = Math.floor(Date.now() / 1000) + 120;
       const devHeaders: Record<string, string> =
         process.env.NODE_ENV === "development"
-          ? { "x-forwarded-for": subnetPrefix + "1" }
+          ? { "x-forwarded-for": `${subnetPrefix}1` }
           : {};
+
       const authorizeResponse = await fetch("/api/events/authorize", {
         method: "POST",
         headers: { "content-type": "application/json", ...devHeaders },
         body: JSON.stringify({
-          organizer: account,
+          organizer: walletAddress,
           eventId: derivedEventId,
           venueHash: computedVenueHash,
           startTime: start,
@@ -276,20 +241,25 @@ export default function OrganizerClient() {
       });
 
       if (!authorizeResponse.ok) {
-        const text = await authorizeResponse.text();
-        throw new Error(`Authorization failed: ${text}`);
+        throw new Error(`Authorization failed: ${await authorizeResponse.text()}`);
       }
+      const { signature } = (await authorizeResponse.json()) as { signature: `0x${string}` };
 
-      const { signature } = await authorizeResponse.json();
+      setStatusMsg("Confirm transaction in your wallet...");
+      const ethereum = getEthereum();
+      if (!ethereum) throw new Error("Wallet connection lost.");
+      const walletClient = createWalletClient({
+        chain: baseSepolia,
+        transport: custom(ethereum),
+      });
 
-      setStatus("Creating event on-chain...");
       const txHash = await walletClient.writeContract({
         address: wifiproofAddress as `0x${string}`,
         abi: WIFI_PROOF_ABI,
         functionName: "createEventWithSig",
-        account,
+        account: walletAddress as `0x${string}`,
         args: [
-          account,
+          walletAddress as `0x${string}`,
           derivedEventId,
           computedVenueHash,
           BigInt(start),
@@ -300,17 +270,16 @@ export default function OrganizerClient() {
         ],
       });
 
+      setStatusMsg("Waiting for Base Sepolia confirmation...");
       const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
       if (receipt.status !== "success") {
         throw new Error("Transaction failed. Event not created.");
       }
 
-      setStatus("Saving event metadata...");
+      setStatusMsg("Saving metadata...");
       const saveResponse = await fetch("/api/events/create", {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({
           eventId: derivedEventId,
           venueHash: computedVenueHash,
@@ -328,133 +297,188 @@ export default function OrganizerClient() {
       }
 
       const eventUrl = `${window.location.origin}/event/${derivedEventId}`;
-      const qr = await QRCode.toDataURL(eventUrl, { margin: 1, width: 220 });
-      setQrDataUrl(qr);
+      setQrDataUrl(
+        await QRCode.toDataURL(eventUrl, {
+          margin: 1,
+          width: 300,
+          color: { dark: "#02040A", light: "#FFFFFF" },
+        })
+      );
+
       setEventId(derivedEventId);
       setVenueHash(computedVenueHash);
-      setStatus("Event created successfully.");
+      setStep(3);
+      setStatusMsg("");
     } catch (error) {
-      setStatus(`Error: ${(error as Error).message}`);
+      setErrorMsg((error as Error).message);
+      setStep(1);
     }
   }
 
   return (
-    <section className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-8">
       <div className="space-y-2">
-        <h1 className="text-3xl font-semibold">Create an Event</h1>
-        <p className="text-white/70">
-          This writes the event on-chain and stores metadata in Supabase.
+        <h1 className="text-4xl font-bold tracking-tight text-white">Event Setup</h1>
+        <p className="text-lg text-slate-400">
+          Secure your venue with zero-knowledge attendance.
         </p>
       </div>
 
-      <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/5 p-6">
-        <label className="grid gap-2">
-          <span className="text-sm text-white/70">Event name</span>
-          <input
-            className="rounded-lg bg-black/40 px-3 py-2 text-white"
-            value={venueName}
-            onChange={(e) => setVenueName(e.target.value)}
-            placeholder="Base Batches 003 test event"
-          />
-        </label>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="grid gap-2">
-            <span className="text-sm text-white/70">Venue latitude</span>
-            <input
-              className="rounded-lg bg-black/40 px-3 py-2 text-white"
-              value={venueLat}
-              onChange={(e) => setVenueLat(e.target.value)}
-              placeholder="37.7749"
-            />
-          </label>
-          <label className="grid gap-2">
-            <span className="text-sm text-white/70">Venue longitude</span>
-            <input
-              className="rounded-lg bg-black/40 px-3 py-2 text-white"
-              value={venueLon}
-              onChange={(e) => setVenueLon(e.target.value)}
-              placeholder="-122.4194"
-            />
-          </label>
+      {errorMsg && (
+        <div className="flex items-start gap-3 rounded-xl border border-red-900/50 bg-red-950/30 p-4 text-red-400">
+          <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+          <p className="text-sm font-medium leading-relaxed">{errorMsg}</p>
         </div>
+      )}
 
-        <button
-          type="button"
-          onClick={handleUseCurrentLocation}
-          className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white/80 hover:bg-white/10"
-        >
-          Use current location
-        </button>
+      {step === 0 && (
+        <WalletCard
+          walletAddress={walletAddress}
+          setWalletAddress={setWalletAddress}
+          onReady={() => setStep(1)}
+        />
+      )}
 
-        <div className="grid gap-4 md:grid-cols-2">
+      {step === 1 && (
+        <div className="space-y-6 rounded-3xl border border-cyan-900/30 bg-slate-900/60 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
+          <div className="mb-6 flex items-center gap-3 border-b border-cyan-900/30 pb-6">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-500/10 font-mono text-sm font-bold text-cyan-400">
+              2
+            </div>
+            <h2 className="text-xl font-bold text-white">Venue Configuration</h2>
+          </div>
+
           <label className="grid gap-2">
-            <span className="text-sm text-white/70">Radius (meters)</span>
+            <span className="text-sm font-medium text-slate-300">Event Name</span>
             <input
-              className="rounded-lg bg-black/40 px-3 py-2 text-white"
-              value={radiusMeters}
-              onChange={(e) => setRadiusMeters(e.target.value)}
+              className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:outline-none"
+              value={venueName}
+              onChange={(e) => setVenueName(e.target.value)}
+              placeholder="ETH Safari - Day 1"
             />
           </label>
-          <label className="grid gap-2">
-            <span className="text-sm text-white/70">WiFi subnet prefix</span>
-            <input
-              className="rounded-lg bg-black/40 px-3 py-2 text-white"
-              value={subnetPrefix}
-              onChange={(e) => setSubnetPrefix(e.target.value)}
-              placeholder="192.168.1"
-            />
-          </label>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="grid gap-2">
+              <span className="text-sm font-medium text-slate-300">Latitude</span>
+              <input
+                className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 font-mono text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:outline-none"
+                value={venueLat}
+                onChange={(e) => setVenueLat(e.target.value)}
+                placeholder="-1.1018"
+              />
+            </label>
+            <label className="grid gap-2">
+              <span className="text-sm font-medium text-slate-300">Longitude</span>
+              <input
+                className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 font-mono text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:outline-none"
+                value={venueLon}
+                onChange={(e) => setVenueLon(e.target.value)}
+                placeholder="37.0144"
+              />
+            </label>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleUseCurrentLocation}
+            className="flex items-center gap-2 text-sm font-medium text-cyan-400 transition-colors hover:text-cyan-300"
+          >
+            <MapPin className="h-4 w-4" /> Fetch My Current Coordinates
+          </button>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="grid gap-2">
+              <span className="text-sm font-medium text-slate-300">Radius (meters)</span>
+              <input
+                className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 font-mono text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:outline-none"
+                value={radiusMeters}
+                onChange={(e) => setRadiusMeters(e.target.value)}
+              />
+            </label>
+            <label className="grid gap-2">
+              <span className="text-sm font-medium text-slate-300">WiFi Subnet Prefix</span>
+              <input
+                className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 font-mono text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:outline-none"
+                value={subnetPrefix}
+                onChange={(e) => setSubnetPrefix(e.target.value)}
+                placeholder="192.168.1."
+              />
+            </label>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="grid gap-2">
+              <span className="text-sm font-medium text-slate-300">Start Time</span>
+              <input
+                type="datetime-local"
+                className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 text-white focus:border-cyan-500/50 focus:outline-none"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+              />
+            </label>
+            <label className="grid gap-2">
+              <span className="text-sm font-medium text-slate-300">End Time</span>
+              <input
+                type="datetime-local"
+                className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 text-white focus:border-cyan-500/50 focus:outline-none"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+              />
+            </label>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCreateEvent}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-4 font-bold text-slate-900 transition-all hover:bg-cyan-400 active:scale-[0.98]"
+          >
+            Generate ZK Proof & Mint Event <ChevronRight className="h-5 w-5" />
+          </button>
         </div>
+      )}
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="grid gap-2">
-            <span className="text-sm text-white/70">Start time</span>
-            <input
-              type="datetime-local"
-              className="rounded-lg bg-black/40 px-3 py-2 text-white"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-            />
-          </label>
-          <label className="grid gap-2">
-            <span className="text-sm text-white/70">End time</span>
-            <input
-              type="datetime-local"
-              className="rounded-lg bg-black/40 px-3 py-2 text-white"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-            />
-          </label>
+      {step === 2 && (
+        <div className="space-y-6 rounded-3xl border border-cyan-900/30 bg-slate-900/60 p-12 text-center shadow-2xl backdrop-blur-xl">
+          <Loader2 className="mx-auto h-12 w-12 animate-spin text-cyan-400" />
+          <h2 className="text-2xl font-bold text-white tracking-tight">Processing Setup</h2>
+          <p className="font-mono text-sm text-slate-400">{statusMsg}</p>
         </div>
+      )}
 
-        <button
-          type="button"
-          onClick={handleCreateEvent}
-          className="rounded-lg bg-white px-4 py-2 font-semibold text-black hover:bg-white/90"
-        >
-          Create event
-        </button>
+      {step === 3 && (
+        <div className="space-y-8 rounded-3xl border border-green-500/30 bg-slate-900/60 p-8 text-center shadow-[0_0_40px_rgba(34,197,94,0.1)] backdrop-blur-xl sm:p-12">
+          <CheckCircle2 className="mx-auto h-16 w-16 text-green-400" />
+          <div>
+            <h2 className="mb-2 text-3xl font-bold text-white">Event Secured</h2>
+            <p className="text-slate-400">Your event is live on Base Sepolia.</p>
+          </div>
 
-        {status && <p className="text-sm text-white/70">{status}</p>}
-      </div>
+          <div className="mx-auto max-w-md space-y-4 rounded-2xl border border-cyan-900/30 bg-[#02040A] p-6 text-left">
+            <div>
+              <span className="mb-1 block font-mono text-xs text-slate-500">EVENT ID</span>
+              <span className="block break-all font-mono text-sm text-cyan-400">
+                {eventId}
+              </span>
+            </div>
+            <div>
+              <span className="mb-1 block font-mono text-xs text-slate-500">VENUE HASH</span>
+              <span className="block break-all font-mono text-sm text-cyan-400">
+                {venueHash}
+              </span>
+            </div>
+          </div>
 
-      {eventId && (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-3">
-          <h2 className="text-xl font-semibold">Event created</h2>
-          <p className="break-all text-sm text-white/70">Event ID: {eventId}</p>
-          {venueHash && (
-            <p className="break-all text-sm text-white/70">Venue hash: {venueHash}</p>
-          )}
           {qrDataUrl && (
-            <img
-              src={qrDataUrl}
-              alt="Event QR code"
-              className="h-56 w-56 rounded-lg border border-white/20 bg-white/5 p-2"
-            />
+            <div className="flex flex-col items-center justify-center space-y-4 border-t border-cyan-900/30 pt-6">
+              <span className="text-sm font-medium text-slate-300">Print & display at venue</span>
+              <div className="rounded-2xl bg-white p-4 shadow-xl">
+                <img src={qrDataUrl} alt="Event Check-in QR code" className="h-48 w-48" />
+              </div>
+            </div>
           )}
         </div>
       )}
-    </section>
+    </div>
   );
 }
