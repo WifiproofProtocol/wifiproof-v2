@@ -120,12 +120,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Venue hash mismatch" }, { status: 403 });
     }
 
-    const verifierAddress = process.env.VERIFIER_ADDRESS as `0x${string}` | undefined;
+    const verifierAddress = process.env.VERIFIER_ADDRESS?.trim() as `0x${string}` | undefined;
     if (!verifierAddress) {
       return NextResponse.json({ error: "Missing VERIFIER_ADDRESS" }, { status: 500 });
     }
 
-    const rpcUrl = process.env.BASE_RPC_URL;
+    const rpcUrl = process.env.BASE_RPC_URL?.trim();
     if (!rpcUrl) {
       return NextResponse.json({ error: "Missing BASE_RPC_URL" }, { status: 500 });
     }
@@ -154,15 +154,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const privateKey =
-      (process.env.EVENT_SIGNER_PRIVATE_KEY as `0x${string}` | undefined) ??
-      (process.env.IP_SIGNER_PRIVATE_KEY as `0x${string}` | undefined);
+    const privateKey = (
+      (process.env.EVENT_SIGNER_PRIVATE_KEY?.trim() as `0x${string}` | undefined) ??
+      (process.env.IP_SIGNER_PRIVATE_KEY?.trim() as `0x${string}` | undefined)
+    );
     if (!privateKey) {
       return NextResponse.json({ error: "Signer not configured" }, { status: 500 });
     }
 
-    const chainId = Number(process.env.CHAIN_ID ?? 84532);
-    const verifyingContract = process.env.WIFIPROOF_ADDRESS as `0x${string}` | undefined;
+    const chainId = Number(process.env.CHAIN_ID?.trim() ?? 84532);
+    const verifyingContract = process.env.WIFIPROOF_ADDRESS?.trim() as `0x${string}` | undefined;
     if (!verifyingContract) {
       return NextResponse.json({ error: "Missing WIFIPROOF_ADDRESS" }, { status: 500 });
     }
