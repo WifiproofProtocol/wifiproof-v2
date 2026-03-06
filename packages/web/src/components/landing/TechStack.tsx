@@ -2,15 +2,11 @@
 import { motion } from "framer-motion";
 
 const techStack = [
-  { name: "Noir", desc: "ZK Circuits", color: "from-purple-500 to-purple-600" },
-  { name: "Base", desc: "L2 Network", color: "from-blue-500 to-blue-600" },
-  { name: "EAS", desc: "Attestations", color: "from-green-500 to-green-600" },
-  {
-    name: "Coinbase KYC",
-    desc: "Identity",
-    color: "from-blue-400 to-blue-500",
-  },
-  { name: "Foundry", desc: "Contracts", color: "from-orange-500 to-red-500" },
+  { name: "Noir", desc: "ZK Circuits", color: "from-purple-500 to-purple-600", logo: "/brand/noirlang.png" },
+  { name: "Base", desc: "L2 Network", color: "from-blue-500 to-blue-600", logo: "/brand/logo-base.svg" },
+  { name: "EAS", desc: "Attestations", color: "from-green-500 to-green-600", logo: "/brand/eas-attestation.png" },
+  { name: "Coinbase KYC", desc: "Identity", color: "from-blue-400 to-blue-500", logo: null },
+  { name: "Foundry", desc: "Contracts", color: "from-orange-500 to-red-500", logo: null },
 ];
 
 export default function TechStack() {
@@ -50,13 +46,19 @@ export default function TechStack() {
                 className={`absolute inset-0 rounded-xl bg-gradient-to-br ${tech.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300 blur-xl`}
               />
 
-              <div className="relative z-10 text-center">
-                <div
-                  className={`text-lg font-bold bg-gradient-to-r ${tech.color} bg-clip-text text-transparent`}
-                >
-                  {tech.name}
-                </div>
-                <div className="text-xs text-gray-500 uppercase tracking-wider mt-1">
+              <div className="relative z-10 flex flex-col items-center gap-2">
+                {tech.logo ? (
+                  <img
+                    src={tech.logo}
+                    alt={tech.name}
+                    className="h-7 w-auto object-contain opacity-80 group-hover:opacity-100 transition-opacity duration-300"
+                  />
+                ) : (
+                  <div className={`text-lg font-bold bg-gradient-to-r ${tech.color} bg-clip-text text-transparent`}>
+                    {tech.name}
+                  </div>
+                )}
+                <div className="text-xs text-gray-500 uppercase tracking-wider">
                   {tech.desc}
                 </div>
               </div>
