@@ -213,9 +213,6 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
       let foundUid = "";
       for (const log of receipt.logs) {
-        if (log.address.toLowerCase() !== wifiproofAddress.toLowerCase()) {
-          continue;
-        }
         try {
           const decoded = decodeEventLog({
             abi: WIFI_PROOF_ABI,
