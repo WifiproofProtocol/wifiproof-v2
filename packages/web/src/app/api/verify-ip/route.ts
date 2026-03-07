@@ -14,16 +14,24 @@ type VerifyIpRequest = {
   deadline: number;
 };
 
+function normalizeIp(ip: string): string {
+  // Strip IPv6-mapped IPv4 prefix: ::ffff:102.205.238.245 -> 102.205.238.245
+  return ip.replace(/^::ffff:/i, "").trim();
+}
+
 function getClientIp(request: Request): string | null {
+  const vercelIp = request.headers.get("x-vercel-forwarded-for");
+  if (vercelIp) {
+    return normalizeIp(vercelIp.split(",")[0].trim());
+  }
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) {
-    return forwardedFor.split(",")[0].trim();
+    return normalizeIp(forwardedFor.split(",")[0].trim());
   }
   const realIp = request.headers.get("x-real-ip");
   if (realIp) {
-    return realIp.trim();
+    return normalizeIp(realIp.trim());
   }
-
   return null;
 }
 
@@ -76,7 +84,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Venue hash mismatch" }, { status: 403 });
     }
 
-    const expectedSubnet = String(eventRecord.subnet_prefix || "");
+    const expectedSubnet = String(eventRecord.subnet_prefix || "").trim();
     if (!expectedSubnet || !clientIp.startsWith(expectedSubnet)) {
       return NextResponse.json({ error: "Not on venue subnet" }, { status: 403 });
     }
