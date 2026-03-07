@@ -25,16 +25,19 @@ export default function FinalCTA() {
 
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
               <a href="/organizer" className="w-full sm:w-auto px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-900 rounded-lg font-bold text-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98]">
-                I'm an Organizer <ArrowRight className="w-5 h-5" />
+                I&apos;m an Organizer <ArrowRight className="w-5 h-5" />
               </a>
 
-              <div className="w-full sm:w-auto px-8 py-4 border border-cyan-900/50 bg-slate-900/50 backdrop-blur-md rounded-lg flex items-center justify-center gap-4">
+              <a
+                href="/events"
+                className="w-full sm:w-auto px-8 py-4 border border-cyan-900/50 bg-slate-900/50 backdrop-blur-md rounded-lg flex items-center justify-center gap-4 hover:border-cyan-500/40 transition-colors"
+              >
                 <QrCode className="w-6 h-6 text-cyan-400 flex-shrink-0" />
                 <div className="flex flex-col text-left">
-                  <span className="font-bold text-white text-sm">I'm Attending</span>
-                  <span className="text-xs text-slate-400">Scan QR at the venue</span>
+                  <span className="font-bold text-white text-sm">I&apos;m Attending</span>
+                  <span className="text-xs text-slate-400">Find active events and check-in</span>
                 </div>
-              </div>
+              </a>
             </div>
           </motion.div>
         </div>
