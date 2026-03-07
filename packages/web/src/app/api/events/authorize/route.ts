@@ -22,6 +22,23 @@ const VERIFIER_ABI = [
   },
 ] as const;
 
+const WIFIPROOF_AUTH_ABI = [
+  {
+    type: "function",
+    name: "owner",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+  },
+  {
+    type: "function",
+    name: "isOrganizer",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "address" }],
+    outputs: [{ name: "", type: "bool" }],
+  },
+] as const;
+
 const FIELD_MODULUS =
   21888242871839275222246405745257275088548364400416034343698204186575808495617n;
 
@@ -125,17 +142,49 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing VERIFIER_ADDRESS" }, { status: 500 });
     }
 
+    const verifyingContract = process.env.WIFIPROOF_ADDRESS?.trim() as `0x${string}` | undefined;
+    if (!verifyingContract) {
+      return NextResponse.json({ error: "Missing WIFIPROOF_ADDRESS" }, { status: 500 });
+    }
+
     const rpcUrl = process.env.BASE_RPC_URL?.trim();
     if (!rpcUrl) {
       return NextResponse.json({ error: "Missing BASE_RPC_URL" }, { status: 500 });
     }
 
-    try {
-      const publicClient = createPublicClient({
-        chain: baseSepolia,
-        transport: http(rpcUrl),
-      });
+    const publicClient = createPublicClient({
+      chain: baseSepolia,
+      transport: http(rpcUrl),
+    });
 
+    try {
+      const [owner, allowlisted] = await Promise.all([
+        publicClient.readContract({
+          address: verifyingContract,
+          abi: WIFIPROOF_AUTH_ABI,
+          functionName: "owner",
+        }),
+        publicClient.readContract({
+          address: verifyingContract,
+          abi: WIFIPROOF_AUTH_ABI,
+          functionName: "isOrganizer",
+          args: [organizer],
+        }),
+      ]);
+
+      const isOwner = owner.toLowerCase() === organizer.toLowerCase();
+      if (!allowlisted && !isOwner) {
+        return NextResponse.json({ error: "Organizer not allowlisted" }, { status: 403 });
+      }
+    } catch (err) {
+      const allowlistError = err instanceof Error ? err.message : String(err);
+      return NextResponse.json(
+        { error: "Organizer allowlist check failed", detail: allowlistError },
+        { status: 400 }
+      );
+    }
+
+    try {
       const isValid = await publicClient.readContract({
         address: verifierAddress,
         abi: VERIFIER_ABI,
@@ -163,10 +212,6 @@ export async function POST(request: Request) {
     }
 
     const chainId = Number(process.env.CHAIN_ID?.trim() ?? 84532);
-    const verifyingContract = process.env.WIFIPROOF_ADDRESS?.trim() as `0x${string}` | undefined;
-    if (!verifyingContract) {
-      return NextResponse.json({ error: "Missing WIFIPROOF_ADDRESS" }, { status: 500 });
-    }
 
     const venueNameHash = keccak256(toBytes(venueName));
 
