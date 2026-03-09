@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import QRCode from "qrcode";
 import {
   createPublicClient,
@@ -14,15 +14,14 @@ import type { EIP1193Provider } from "viem";
 import { baseSepolia } from "viem/chains";
 import {
   AlertCircle,
-  CalendarDays,
   CheckCircle2,
   ChevronRight,
-  Clock3,
   Loader2,
   MapPin,
 } from "lucide-react";
 
 import WalletCard from "@/components/wallet/WalletCard";
+import DateTimePicker from "@/components/DateTimePicker";
 
 const WIFI_PROOF_ABI = [
   {
@@ -92,35 +91,6 @@ function uint8ArrayToHex(bytes: Uint8Array) {
   return `0x${hex}`;
 }
 
-function formatDateInput(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function formatTimeInput(date: Date) {
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${hours}:${minutes}`;
-}
-
-function combineDateAndTime(date: string, time: string) {
-  if (!date || !time) return null;
-  return `${date}T${time}`;
-}
-
-function openNativePicker(ref: { current: HTMLInputElement | null }) {
-  const input = ref.current;
-  if (!input) return;
-  const withPicker = input as HTMLInputElement & { showPicker?: () => void };
-  if (typeof withPicker.showPicker === "function") {
-    withPicker.showPicker();
-    return;
-  }
-  input.focus();
-  input.click();
-}
 
 async function loadCircuit() {
   const mod = await import("@wifiproof/proof-app/circuit/target/circuit.json");
@@ -146,10 +116,10 @@ export default function OrganizerClient() {
   const [venueLat, setVenueLat] = useState("");
   const [venueLon, setVenueLon] = useState("");
   const [radiusMeters, setRadiusMeters] = useState("150");
-  const [startDate, setStartDate] = useState("");
-  const [startClock, setStartClock] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [endClock, setEndClock] = useState("");
+  const [startDateTime, setStartDateTime] = useState<Date | null>(() => new Date());
+  const [endDateTime, setEndDateTime] = useState<Date | null>(
+    () => new Date(Date.now() + 2 * 60 * 60 * 1000)
+  );
   const [subnetPrefix, setSubnetPrefix] = useState("");
 
   const [statusMsg, setStatusMsg] = useState("");
@@ -157,11 +127,6 @@ export default function OrganizerClient() {
   const [eventId, setEventId] = useState("");
   const [venueHash, setVenueHash] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
-  const startDateRef = useRef<HTMLInputElement | null>(null);
-  const startTimeRef = useRef<HTMLInputElement | null>(null);
-  const endDateRef = useRef<HTMLInputElement | null>(null);
-  const endTimeRef = useRef<HTMLInputElement | null>(null);
-
   const wifiproofAddress = (
     process.env.NEXT_PUBLIC_WIFIPROOF_ADDRESS ??
     "0xbcEfE9B5a2f1C0FA6f0E02c8c678CF41884e3f7C"
@@ -174,15 +139,6 @@ export default function OrganizerClient() {
     [rpcUrl]
   );
 
-  useEffect(() => {
-    const now = new Date();
-    const suggestedEnd = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-    setStartDate((value) => value || formatDateInput(now));
-    setStartClock((value) => value || formatTimeInput(now));
-    setEndDate((value) => value || formatDateInput(suggestedEnd));
-    setEndClock((value) => value || formatTimeInput(suggestedEnd));
-  }, []);
-
   async function handleUseCurrentLocation() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -191,16 +147,6 @@ export default function OrganizerClient() {
       },
       (err) => setErrorMsg(`Location error: ${err.message}`)
     );
-  }
-
-  function handleSetSuggestedTimes() {
-    const now = new Date();
-    const suggestedEnd = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-
-    setStartDate(formatDateInput(now));
-    setStartClock(formatTimeInput(now));
-    setEndDate(formatDateInput(suggestedEnd));
-    setEndClock(formatTimeInput(suggestedEnd));
   }
 
   async function handleCreateEvent() {
@@ -213,10 +159,8 @@ export default function OrganizerClient() {
         !venueName ||
         !venueLat ||
         !venueLon ||
-        !startDate ||
-        !startClock ||
-        !endDate ||
-        !endClock ||
+        !startDateTime ||
+        !endDateTime ||
         !subnetPrefix
       ) {
         throw new Error("Missing required fields.");
@@ -231,14 +175,9 @@ export default function OrganizerClient() {
       const lat = Number(venueLat);
       const lon = Number(venueLon);
       const radius = Number(radiusMeters);
-      const startDateTime = combineDateAndTime(startDate, startClock);
-      const endDateTime = combineDateAndTime(endDate, endClock);
-      if (!startDateTime || !endDateTime) {
-        throw new Error("Missing event date or time.");
-      }
 
-      const start = Math.floor(new Date(startDateTime).getTime() / 1000);
-      const end = Math.floor(new Date(endDateTime).getTime() / 1000);
+      const start = Math.floor(startDateTime.getTime() / 1000);
+      const end = Math.floor(endDateTime.getTime() / 1000);
 
       if (Number.isNaN(lat) || Number.isNaN(lon) || Number.isNaN(radius)) {
         throw new Error("Invalid coordinates or radius.");
@@ -480,107 +419,24 @@ export default function OrganizerClient() {
           </div>
 
           <div className="space-y-4 rounded-2xl border border-cyan-900/30 bg-[#02040A]/60 p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-200">Event Schedule</h3>
-              <button
-                type="button"
-                onClick={handleSetSuggestedTimes}
-                className="rounded-lg border border-cyan-700/40 px-3 py-1 text-xs font-semibold text-cyan-300 transition-colors hover:border-cyan-500/60 hover:text-cyan-200"
-              >
-                Use Current Time
-              </button>
-            </div>
+            <h3 className="text-sm font-semibold text-slate-200">Event Schedule</h3>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-2">
-                <span className="text-sm font-medium text-slate-300">Start Date</span>
-                <div className="relative">
-                  <input
-                    ref={startDateRef}
-                    type="date"
-                    className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 pr-12 text-white focus:border-cyan-500/50 focus:outline-none"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => openNativePicker(startDateRef)}
-                    className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-cyan-300 transition-colors hover:text-cyan-200"
-                    aria-label="Pick start date"
-                  >
-                    <CalendarDays className="h-4 w-4" />
-                  </button>
-                </div>
-              </label>
-              <label className="grid gap-2">
-                <span className="text-sm font-medium text-slate-300">Start Time</span>
-                <div className="relative">
-                  <input
-                    ref={startTimeRef}
-                    type="time"
-                    step={300}
-                    className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 pr-12 text-white focus:border-cyan-500/50 focus:outline-none"
-                    value={startClock}
-                    onChange={(e) => setStartClock(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => openNativePicker(startTimeRef)}
-                    className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-cyan-300 transition-colors hover:text-cyan-200"
-                    aria-label="Pick start time"
-                  >
-                    <Clock3 className="h-4 w-4" />
-                  </button>
-                </div>
-              </label>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-2">
-                <span className="text-sm font-medium text-slate-300">End Date</span>
-                <div className="relative">
-                  <input
-                    ref={endDateRef}
-                    type="date"
-                    className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 pr-12 text-white focus:border-cyan-500/50 focus:outline-none"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => openNativePicker(endDateRef)}
-                    className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-cyan-300 transition-colors hover:text-cyan-200"
-                    aria-label="Pick end date"
-                  >
-                    <CalendarDays className="h-4 w-4" />
-                  </button>
-                </div>
-              </label>
-              <label className="grid gap-2">
-                <span className="text-sm font-medium text-slate-300">End Time</span>
-                <div className="relative">
-                  <input
-                    ref={endTimeRef}
-                    type="time"
-                    step={300}
-                    className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 pr-12 text-white focus:border-cyan-500/50 focus:outline-none"
-                    value={endClock}
-                    onChange={(e) => setEndClock(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => openNativePicker(endTimeRef)}
-                    className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-cyan-300 transition-colors hover:text-cyan-200"
-                    aria-label="Pick end time"
-                  >
-                    <Clock3 className="h-4 w-4" />
-                  </button>
-                </div>
-              </label>
+              <DateTimePicker
+                label="Start"
+                value={startDateTime}
+                onChange={setStartDateTime}
+              />
+              <DateTimePicker
+                label="End"
+                value={endDateTime}
+                onChange={setEndDateTime}
+                minDate={startDateTime ?? undefined}
+              />
             </div>
 
             <p className="text-xs text-slate-500">
-              Times are interpreted in your current local timezone.
+              Times are in your local timezone.
             </p>
           </div>
 
