@@ -55,16 +55,23 @@ type AuthorizeRequest = {
   publicInputs: `0x${string}`[];
 };
 
+function normalizeIp(ip: string): string {
+  return ip.replace(/^::ffff:/i, "").trim();
+}
+
 function getClientIp(request: Request): string | null {
+  const vercelIp = request.headers.get("x-vercel-forwarded-for");
+  if (vercelIp) {
+    return normalizeIp(vercelIp.split(",")[0].trim());
+  }
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) {
-    return forwardedFor.split(",")[0].trim();
+    return normalizeIp(forwardedFor.split(",")[0].trim());
   }
   const realIp = request.headers.get("x-real-ip");
   if (realIp) {
-    return realIp.trim();
+    return normalizeIp(realIp.trim());
   }
-
   return null;
 }
 
