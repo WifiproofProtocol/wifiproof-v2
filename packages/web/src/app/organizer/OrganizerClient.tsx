@@ -90,6 +90,24 @@ function uint8ArrayToHex(bytes: Uint8Array) {
   return `0x${hex}`;
 }
 
+function formatDateInput(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatTimeInput(date: Date) {
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
+function combineDateAndTime(date: string, time: string) {
+  if (!date || !time) return null;
+  return `${date}T${time}`;
+}
+
 async function loadCircuit() {
   const mod = await import("@wifiproof/proof-app/circuit/target/circuit.json");
   return mod.default ?? mod;
@@ -114,8 +132,10 @@ export default function OrganizerClient() {
   const [venueLat, setVenueLat] = useState("");
   const [venueLon, setVenueLon] = useState("");
   const [radiusMeters, setRadiusMeters] = useState("150");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [startClock, setStartClock] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [endClock, setEndClock] = useState("");
   const [subnetPrefix, setSubnetPrefix] = useState("");
 
   const [statusMsg, setStatusMsg] = useState("");
@@ -146,13 +166,34 @@ export default function OrganizerClient() {
     );
   }
 
+  function handleSetSuggestedTimes() {
+    const now = new Date();
+    const roundedStart = new Date(now.getTime() + 15 * 60 * 1000);
+    roundedStart.setMinutes(Math.ceil(roundedStart.getMinutes() / 5) * 5, 0, 0);
+    const suggestedEnd = new Date(roundedStart.getTime() + 2 * 60 * 60 * 1000);
+
+    setStartDate(formatDateInput(roundedStart));
+    setStartClock(formatTimeInput(roundedStart));
+    setEndDate(formatDateInput(suggestedEnd));
+    setEndClock(formatTimeInput(suggestedEnd));
+  }
+
   async function handleCreateEvent() {
     try {
       setErrorMsg("");
       setStatusMsg("Preparing event payload...");
       setStep(2);
 
-      if (!venueName || !venueLat || !venueLon || !startTime || !endTime || !subnetPrefix) {
+      if (
+        !venueName ||
+        !venueLat ||
+        !venueLon ||
+        !startDate ||
+        !startClock ||
+        !endDate ||
+        !endClock ||
+        !subnetPrefix
+      ) {
         throw new Error("Missing required fields.");
       }
       if (!walletAddress) {
@@ -165,8 +206,14 @@ export default function OrganizerClient() {
       const lat = Number(venueLat);
       const lon = Number(venueLon);
       const radius = Number(radiusMeters);
-      const start = Math.floor(new Date(startTime).getTime() / 1000);
-      const end = Math.floor(new Date(endTime).getTime() / 1000);
+      const startDateTime = combineDateAndTime(startDate, startClock);
+      const endDateTime = combineDateAndTime(endDate, endClock);
+      if (!startDateTime || !endDateTime) {
+        throw new Error("Missing event date or time.");
+      }
+
+      const start = Math.floor(new Date(startDateTime).getTime() / 1000);
+      const end = Math.floor(new Date(endDateTime).getTime() / 1000);
 
       if (Number.isNaN(lat) || Number.isNaN(lon) || Number.isNaN(radius)) {
         throw new Error("Invalid coordinates or radius.");
@@ -407,25 +454,65 @@ export default function OrganizerClient() {
             </label>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="grid gap-2">
-              <span className="text-sm font-medium text-slate-300">Start Time</span>
-              <input
-                type="datetime-local"
-                className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 text-white focus:border-cyan-500/50 focus:outline-none"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-              />
-            </label>
-            <label className="grid gap-2">
-              <span className="text-sm font-medium text-slate-300">End Time</span>
-              <input
-                type="datetime-local"
-                className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 text-white focus:border-cyan-500/50 focus:outline-none"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-              />
-            </label>
+          <div className="space-y-4 rounded-2xl border border-cyan-900/30 bg-[#02040A]/60 p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-200">Event Schedule</h3>
+              <button
+                type="button"
+                onClick={handleSetSuggestedTimes}
+                className="rounded-lg border border-cyan-700/40 px-3 py-1 text-xs font-semibold text-cyan-300 transition-colors hover:border-cyan-500/60 hover:text-cyan-200"
+              >
+                Use Next 2 Hours
+              </button>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="grid gap-2">
+                <span className="text-sm font-medium text-slate-300">Start Date</span>
+                <input
+                  type="date"
+                  className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 text-white focus:border-cyan-500/50 focus:outline-none"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </label>
+              <label className="grid gap-2">
+                <span className="text-sm font-medium text-slate-300">Start Time</span>
+                <input
+                  type="time"
+                  step={300}
+                  className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 text-white focus:border-cyan-500/50 focus:outline-none"
+                  value={startClock}
+                  onChange={(e) => setStartClock(e.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="grid gap-2">
+                <span className="text-sm font-medium text-slate-300">End Date</span>
+                <input
+                  type="date"
+                  className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 text-white focus:border-cyan-500/50 focus:outline-none"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </label>
+              <label className="grid gap-2">
+                <span className="text-sm font-medium text-slate-300">End Time</span>
+                <input
+                  type="time"
+                  step={300}
+                  className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 text-white focus:border-cyan-500/50 focus:outline-none"
+                  value={endClock}
+                  onChange={(e) => setEndClock(e.target.value)}
+                />
+              </label>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Times are interpreted in your current local timezone.
+            </p>
           </div>
 
           <button
