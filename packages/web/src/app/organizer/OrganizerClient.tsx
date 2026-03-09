@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import {
   createPublicClient,
@@ -14,8 +14,10 @@ import type { EIP1193Provider } from "viem";
 import { baseSepolia } from "viem/chains";
 import {
   AlertCircle,
+  CalendarDays,
   CheckCircle2,
   ChevronRight,
+  Clock3,
   Loader2,
   MapPin,
 } from "lucide-react";
@@ -108,6 +110,18 @@ function combineDateAndTime(date: string, time: string) {
   return `${date}T${time}`;
 }
 
+function openNativePicker(ref: { current: HTMLInputElement | null }) {
+  const input = ref.current;
+  if (!input) return;
+  const withPicker = input as HTMLInputElement & { showPicker?: () => void };
+  if (typeof withPicker.showPicker === "function") {
+    withPicker.showPicker();
+    return;
+  }
+  input.focus();
+  input.click();
+}
+
 async function loadCircuit() {
   const mod = await import("@wifiproof/proof-app/circuit/target/circuit.json");
   return mod.default ?? mod;
@@ -143,6 +157,10 @@ export default function OrganizerClient() {
   const [eventId, setEventId] = useState("");
   const [venueHash, setVenueHash] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
+  const startDateRef = useRef<HTMLInputElement | null>(null);
+  const startTimeRef = useRef<HTMLInputElement | null>(null);
+  const endDateRef = useRef<HTMLInputElement | null>(null);
+  const endTimeRef = useRef<HTMLInputElement | null>(null);
 
   const wifiproofAddress = (
     process.env.NEXT_PUBLIC_WIFIPROOF_ADDRESS ??
@@ -156,6 +174,15 @@ export default function OrganizerClient() {
     [rpcUrl]
   );
 
+  useEffect(() => {
+    const now = new Date();
+    const suggestedEnd = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+    setStartDate((value) => value || formatDateInput(now));
+    setStartClock((value) => value || formatTimeInput(now));
+    setEndDate((value) => value || formatDateInput(suggestedEnd));
+    setEndClock((value) => value || formatTimeInput(suggestedEnd));
+  }, []);
+
   async function handleUseCurrentLocation() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -168,12 +195,10 @@ export default function OrganizerClient() {
 
   function handleSetSuggestedTimes() {
     const now = new Date();
-    const roundedStart = new Date(now.getTime() + 15 * 60 * 1000);
-    roundedStart.setMinutes(Math.ceil(roundedStart.getMinutes() / 5) * 5, 0, 0);
-    const suggestedEnd = new Date(roundedStart.getTime() + 2 * 60 * 60 * 1000);
+    const suggestedEnd = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 
-    setStartDate(formatDateInput(roundedStart));
-    setStartClock(formatTimeInput(roundedStart));
+    setStartDate(formatDateInput(now));
+    setStartClock(formatTimeInput(now));
     setEndDate(formatDateInput(suggestedEnd));
     setEndClock(formatTimeInput(suggestedEnd));
   }
@@ -462,51 +487,95 @@ export default function OrganizerClient() {
                 onClick={handleSetSuggestedTimes}
                 className="rounded-lg border border-cyan-700/40 px-3 py-1 text-xs font-semibold text-cyan-300 transition-colors hover:border-cyan-500/60 hover:text-cyan-200"
               >
-                Use Next 2 Hours
+                Use Current Time
               </button>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="grid gap-2">
                 <span className="text-sm font-medium text-slate-300">Start Date</span>
-                <input
-                  type="date"
-                  className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 text-white focus:border-cyan-500/50 focus:outline-none"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
+                <div className="relative">
+                  <input
+                    ref={startDateRef}
+                    type="date"
+                    className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 pr-12 text-white focus:border-cyan-500/50 focus:outline-none"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => openNativePicker(startDateRef)}
+                    className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-cyan-300 transition-colors hover:text-cyan-200"
+                    aria-label="Pick start date"
+                  >
+                    <CalendarDays className="h-4 w-4" />
+                  </button>
+                </div>
               </label>
               <label className="grid gap-2">
                 <span className="text-sm font-medium text-slate-300">Start Time</span>
-                <input
-                  type="time"
-                  step={300}
-                  className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 text-white focus:border-cyan-500/50 focus:outline-none"
-                  value={startClock}
-                  onChange={(e) => setStartClock(e.target.value)}
-                />
+                <div className="relative">
+                  <input
+                    ref={startTimeRef}
+                    type="time"
+                    step={300}
+                    className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 pr-12 text-white focus:border-cyan-500/50 focus:outline-none"
+                    value={startClock}
+                    onChange={(e) => setStartClock(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => openNativePicker(startTimeRef)}
+                    className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-cyan-300 transition-colors hover:text-cyan-200"
+                    aria-label="Pick start time"
+                  >
+                    <Clock3 className="h-4 w-4" />
+                  </button>
+                </div>
               </label>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="grid gap-2">
                 <span className="text-sm font-medium text-slate-300">End Date</span>
-                <input
-                  type="date"
-                  className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 text-white focus:border-cyan-500/50 focus:outline-none"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
+                <div className="relative">
+                  <input
+                    ref={endDateRef}
+                    type="date"
+                    className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 pr-12 text-white focus:border-cyan-500/50 focus:outline-none"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => openNativePicker(endDateRef)}
+                    className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-cyan-300 transition-colors hover:text-cyan-200"
+                    aria-label="Pick end date"
+                  >
+                    <CalendarDays className="h-4 w-4" />
+                  </button>
+                </div>
               </label>
               <label className="grid gap-2">
                 <span className="text-sm font-medium text-slate-300">End Time</span>
-                <input
-                  type="time"
-                  step={300}
-                  className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 text-white focus:border-cyan-500/50 focus:outline-none"
-                  value={endClock}
-                  onChange={(e) => setEndClock(e.target.value)}
-                />
+                <div className="relative">
+                  <input
+                    ref={endTimeRef}
+                    type="time"
+                    step={300}
+                    className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 pr-12 text-white focus:border-cyan-500/50 focus:outline-none"
+                    value={endClock}
+                    onChange={(e) => setEndClock(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => openNativePicker(endTimeRef)}
+                    className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-cyan-300 transition-colors hover:text-cyan-200"
+                    aria-label="Pick end time"
+                  >
+                    <Clock3 className="h-4 w-4" />
+                  </button>
+                </div>
               </label>
             </div>
 
