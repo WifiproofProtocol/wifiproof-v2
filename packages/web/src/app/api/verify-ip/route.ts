@@ -3,6 +3,7 @@ import { privateKeyToAccount } from "viem/accounts";
 
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { verifyWorldToken } from "@/lib/world";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ type VerifyIpRequest = {
   eventId: `0x${string}`;
   venueHash: `0x${string}`;
   deadline: number;
+  worldToken: string;
 };
 
 function normalizeIp(ip: string): string {
@@ -38,13 +40,30 @@ function getClientIp(request: Request): string | null {
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as VerifyIpRequest;
-    const { wallet, eventId, venueHash, deadline } = body;
+    const { wallet, eventId, venueHash, deadline, worldToken } = body;
 
-    if (!wallet || !eventId || !venueHash || !deadline) {
+    if (!wallet || !eventId || !venueHash || !deadline || !worldToken) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    const rateKey = `${wallet.toLowerCase()}:${getClientIp(request) ?? "unknown"}`;
+    const worldClaims = verifyWorldToken(worldToken);
+    if (!worldClaims) {
+      return NextResponse.json({ error: "World verification required" }, { status: 403 });
+    }
+
+    const normalizedWallet = wallet.toLowerCase();
+    const normalizedEventId = eventId.toLowerCase();
+    if (
+      worldClaims.wallet !== normalizedWallet ||
+      worldClaims.eventId !== normalizedEventId
+    ) {
+      return NextResponse.json(
+        { error: "World verification does not match wallet or event" },
+        { status: 403 }
+      );
+    }
+
+    const rateKey = `${normalizedWallet}:${getClientIp(request) ?? "unknown"}`;
     const rateWindowSeconds = Number(process.env.RATE_LIMIT_WINDOW_SECONDS ?? 120);
     const rateMax = Number(process.env.RATE_LIMIT_MAX ?? 5);
     const rateResult = checkRateLimit(rateKey, rateMax, rateWindowSeconds * 1000);
@@ -68,7 +87,7 @@ export async function POST(request: Request) {
     const { data: eventRecord, error } = await supabase
       .from("events")
       .select("event_id, venue_hash, subnet_prefix, start_time, end_time")
-      .eq("event_id", eventId.toLowerCase())
+      .eq("event_id", normalizedEventId)
       .maybeSingle();
 
     if (error) {
@@ -134,7 +153,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ signature });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }
