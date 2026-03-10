@@ -2,11 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  IDKitRequestWidget,
+  orbLegacy,
+  type IDKitResult,
+  type RpContext,
+} from "@worldcoin/idkit";
+import {
   createPublicClient,
   createWalletClient,
   custom,
   decodeEventLog,
+  encodeAbiParameters,
   http,
+  keccak256,
 } from "viem";
 import type { EIP1193Provider } from "viem";
 import { baseSepolia } from "viem/chains";
@@ -58,6 +66,17 @@ type EventRecord = {
   radius_meters: number;
 };
 
+type WorldVerifyResponse = {
+  ok: boolean;
+  token: string;
+  nullifierHash: string;
+  expiresAt: number;
+};
+
+type RpContextResponse = {
+  rp_context: RpContext;
+};
+
 function toBytes32Hex(value: string) {
   const big = BigInt(value);
   const hex = big.toString(16).padStart(64, "0");
@@ -96,6 +115,15 @@ export default function EventClient({ eventId }: { eventId: string }) {
   const [statusMsg, setStatusMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [attestationUid, setAttestationUid] = useState("");
+  const [worldToken, setWorldToken] = useState("");
+  const [worldNullifierHash, setWorldNullifierHash] = useState("");
+  const [worldStatus, setWorldStatus] = useState("");
+  const [isPreparingWorld, setIsPreparingWorld] = useState(false);
+  const [isVerifyingWorld, setIsVerifyingWorld] = useState(false);
+  const [isWorldModalOpen, setIsWorldModalOpen] = useState(false);
+  const [rpContext, setRpContext] = useState<RpContext | null>(null);
+  const [artifactCid, setArtifactCid] = useState("");
+  const [archiveWarning, setArchiveWarning] = useState("");
 
   const wifiproofAddress = (
     process.env.NEXT_PUBLIC_WIFIPROOF_ADDRESS ??
@@ -103,6 +131,9 @@ export default function EventClient({ eventId }: { eventId: string }) {
   ).trim();
 
   const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL ?? "https://sepolia.base.org";
+  const worldAppId = (process.env.NEXT_PUBLIC_WORLD_APP_ID ?? "").trim();
+  const worldActionId = (process.env.NEXT_PUBLIC_WORLD_ACTION_ID ?? "").trim();
+  const isWorldConfigured = Boolean(worldAppId && worldActionId);
 
   const publicClient = useMemo(
     () => createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) }),
@@ -126,6 +157,95 @@ export default function EventClient({ eventId }: { eventId: string }) {
     void fetchEvent();
   }, [fetchEvent]);
 
+  useEffect(() => {
+    setWorldToken("");
+    setWorldNullifierHash("");
+    setWorldStatus("");
+    setRpContext(null);
+    setIsWorldModalOpen(false);
+    setArtifactCid("");
+    setArchiveWarning("");
+  }, [walletAddress, eventId]);
+
+  async function prepareWorldVerification() {
+    try {
+      setErrorMsg("");
+      setWorldStatus("");
+
+      if (!walletAddress) throw new Error("Connect wallet before World verification.");
+      if (!isWorldConfigured) {
+        throw new Error("World ID is not configured in environment variables.");
+      }
+
+      setIsPreparingWorld(true);
+      setWorldStatus("Preparing World verification...");
+
+      const response = await fetch("/api/world/rp-context", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: worldActionId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to prepare World verification: ${await response.text()}`);
+      }
+
+      const result = (await response.json()) as RpContextResponse;
+      if (!result.rp_context) {
+        throw new Error("Missing rp_context from backend.");
+      }
+
+      setRpContext(result.rp_context);
+      setIsWorldModalOpen(true);
+      setWorldStatus("Open World App to complete verification.");
+    } catch (error) {
+      setWorldStatus("");
+      setErrorMsg((error as Error).message);
+    } finally {
+      setIsPreparingWorld(false);
+    }
+  }
+
+  async function handleWorldSuccess(idkitResult: IDKitResult) {
+    try {
+      setErrorMsg("");
+      setIsVerifyingWorld(true);
+      setWorldStatus("Confirming World proof...");
+
+      const response = await fetch("/api/world/verify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          wallet: walletAddress,
+          eventId,
+          idkitResult,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`World verification failed: ${await response.text()}`);
+      }
+
+      const result = (await response.json()) as WorldVerifyResponse;
+      if (!result.ok || !result.token) {
+        throw new Error("World verification response missing token.");
+      }
+
+      setWorldToken(result.token);
+      setWorldNullifierHash(result.nullifierHash);
+      setWorldStatus("Humanity verified.");
+    } catch (error) {
+      setWorldToken("");
+      setWorldNullifierHash("");
+      setWorldStatus("");
+      setErrorMsg((error as Error).message);
+    } finally {
+      setIsVerifyingWorld(false);
+    }
+  }
+
   async function handleClaim() {
     try {
       setErrorMsg("");
@@ -134,6 +254,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
       if (!event) throw new Error("Event data not loaded.");
       if (!walletAddress) throw new Error("Wallet not connected.");
+      if (!worldToken) throw new Error("World verification is required before claiming.");
       if (!getEthereum()) throw new Error("Wallet connection lost.");
 
       setStatusMsg("Verifying venue subnet...");
@@ -151,6 +272,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
           eventId,
           venueHash: event.venue_hash,
           deadline,
+          worldToken,
         }),
       });
 
@@ -185,6 +307,10 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
       const proofHex = uint8ArrayToHex(proof);
       const publicInputsBytes32 = publicInputs.map(toBytes32Hex);
+      const proofHash = keccak256(proofHex);
+      const publicInputsHash = keccak256(
+        encodeAbiParameters([{ type: "bytes32[]" }], [publicInputsBytes32])
+      );
 
       setStatusMsg("Minting attestation on Base Sepolia...");
       const ethereum = getEthereum();
@@ -229,6 +355,35 @@ export default function EventClient({ eventId }: { eventId: string }) {
       }
 
       setAttestationUid(foundUid || "Pending indexer sync...");
+      setArtifactCid("");
+      setArchiveWarning("");
+
+      if (foundUid.startsWith("0x") && foundUid.length === 66) {
+        const archiveRes = await fetch("/api/claims/archive", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            eventId,
+            wallet: walletAddress,
+            txHash,
+            attestationUid: foundUid,
+            proofHash,
+            publicInputsHash,
+            worldNullifierHash: worldNullifierHash || undefined,
+            network: "base-sepolia",
+          }),
+        });
+
+        if (archiveRes.ok) {
+          const archiveJson = (await archiveRes.json()) as { cid?: string };
+          if (archiveJson.cid) {
+            setArtifactCid(archiveJson.cid);
+          }
+        } else {
+          setArchiveWarning("Claim succeeded, but decentralized archival failed.");
+        }
+      }
+
       setStatusMsg("");
       setStep(3);
     } catch (error) {
@@ -307,11 +462,43 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 </div>
               </div>
 
+              <div className="space-y-3 rounded-2xl border border-cyan-900/30 bg-[#02040A] p-4 text-left">
+                <button
+                  onClick={prepareWorldVerification}
+                  disabled={!isWorldConfigured || isPreparingWorld || isVerifyingWorld}
+                  className="w-full rounded-xl border border-cyan-500/40 bg-cyan-950/30 py-2.5 text-sm font-semibold text-cyan-300 transition-colors hover:bg-cyan-900/40 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isPreparingWorld
+                    ? "Preparing..."
+                    : isVerifyingWorld
+                      ? "Confirming..."
+                      : "Verify with World ID"}
+                </button>
+
+                {worldStatus && (
+                  <p className="text-xs font-medium text-green-400">{worldStatus}</p>
+                )}
+                {!isWorldConfigured && (
+                  <p className="text-xs font-medium text-amber-400">
+                    Missing `NEXT_PUBLIC_WORLD_APP_ID` or `NEXT_PUBLIC_WORLD_ACTION_ID`.
+                  </p>
+                )}
+                <p className="text-xs text-slate-500">
+                  Desktop: scan QR in World App. Mobile: World App opens directly.
+                </p>
+                {worldNullifierHash && (
+                  <p className="break-all font-mono text-[11px] text-slate-500">
+                    nullifier: {worldNullifierHash}
+                  </p>
+                )}
+              </div>
+
               <button
                 onClick={handleClaim}
-                className="w-full rounded-xl bg-cyan-500 py-4 text-lg font-bold text-slate-900 transition-all hover:bg-cyan-400 active:scale-[0.98]"
+                disabled={!worldToken}
+                className="w-full rounded-xl bg-cyan-500 py-4 text-lg font-bold text-slate-900 transition-all hover:bg-cyan-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-cyan-900/40 disabled:text-slate-400"
               >
-                Prove Presence & Mint
+                {worldToken ? "Prove Presence & Mint" : "Verify with World first"}
               </button>
             </div>
           )}
@@ -345,6 +532,19 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   {attestationUid}
                 </span>
               </div>
+              {artifactCid && (
+                <div className="rounded-xl border border-cyan-500/20 bg-[#02040A] p-4 text-left">
+                  <span className="mb-1 block font-mono text-xs text-slate-500">
+                    ARCHIVE CID
+                  </span>
+                  <span className="block break-all font-mono text-sm leading-relaxed text-cyan-300">
+                    {artifactCid}
+                  </span>
+                </div>
+              )}
+              {archiveWarning && (
+                <p className="text-xs font-medium text-amber-400">{archiveWarning}</p>
+              )}
               {attestationUid && attestationUid.startsWith("0x") && (
                 <a
                   href={`https://base-sepolia.easscan.org/attestation/view/${attestationUid}`}
@@ -355,10 +555,37 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   View on EASScan →
                 </a>
               )}
+              {artifactCid && (
+                <a
+                  href={`https://ipfs.io/ipfs/${artifactCid}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block rounded-xl border border-cyan-500/30 bg-cyan-950/20 px-4 py-2 text-sm font-medium text-cyan-300 transition-colors hover:bg-cyan-950/40 hover:text-cyan-200"
+                >
+                  View archived payload →
+                </a>
+              )}
             </div>
           )}
         </div>
       </div>
+
+      {isWorldConfigured && rpContext && walletAddress && (
+        <IDKitRequestWidget
+          open={isWorldModalOpen}
+          onOpenChange={setIsWorldModalOpen}
+          app_id={worldAppId as `app_${string}`}
+          action={worldActionId}
+          rp_context={rpContext}
+          allow_legacy_proofs={true}
+          preset={orbLegacy({ signal: walletAddress.toLowerCase() })}
+          onSuccess={handleWorldSuccess}
+          onError={(errorCode) => {
+            setErrorMsg(`World verification error: ${errorCode}`);
+            setWorldStatus("");
+          }}
+        />
+      )}
     </section>
   );
 }
