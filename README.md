@@ -42,6 +42,20 @@ wifiproof-v2/
 | **Database** | Supabase (PostgreSQL) | - |
 | **Chain** | Base | Mainnet & Sepolia |
 
+## PL_Genesis Existing-Code Upgrade
+
+This branch adds two sponsor-facing integrations for the hackathon:
+
+1. **World proof of humanity gate**
+- New server verification route: `POST /api/world/verify`
+- New signed short-lived world token (required by `POST /api/verify-ip`)
+- Claim flow now enforces World verification before subnet signature issuance
+
+2. **Storacha artifact archival**
+- New server archival route: `POST /api/claims/archive`
+- New lookup route: `GET /api/claims/:eventId/:wallet`
+- Stores claim artifact metadata + CID in Supabase `attendance_artifacts`
+
 ## Quick Start
 
 ### 1. Clone & Install
