@@ -74,9 +74,29 @@ export async function POST(request: Request) {
       timestamp: Math.floor(Date.now() / 1000),
     };
 
+    const supabase = getSupabaseAdmin();
+    const { data: existingEvent, error: eventLookupError } = await supabase
+      .from("events")
+      .select("event_id")
+      .eq("event_id", payload.eventId)
+      .maybeSingle();
+
+    if (eventLookupError) {
+      return NextResponse.json(
+        { error: "Failed to validate event", detail: eventLookupError.message },
+        { status: 500 }
+      );
+    }
+
+    if (!existingEvent) {
+      return NextResponse.json(
+        { error: "Event not found for artifact archive", detail: "Create event first, then archive." },
+        { status: 404 }
+      );
+    }
+
     const cid = await uploadAttendanceArtifact(payload);
 
-    const supabase = getSupabaseAdmin();
     const { error } = await supabase.from("attendance_artifacts").insert({
       event_id: payload.eventId,
       wallet: payload.wallet,
@@ -91,7 +111,11 @@ export async function POST(request: Request) {
 
     if (error) {
       return NextResponse.json(
-        { error: "Failed to persist artifact", detail: error.message },
+        {
+          error: "Failed to persist artifact",
+          detail: error.message,
+          code: error.code,
+        },
         { status: 500 }
       );
     }
