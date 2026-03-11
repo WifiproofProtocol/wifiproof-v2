@@ -10,9 +10,12 @@
     "insert-event": "tsx scripts/insert-event.ts"
   },
   "dependencies": {
+    "@storacha/client": "^2.1.1",
     "@supabase/supabase-js": "^2.90.1",
     "@wifiproof/common": "workspace:*",
     "@wifiproof/proof-app": "workspace:*",
+    "@worldcoin/idkit": "^4.0.8",
+    "@worldcoin/minikit-js": "^1.11.0",
     "framer-motion": "^12.26.2",
     "lucide-react": "^0.562.0",
     "next": "16.1.3",
