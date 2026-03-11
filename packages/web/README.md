@@ -67,6 +67,12 @@ Next.js frontend + API routes for WiFiProof V2.
 pnpm --filter web dev
 ```
 
+### Dev-only Storacha Archive Tester
+
+- Open: `http://localhost:3000/dev/archive-test`
+- Purpose: manually post a payload to `POST /api/claims/archive` and confirm CID archival.
+- This page is hidden in non-dev builds unless `ENABLE_DEV_TEST_PAGES=true`.
+
 ## Typecheck / Lint
 
 ```bash
