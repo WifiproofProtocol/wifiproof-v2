@@ -82,6 +82,11 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (eventLookupError) {
+      console.error("[claims/archive] Event lookup failed", {
+        eventId: payload.eventId,
+        message: eventLookupError.message,
+        code: eventLookupError.code,
+      });
       return NextResponse.json(
         { error: "Failed to validate event", detail: eventLookupError.message },
         { status: 500 }
@@ -89,13 +94,28 @@ export async function POST(request: Request) {
     }
 
     if (!existingEvent) {
+      console.warn("[claims/archive] Event not found", { eventId: payload.eventId });
       return NextResponse.json(
         { error: "Event not found for artifact archive", detail: "Create event first, then archive." },
         { status: 404 }
       );
     }
 
-    const cid = await uploadAttendanceArtifact(payload);
+    let cid = "";
+    try {
+      cid = await uploadAttendanceArtifact(payload);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Storacha upload failed";
+      console.error("[claims/archive] Storacha upload failed", {
+        eventId: payload.eventId,
+        wallet: payload.wallet,
+        message,
+      });
+      return NextResponse.json(
+        { error: "Failed to upload artifact", detail: message },
+        { status: 500 }
+      );
+    }
 
     const { error } = await supabase.from("attendance_artifacts").insert({
       event_id: payload.eventId,
@@ -110,6 +130,12 @@ export async function POST(request: Request) {
     });
 
     if (error) {
+      console.error("[claims/archive] Supabase insert failed", {
+        eventId: payload.eventId,
+        wallet: payload.wallet,
+        message: error.message,
+        code: error.code,
+      });
       return NextResponse.json(
         {
           error: "Failed to persist artifact",
@@ -123,6 +149,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, cid });
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unexpected error";
+    console.error("[claims/archive] Unexpected failure", { message: msg });
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
