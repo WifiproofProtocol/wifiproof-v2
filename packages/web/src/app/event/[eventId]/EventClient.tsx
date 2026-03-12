@@ -380,7 +380,21 @@ export default function EventClient({ eventId }: { eventId: string }) {
             setArtifactCid(archiveJson.cid);
           }
         } else {
-          setArchiveWarning("Claim succeeded, but decentralized archival failed.");
+          const archiveErrorText = await archiveRes.text();
+          let warning = "Claim succeeded, but decentralized archival failed.";
+          try {
+            const parsed = JSON.parse(archiveErrorText) as { error?: string; detail?: string };
+            if (parsed.error && parsed.detail) {
+              warning = `${warning} ${parsed.error}: ${parsed.detail}`;
+            } else if (parsed.error) {
+              warning = `${warning} ${parsed.error}`;
+            }
+          } catch {
+            if (archiveErrorText.trim()) {
+              warning = `${warning} ${archiveErrorText.trim()}`;
+            }
+          }
+          setArchiveWarning(warning);
         }
       }
 
