@@ -1,87 +1,86 @@
 "use client";
 import { motion } from "framer-motion";
-import { Globe, Shield, Zap, Users } from "lucide-react";
+import { CheckCircle2, Shield, Users, Zap } from "lucide-react";
 
 const cards = [
   {
-    title: "Conferences & Events",
-    desc: "Issue non-transferable attestations that actually require physical attendance. No more QR code farming from Twitter.",
-    icon: <Users className="w-8 h-8 text-white" />,
-    gradient: "from-cyan-600 to-blue-500",
+    title: "Make your event check-in harder to fake",
+    desc: "WiFiProof gives organizers a stronger signal than QR codes alone, because presence is anchored to the venue itself.",
+    icon: <Shield className="h-7 w-7" />,
+    tone:
+      "bg-[#1f1b18] text-[#f4efe6] border-white/10 [&_p]:text-[#ddd0c2] [&_svg]:text-[#ccb9a2]",
     className: "md:col-span-2",
   },
   {
-    title: "Sybil Guard",
-    desc: "Gated by Coinbase KYC for 1-person-1-proof integrity.",
-    icon: <Shield className="w-8 h-8 text-white" />,
-    gradient: "from-slate-600 to-cyan-800",
+    title: "Respect guest privacy",
+    desc: "You can verify presence without building another spreadsheet full of attendee contact data.",
+    icon: <Users className="h-7 w-7" />,
+    tone:
+      "bg-white/70 text-[#1f1b17] border-[#2d261d]/10 [&_p]:text-[#5d554d] [&_svg]:text-[#5f6f52]",
     className: "md:col-span-1",
   },
   {
-    title: "Instant Verification",
-    desc: "Proofs verified in seconds on Base L2.",
-    icon: <Zap className="w-8 h-8 text-white" />,
-    gradient: "from-blue-800 to-slate-700",
+    title: "Keep organizer control",
+    desc: "Organizer creation is allowlisted, so official venue check-ins stay in the hands of approved wallets.",
+    icon: <CheckCircle2 className="h-7 w-7" />,
+    tone:
+      "bg-[#efe2d0] text-[#1f1b17] border-[#2d261d]/10 [&_p]:text-[#5d554d] [&_svg]:text-[#ab6c42]",
     className: "md:col-span-1",
   },
   {
-    title: "Privacy Protocol",
-    desc: "Your coordinates never leave your device. The protocol only sees a 'True/False' verification of your proximity.",
-    icon: <Globe className="w-8 h-8 text-white" />,
-    gradient: "from-cyan-500 to-slate-600",
+    title: "Built for demos, conferences, campuses, and gated spaces",
+    desc: "Anywhere the real claim is “this person showed up,” the flow stays simple for guests and credible for organizers.",
+    icon: <Zap className="h-7 w-7" />,
+    tone:
+      "bg-white/70 text-[#1f1b17] border-[#2d261d]/10 [&_p]:text-[#5d554d] [&_svg]:text-[#5f6f52]",
     className: "md:col-span-2",
   },
 ];
 
 export default function BentoGrid() {
   return (
-    <section id="use-cases" className="py-24 relative bg-[#02040A]">
-      <div className="container mx-auto px-6">
+    <section id="organizers" className="bg-[#f3ede4] px-6 py-24 text-[#1f1b17]">
+      <div className="mx-auto max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="mb-16 max-w-3xl"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white tracking-tight">
-            Built for the <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Onchain Future</span>
+          <p className="section-kicker">For organizers</p>
+          <h2 className="display-type mt-4 text-4xl leading-tight tracking-[-0.03em] md:text-6xl">
+            Better proof for you. Less unnecessary exposure for everyone else.
           </h2>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            From conferences to retail, WiFiProof enables privacy-preserving
-            proof of presence for any venue.
+          <p className="mt-5 text-lg leading-8 text-[#5f564d]">
+            WiFiProof is strongest when the venue wants confidence without
+            turning the guest experience into a form-filling ritual.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[minmax(250px,auto)]">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 auto-rows-[minmax(240px,auto)]">
           {cards.map((card, i) => (
             <motion.div
-              key={i}
+              key={card.title}
               initial={{ opacity: 0, y: 40, scale: 0.95 }}
               whileInView={{ opacity: 1, y: 0, scale: 1 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ delay: i * 0.1 }}
-              whileHover={{ y: -5 }}
-              className={`group relative glass-panel p-8 rounded-3xl overflow-hidden ${card.className}`}
+              whileHover={{ y: -4 }}
+              className={`rounded-[2rem] border p-8 shadow-[0_24px_60px_rgba(57,43,30,0.08)] ${card.tone} ${card.className}`}
             >
-              {/* Animated Gradient Background on Hover */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
-
-              <div className="relative z-10 h-full flex flex-col">
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${card.gradient} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+              <div className="flex h-full flex-col">
+                <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-current/10 bg-current/5">
                   {card.icon}
                 </div>
 
-                <h3 className="text-2xl font-bold text-white mb-3 leading-tight">
+                <h3 className="text-2xl font-semibold leading-tight">
                   {card.title}
                 </h3>
 
-                <p className="text-gray-400 leading-relaxed group-hover:text-gray-200 transition-colors">
+                <p className="mt-4 leading-8">
                   {card.desc}
                 </p>
               </div>
-
-              {/* Decorative Blur */}
-              <div className={`absolute -bottom-10 -right-10 w-32 h-32 bg-gradient-to-br ${card.gradient} rounded-full blur-[60px] opacity-20 group-hover:opacity-40 transition-opacity`} />
             </motion.div>
           ))}
         </div>

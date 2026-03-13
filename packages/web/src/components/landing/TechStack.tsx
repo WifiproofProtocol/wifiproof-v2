@@ -1,66 +1,72 @@
 "use client";
+import Image from "next/image";
 import { motion } from "framer-motion";
 
 const techStack = [
-  { name: "Noir", desc: "ZK Circuits", color: "from-purple-500 to-purple-600", logo: "/brand/noirlang.png" },
-  { name: "Base", desc: "L2 Network", color: "from-blue-500 to-blue-600", logo: "/brand/logo-base.svg" },
-  { name: "EAS", desc: "Attestations", color: "from-green-500 to-green-600", logo: "/brand/eas-attestation.png" },
-  { name: "Coinbase KYC", desc: "Identity", color: "from-blue-400 to-blue-500", logo: null },
-  { name: "Foundry", desc: "Contracts", color: "from-orange-500 to-red-500", logo: null },
+  { name: "Noir", desc: "On-device proving", logo: "/brand/noirlang.png" },
+  { name: "Base", desc: "Settlement layer", logo: "/brand/logo-base.svg" },
+  { name: "EAS", desc: "Attendance attestations", logo: "/brand/eas-attestation.png" },
+  { name: "Human checks", desc: "Sybil resistance", logo: null },
+  { name: "Foundry", desc: "Contract tooling", logo: null },
 ];
 
 export default function TechStack() {
   return (
-    <section className="py-20 border-y border-white/5 relative overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-transparent to-purple-600/5" />
-
-      <div className="container mx-auto px-6 relative z-10">
-        <motion.p
+    <section className="border-y border-[#2d261d]/10 bg-[#e8ddcd]/70 px-6 py-20 text-[#1f1b17]">
+      <div className="mx-auto max-w-6xl">
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center text-gray-500 text-sm uppercase tracking-widest mb-10"
+          className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between"
         >
-          Powered by
-        </motion.p>
+          <div className="max-w-2xl">
+            <p className="section-kicker">Under the hood</p>
+            <h2 className="display-type mt-4 text-4xl leading-tight tracking-[-0.03em] md:text-5xl">
+              Serious infrastructure underneath a simple guest experience.
+            </h2>
+          </div>
+          <p className="max-w-xl text-sm leading-7 text-[#5f564d] md:text-base">
+            The story should feel human. The rails still matter: local proving,
+            an onchain settlement layer, and non-transferable attestations that
+            organizers can build on later.
+          </p>
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="flex flex-wrap items-center justify-center gap-6 md:gap-12"
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"
         >
           {techStack.map((tech, i) => (
             <motion.div
-              key={i}
+              key={tech.name}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
               whileHover={{ scale: 1.05, y: -2 }}
-              className="group relative px-6 py-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all duration-300 cursor-pointer"
+              className="rounded-[1.5rem] border border-[#2d261d]/10 bg-white/70 px-5 py-6 transition-all duration-300"
             >
-              {/* Glow effect */}
-              <div
-                className={`absolute inset-0 rounded-xl bg-gradient-to-br ${tech.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300 blur-xl`}
-              />
-
-              <div className="relative z-10 flex flex-col items-center gap-2">
+              <div className="flex h-full flex-col items-center gap-3 text-center">
                 {tech.logo ? (
-                  <img
+                  <Image
                     src={tech.logo}
                     alt={tech.name}
-                    className="h-7 w-auto object-contain opacity-80 group-hover:opacity-100 transition-opacity duration-300"
+                    width={112}
+                    height={28}
+                    className="h-7 w-auto object-contain opacity-90"
                   />
                 ) : (
-                  <div className={`text-lg font-bold bg-gradient-to-r ${tech.color} bg-clip-text text-transparent`}>
+                  <div className="text-lg font-semibold text-[#1f1b17]">
                     {tech.name}
                   </div>
                 )}
-                <div className="text-xs text-gray-500 uppercase tracking-wider">
-                  {tech.desc}
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
+                  {tech.name}
                 </div>
+                <div className="text-sm leading-6 text-[#5f564d]">{tech.desc}</div>
               </div>
             </motion.div>
           ))}

@@ -1,84 +1,132 @@
 "use client";
 import { motion } from "framer-motion";
 
+const dataRequests = [
+  "Email address",
+  "Phone number",
+  "Full legal name",
+  "Government ID",
+  "A public trail of where you went",
+];
+
+const proofSteps = [
+  {
+    number: "01",
+    title: "Join the venue network",
+    description:
+      "The guest connects to the venue Wi-Fi and opens the check-in page that belongs to that specific event.",
+  },
+  {
+    number: "02",
+    title: "Generate proof locally",
+    description:
+      "Their device proves proximity to the venue on-device, so the exact coordinates never have to leave the phone.",
+  },
+  {
+    number: "03",
+    title: "Issue attendance without oversharing",
+    description:
+      "The event mints a non-transferable proof of attendance instead of building a dossier on the guest.",
+  },
+];
+
 export default function Features() {
   return (
-    <section id="features" className="py-24 relative bg-[#010614]">
-      <div className="container px-6 mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          {/* Exposure Problem Section */}
-          <div className="grid lg:grid-cols-2 gap-16 items-center mb-32">
-            <div className="order-2 lg:order-1 relative rounded-2xl overflow-hidden border border-cyan-900/30 shadow-2xl bg-[#02040A]">
-              <img 
-                src="/brand/exposure-visual.png" 
-                alt="Public Exposure Problem Visual" 
-                className="w-full h-auto object-cover opacity-90"
-              />
-            </div>
+    <section id="problem" className="bg-[#f3ede4] px-6 py-24 text-[#1f1b17]">
+      <div className="mx-auto max-w-6xl space-y-20">
+        <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr]">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="max-w-2xl"
+          >
+            <p className="section-kicker">The check-in problem</p>
+            <h2 className="display-type mt-4 text-4xl leading-tight tracking-[-0.03em] text-[#1f1b17] md:text-6xl">
+              The only question a venue really needs answered is: were you here?
+            </h2>
+            <p className="mt-6 text-lg leading-8 text-[#5f564d]">
+              Most check-in flows collect identity by default because that is the
+              easiest product pattern on the web. WiFiProof starts from the
+              opposite premise: attendance should be verifiable without turning
+              guests into a row in a marketing database.
+            </p>
 
-            <div className="order-1 lg:order-2 space-y-6">
-              <h3 className="text-sm font-mono text-slate-500 mb-2 uppercase tracking-wider flex items-center gap-2">
-                <span className="w-2 h-2 bg-slate-500 rounded-full" />
-                The Status Quo
-              </h3>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight tracking-tight">
-                The <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-500">Exposure Problem</span>
-              </h2>
-              <p className="text-slate-400 text-lg leading-relaxed max-w-[65ch]">
-                Traditional public ledgers permanently broadcast your exact location history and behaviors to the world. A simple attendance claim shouldn't require compromising your operational security.
+            <blockquote className="paper-panel mt-8 rounded-[2rem] p-6 text-lg leading-8 text-[#372f28]">
+              “Presence is the thing being proven. Everything else is optional,
+              and most of it should stay private.”
+            </blockquote>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="space-y-3"
+          >
+            {dataRequests.map((item) => (
+              <div
+                key={item}
+                className="flex items-center justify-between gap-4 rounded-[1.4rem] border border-[#2d261d]/10 bg-white/65 px-5 py-4"
+              >
+                <span className="font-medium text-[#2b241f]">{item}</span>
+                <span className="rounded-full bg-[#efe3d2] px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#8c5a36]">
+                  Commonly requested
+                </span>
+              </div>
+            ))}
+            <div className="ink-panel rounded-[2rem] p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ccb9a2]">
+                WiFiProof instead
+              </p>
+              <p className="mt-4 text-lg leading-8 text-[#eee2d5]">
+                It reduces the claim to a single statement: this wallet was
+                physically present inside the event boundary during the event
+                window.
               </p>
             </div>
+          </motion.div>
+        </div>
+
+        <motion.div
+          id="how"
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="rounded-[2.5rem] bg-[#1f1b18] px-6 py-10 text-[#f5efe6] md:px-10 md:py-12"
+        >
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ccb9a2]">
+                How it works
+              </p>
+              <h3 className="display-type mt-3 text-4xl leading-tight tracking-[-0.03em] md:text-5xl">
+                Venue Wi-Fi becomes part of the proof, not just the password
+                everyone keeps asking for.
+              </h3>
+            </div>
+            <p className="max-w-xl text-sm leading-7 text-[#d7c7b6] md:text-base">
+              The experience stays simple for guests, but the claim is much
+              harder to fake than a QR code shared in a group chat.
+            </p>
           </div>
 
-          {/* How It Works Section */}
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div className="space-y-6">
-              <h3 className="text-sm font-mono text-cyan-400 mb-2 uppercase tracking-wider flex items-center gap-2">
-                <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
-                The Protocol
-              </h3>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight tracking-tight">
-                How WiFiProof Works
-              </h2>
-              
-              <div className="space-y-8 mt-8">
-                <div className="flex gap-4 items-start group">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-900/50 border border-cyan-500 flex items-center justify-center text-cyan-400 font-bold text-sm shadow-[0_0_15px_rgba(0,229,255,0.2)]">1</div>
-                  <div>
-                    <h4 className="text-white font-bold text-lg mb-1 group-hover:text-cyan-400 transition-colors">Scan & Check-In</h4>
-                    <p className="text-slate-400 text-base leading-relaxed">Connect to the venue subnet and scan the local QR code.</p>
-                  </div>
-                </div>
-                
-                <div className="flex gap-4 items-start group">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-900/50 border border-cyan-500 flex items-center justify-center text-cyan-400 font-bold text-sm shadow-[0_0_15px_rgba(0,229,255,0.2)]">2</div>
-                  <div>
-                    <h4 className="text-white font-bold text-lg mb-1 group-hover:text-cyan-400 transition-colors">Local Proof Generation</h4>
-                    <p className="text-slate-400 text-base leading-relaxed">Your device generates a ZK proof verifying proximity coordinates without broadcasting them.</p>
-                  </div>
-                </div>
-                
-                <div className="flex gap-4 items-start group">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-900/50 border border-cyan-500 flex items-center justify-center text-cyan-400 font-bold text-sm shadow-[0_0_15px_rgba(0,229,255,0.2)]">3</div>
-                  <div>
-                    <h4 className="text-white font-bold text-lg mb-1 group-hover:text-cyan-400 transition-colors">Onchain Attestation</h4>
-                    <p className="text-slate-400 text-base leading-relaxed">Mint a non-transferable EAS attestation that guarantees physical presence.</p>
-                  </div>
-                </div>
+          <div className="mt-10 grid gap-4 lg:grid-cols-3">
+            {proofSteps.map((step) => (
+              <div
+                key={step.number}
+                className="rounded-[2rem] border border-white/10 bg-white/5 p-6"
+              >
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#ccb9a2]">
+                  {step.number}
+                </p>
+                <h4 className="mt-4 text-2xl font-semibold text-white">{step.title}</h4>
+                <p className="mt-4 text-sm leading-7 text-[#ddd0c2] md:text-base">
+                  {step.description}
+                </p>
               </div>
-            </div>
-
-            <div className="relative rounded-2xl overflow-hidden border border-cyan-900/30 shadow-2xl bg-[#02040A]">
-              <img 
-                src="/brand/how-it-works-visual.png" 
-                alt="WiFiProof Technical Flow" 
-                className="w-full h-auto object-cover opacity-90"
-              />
-            </div>
+            ))}
           </div>
         </motion.div>
       </div>

@@ -1,43 +1,69 @@
 "use client";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, QrCode } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export default function FinalCTA() {
   return (
-    <section className="py-32 relative overflow-hidden bg-[#010614]">
-      {/* Background radial glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-900/10 rounded-full blur-[120px] pointer-events-none" />
-
-      <div className="container mx-auto px-6 relative z-10">
-        <div className="max-w-4xl mx-auto bg-[#02040A] border border-cyan-900/30 p-12 md:p-16 rounded-[2rem] text-center shadow-[0_0_80px_rgba(0,229,255,0.05)]">
+    <section className="bg-[#f3ede4] px-6 pb-24 pt-6 text-[#f5efe6]">
+      <div className="mx-auto max-w-6xl rounded-[2.5rem] bg-[#1f1b18] p-8 shadow-[0_28px_80px_rgba(15,11,8,0.2)] md:p-12">
+        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-white tracking-tighter">
-              Ready to secure <br className="hidden md:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">your next event?</span>
-            </h2>
-            <p className="text-slate-400 text-lg md:text-xl mb-12 max-w-2xl mx-auto leading-relaxed">
-              Stop relying on easily forged sign-in sheets and remote QR code farming. Guarantee physical presence starting today.
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ccb9a2]">
+              Ready for the next event
             </p>
+            <h2 className="display-type mt-4 text-4xl leading-tight tracking-[-0.04em] text-white md:text-6xl">
+              If the only thing you need to prove is presence, stop asking for
+              everything else.
+            </h2>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-[#d8cabd]">
+              Start with the organizer guide if you want to run a venue, or
+              jump straight to live events if you are attending. Organizer
+              access stays approval-based for the demo.
+            </p>
+          </motion.div>
 
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-              <a href="/organizer" className="w-full sm:w-auto px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-900 rounded-lg font-bold text-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98]">
-                I&apos;m an Organizer <ArrowRight className="w-5 h-5" />
-              </a>
-
-              <a
-                href="/events"
-                className="w-full sm:w-auto px-8 py-4 border border-cyan-900/50 bg-slate-900/50 backdrop-blur-md rounded-lg flex items-center justify-center gap-4 hover:border-cyan-500/40 transition-colors"
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="grid gap-4"
+          >
+            <div className="rounded-[2rem] border border-white/10 bg-white/6 p-6">
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#ccb9a2]">
+                For organizers
+              </p>
+              <p className="mt-4 text-base leading-7 text-[#ede2d6]">
+                Learn the value story first, request access if your wallet is
+                not approved yet, then move into setup when you are ready.
+              </p>
+              <Link
+                href="/organizer"
+                className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#f5efe6] px-5 py-3 text-sm font-medium text-[#1f1b18] transition hover:bg-white"
               >
-                <QrCode className="w-6 h-6 text-cyan-400 flex-shrink-0" />
-                <div className="flex flex-col text-left">
-                  <span className="font-bold text-white text-sm">I&apos;m Attending</span>
-                  <span className="text-xs text-slate-400">Find active events and check-in</span>
-                </div>
-              </a>
+                Open organizer guide <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            <div className="rounded-[2rem] border border-white/10 bg-transparent p-6">
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#ccb9a2]">
+                For attendees
+              </p>
+              <p className="mt-4 text-base leading-7 text-[#d8cabd]">
+                Browse live events, connect at the venue, and check in without a
+                generic sign-up wall getting in the way.
+              </p>
+              <Link
+                href="/events"
+                className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/14 px-5 py-3 text-sm font-medium text-[#f5efe6] transition hover:bg-white/8"
+              >
+                Browse live events <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
           </motion.div>
         </div>

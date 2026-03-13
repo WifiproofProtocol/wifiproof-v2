@@ -41,26 +41,26 @@ export default function DateTimePicker({ label, value, onChange, minDate }: Prop
 
   return (
     <div className="relative" ref={containerRef}>
-      <span className="mb-2 block text-sm font-medium text-slate-300">{label}</span>
+      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
+        {label}
+      </span>
 
-      {/* Trigger button */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-3 rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 text-left text-sm transition-colors hover:border-cyan-700/50 focus:outline-none focus:border-cyan-500/50"
+        className="flex w-full items-center justify-between gap-3 rounded-[1.25rem] border border-[#d2c5b0] bg-[#fbf7ee] px-4 py-3.5 text-left text-sm text-[#1f1b17] shadow-sm transition-colors hover:border-[#aa9272] focus:border-[#8c765b] focus:outline-none"
       >
-        <span className={value ? "text-white" : "text-slate-500"}>
+        <span className={value ? "text-[#1f1b17]" : "text-[#948674]"}>
           {formatDisplay(value)}
         </span>
-        <span className="flex shrink-0 items-center gap-1.5 text-cyan-400">
+        <span className="flex shrink-0 items-center gap-1.5 text-[#7b684f]">
           <CalendarDays className="h-4 w-4" />
           <Clock3 className="h-3.5 w-3.5" />
         </span>
       </button>
 
-      {/* Popup */}
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 rounded-2xl border border-cyan-900/40 bg-[#0a0f1a] p-4 shadow-2xl">
+        <div className="absolute left-0 top-full z-50 mt-2 w-[min(100vw-2rem,340px)] rounded-[1.5rem] border border-[#d2c5b0] bg-[#f8f2e8] p-4 shadow-[0_24px_60px_rgba(57,43,30,0.12)]">
           <ReactDatePicker
             selected={value}
             onChange={(date: Date | null) => {
@@ -92,18 +92,18 @@ export default function DateTimePicker({ label, value, onChange, minDate }: Prop
                   type="button"
                   onClick={decreaseMonth}
                   disabled={prevMonthButtonDisabled}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-cyan-900/30 hover:text-cyan-300 disabled:opacity-30"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-[#75695d] transition-colors hover:bg-[#efe2d0] hover:text-[#7b4d2e] disabled:opacity-30"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <span className="text-sm font-semibold text-white">
+                <span className="text-sm font-semibold text-[#1f1b17]">
                   {date.toLocaleString(undefined, { month: "long", year: "numeric" })}
                 </span>
                 <button
                   type="button"
                   onClick={increaseMonth}
                   disabled={nextMonthButtonDisabled}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-cyan-900/30 hover:text-cyan-300 disabled:opacity-30"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-[#75695d] transition-colors hover:bg-[#efe2d0] hover:text-[#7b4d2e] disabled:opacity-30"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
@@ -114,7 +114,7 @@ export default function DateTimePicker({ label, value, onChange, minDate }: Prop
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="rounded-lg bg-cyan-500 px-4 py-1.5 text-sm font-semibold text-slate-900 transition-colors hover:bg-cyan-400"
+              className="rounded-full bg-[#201b18] px-4 py-1.5 text-sm font-semibold text-[#f7f1e7] transition-colors hover:bg-[#362e27]"
             >
               Done
             </button>

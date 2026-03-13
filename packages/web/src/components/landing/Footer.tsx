@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { Github } from "lucide-react";
 import Image from "next/image";
 
@@ -11,16 +12,11 @@ const XIcon = ({ className }: { className?: string }) => (
 
 export default function Footer() {
   return (
-    <footer className="bg-[#02040A] border-t border-cyan-900/20 py-12 relative overflow-hidden">
-      {/* Background Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-cyan-900/10 rounded-full blur-[100px]" />
-
-      <div className="container mx-auto px-6 relative z-10">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-
-          {/* Brand */}
+    <footer className="border-t border-[#2d261d]/10 bg-[#191612] py-12 text-[#f5efe6]">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
           <div className="text-center md:text-left">
-            <a href="/" className="flex items-center gap-2 justify-center md:justify-start mb-2">
+            <Link href="/" className="mb-3 inline-flex items-center gap-2 justify-center md:justify-start">
               <div className="relative w-8 h-8 rounded-lg overflow-hidden">
                 <Image
                   src="/WifiProofLogo.png"
@@ -29,20 +25,26 @@ export default function Footer() {
                   className="object-contain"
                 />
               </div>
-              <span className="font-bold text-xl text-white">WiFiProof</span>
-            </a>
-            <p className="text-slate-500 text-sm">
-              The Protocol for Presence. Built on Base.
+              <span className="text-xl font-semibold text-white">WiFiProof</span>
+            </Link>
+            <p className="max-w-sm text-sm leading-7 text-[#cdbfab]">
+              Proof of presence for venues that want real attendance without
+              turning guests into another data source.
             </p>
           </div>
 
-          {/* Links */}
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-[#d7c9b8] md:justify-end">
+            <Link href="/organizer" className="transition hover:text-white">
+              Organizer guide
+            </Link>
+            <Link href="/events" className="transition hover:text-white">
+              Live events
+            </Link>
             <a
-              href="https://twitter.com/WiFiProof"
+              href="https://x.com/WiFiProof"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-slate-400 hover:text-cyan-400 transition-colors"
+              className="transition hover:text-white"
             >
               <span className="sr-only">X (Twitter)</span>
               <XIcon className="w-5 h-5" />
@@ -51,7 +53,7 @@ export default function Footer() {
               href="https://github.com/WifiproofProtocol"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-slate-400 hover:text-cyan-400 transition-colors"
+              className="transition hover:text-white"
             >
               <span className="sr-only">GitHub</span>
               <Github className="w-5 h-5" />
@@ -59,11 +61,11 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-cyan-900/20 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-500">
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/8 pt-8 text-sm text-[#9e9384] md:flex-row">
           <p>© 2026 WiFiProof Protocol. All rights reserved.</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-cyan-400 transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-cyan-400 transition-colors">Terms of Service</a>
+            <a href="#" className="transition hover:text-white">Privacy Policy</a>
+            <a href="#" className="transition hover:text-white">Terms of Service</a>
           </div>
         </div>
       </div>

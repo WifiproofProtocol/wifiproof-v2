@@ -138,9 +138,9 @@ export default function WalletCard({
 
   if (walletState === "checking") {
     return (
-      <div className="flex items-center gap-3 rounded-2xl border border-cyan-900/30 bg-slate-900/50 p-6 text-cyan-400">
+      <div className="flex items-center gap-3 rounded-[1.75rem] border border-[#d2c5b0] bg-[#fbf7ee] p-6 text-[#1f1b17]">
         <Loader2 className="h-5 w-5 animate-spin" />
-        <span className="font-medium">Detecting wallet environment...</span>
+        <span className="font-medium">Checking wallet environment...</span>
       </div>
     );
   }
@@ -153,24 +153,25 @@ export default function WalletCard({
     const metamaskLink = `https://metamask.app.link/dapp/${href.replace(/^https?:\/\//, "")}`;
 
     return (
-      <div className="space-y-6 rounded-2xl border border-cyan-900/30 bg-slate-900/50 p-6">
-        <div className="flex items-center gap-3 text-amber-400">
+      <div className="space-y-6 rounded-[1.75rem] border border-[#d2c5b0] bg-[#fbf7ee] p-6">
+        <div className="flex items-center gap-3 text-[#8c5a36]">
           <Smartphone className="h-6 w-6" />
-          <h3 className="text-lg font-semibold">Web3 Wallet Required</h3>
+          <h3 className="text-lg font-semibold text-[#1f1b17]">Open with a wallet</h3>
         </div>
-        <p className="text-sm leading-relaxed text-slate-400">
-          Open this page inside a wallet browser to continue.
+        <p className="text-sm leading-7 text-[#5f564d]">
+          Event creation needs a wallet browser so the organizer can sign the
+          transaction on Base Sepolia.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <a
             href={coinbaseLink}
-            className="flex items-center justify-center rounded-xl bg-blue-600 px-4 py-3 font-medium text-white transition-colors hover:bg-blue-500"
+            className="flex items-center justify-center rounded-[1rem] bg-[#201b18] px-4 py-3 font-medium text-[#f7f1e7] transition-colors hover:bg-[#362e27]"
           >
             Open in Coinbase
           </a>
           <a
             href={metamaskLink}
-            className="flex items-center justify-center rounded-xl bg-orange-600 px-4 py-3 font-medium text-white transition-colors hover:bg-orange-500"
+            className="flex items-center justify-center rounded-[1rem] border border-[#d2c5b0] bg-white px-4 py-3 font-medium text-[#1f1b17] transition-colors hover:bg-[#f3ebdf]"
           >
             Open in MetaMask
           </a>
@@ -181,18 +182,18 @@ export default function WalletCard({
 
   if (walletState === "wrong_network") {
     return (
-      <div className="space-y-4 rounded-2xl border border-red-900/30 bg-red-950/20 p-6">
-        <div className="flex items-center gap-3 text-red-400">
+      <div className="space-y-4 rounded-[1.75rem] border border-[#d7b7b0] bg-[#fff3f0] p-6">
+        <div className="flex items-center gap-3 text-[#a5483c]">
           <AlertTriangle className="h-6 w-6" />
-          <h3 className="text-lg font-semibold">Wrong Network</h3>
+          <h3 className="text-lg font-semibold text-[#1f1b17]">Wrong network</h3>
         </div>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm leading-7 text-[#5f564d]">
           Switch to Base Sepolia to continue.
         </p>
         <button
           onClick={switchNetwork}
           disabled={isSwitching}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/50 bg-red-500/10 px-4 py-3 font-bold text-red-400 transition-all hover:bg-red-500/20 disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-[1rem] bg-[#201b18] px-4 py-3 font-semibold text-[#f7f1e7] transition-all hover:bg-[#362e27] disabled:opacity-50"
         >
           {isSwitching ? (
             <>
@@ -209,14 +210,14 @@ export default function WalletCard({
 
   if (!walletAddress) {
     return (
-      <div className="space-y-4 rounded-2xl border border-cyan-900/30 bg-slate-900/50 p-6">
-        <h3 className="text-lg font-semibold text-white">Connect Wallet</h3>
-        <p className="text-sm text-slate-400">
-          Connect a wallet to continue.
+      <div className="space-y-4 rounded-[1.75rem] border border-[#d2c5b0] bg-[#fbf7ee] p-6">
+        <h3 className="text-lg font-semibold text-[#1f1b17]">Connect wallet</h3>
+        <p className="text-sm leading-7 text-[#5f564d]">
+          Connect the organizer wallet you want to use for event creation.
         </p>
         <button
           onClick={connectAndCheck}
-          className="w-full rounded-xl bg-cyan-500 px-4 py-3 font-bold text-slate-900 transition-all hover:bg-cyan-400 active:scale-[0.98]"
+          className="w-full rounded-[1rem] bg-[#201b18] px-4 py-3 font-semibold text-[#f7f1e7] transition-all hover:bg-[#362e27] active:scale-[0.98]"
         >
           Connect Wallet
         </button>
@@ -225,19 +226,19 @@ export default function WalletCard({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-cyan-900/40 bg-cyan-950/20 p-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-3 text-cyan-400">
+    <div className="flex flex-col gap-3 rounded-[1.5rem] border border-[#d2c5b0] bg-[#fbf7ee] p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center gap-3 text-[#5f6f52]">
         <CheckCircle2 className="h-5 w-5" />
-        <span className="text-sm font-medium text-slate-200">
+        <span className="text-sm font-medium text-[#1f1b17]">
           Connected:{" "}
-          <span className="font-mono text-cyan-400">
+          <span className="font-mono text-[#5f6f52]">
             {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
           </span>
         </span>
       </div>
       <button
         onClick={onReady}
-        className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-bold text-slate-900 transition-colors hover:bg-cyan-400"
+        className="rounded-full bg-[#201b18] px-4 py-2 text-sm font-semibold text-[#f7f1e7] transition-colors hover:bg-[#362e27]"
       >
         Continue
       </button>

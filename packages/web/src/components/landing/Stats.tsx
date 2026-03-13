@@ -1,87 +1,52 @@
 "use client";
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 
 const stats = [
-  { value: 108, suffix: "", label: "ACIR_OPCODES", prefix: "" },
-  { value: 100, suffix: "%", label: "VERIFICATION_RATE", prefix: "" },
-  { value: 0, suffix: "", label: "DATA_LEAKS", prefix: "" },
-  { value: 1, suffix: "", label: "PROOF_PER_PERSON", prefix: "" },
+  {
+    value: "0",
+    label: "guest emails required",
+    detail: "The proof is about presence, not lead capture.",
+  },
+  {
+    value: "0",
+    label: "exact coordinates published",
+    detail: "Location stays on-device during the proof flow.",
+  },
+  {
+    value: "2",
+    label: "on-site signals combined",
+    detail: "Venue Wi-Fi and physical proximity work together.",
+  },
+  {
+    value: "1",
+    label: "event page to print and share",
+    detail: "Organizers finish with a single QR-linked check-in page.",
+  },
 ];
-
-function AnimatedNumber({
-  value,
-  suffix,
-  prefix,
-}: {
-  value: number;
-  suffix: string;
-  prefix: string;
-}) {
-  const count = useMotionValue(0);
-  const rounded = useTransform(count, (latest) => Math.round(latest));
-  const ref = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          animate(count, value, { duration: 2, ease: "circOut" });
-        }
-      },
-      { threshold: 0.5 }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, [count, value]);
-
-  return (
-    <span ref={ref} className="tabular-nums tracking-tighter">
-      {prefix}
-      <motion.span>{rounded}</motion.span>
-      {suffix}
-    </span>
-  );
-}
 
 export default function Stats() {
   return (
-    <section className="py-24 relative border-y border-white/5 bg-[#050505]">
-      <div className="container mx-auto px-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10 border border-white/10">
-          {stats.map((stat, i) => (
-            <div key={i} className="bg-[#050505] p-8 group hover:bg-[#0a0a0a] transition-colors relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="flex flex-col items-center"
-              >
-                <div className="text-4xl md:text-5xl font-mono font-bold text-white mb-2">
-                  <AnimatedNumber
-                    value={stat.value}
-                    suffix={stat.suffix}
-                    prefix={stat.prefix}
-                  />
-                </div>
-                <div className="text-gray-500 font-mono text-xs uppercase tracking-widest">
-                  {stat.label}
-                </div>
-              </motion.div>
-            </div>
+    <section className="bg-[#f3ede4] px-6 pb-24">
+      <div className="mx-auto max-w-6xl rounded-[2.5rem] border border-[#2d261d]/10 bg-[#e7dccb] p-6 md:p-8">
+        <div className="grid gap-px overflow-hidden rounded-[2rem] border border-[#2d261d]/10 bg-[#2d261d]/10 md:grid-cols-4">
+          {stats.map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.08 }}
+              className="bg-[#f8f3ea] p-6 md:p-7"
+            >
+              <p className="display-type text-5xl tracking-[-0.05em] text-[#1f1b17]">
+                {stat.value}
+              </p>
+              <p className="mt-3 text-sm font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
+                {stat.label}
+              </p>
+              <p className="mt-4 text-sm leading-7 text-[#5b5249]">{stat.detail}</p>
+            </motion.div>
           ))}
-        </div>
-
-        <div className="mt-4 flex justify-between font-mono text-[10px] text-gray-600 uppercase">
-          <span>SystemStatus: ORBITAL</span>
-          <span>Uptime: 99.99%</span>
         </div>
       </div>
     </section>
