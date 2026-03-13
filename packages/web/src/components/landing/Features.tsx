@@ -1,61 +1,48 @@
 "use client";
 import { motion } from "framer-motion";
 
-const dataRequests = [
-  "Email address",
-  "Phone number",
-  "Full legal name",
-  "Government ID",
-  "A public trail of where you went",
+const oldWay = [
+  "Ask for email, name, phone, maybe ID",
+  "Trust a QR code by itself",
+  "Store more personal data than the proof needs",
+];
+
+const newWay = [
+  "Use venue Wi-Fi as a real on-site signal",
+  "Prove proximity with ZK geolocation",
+  "Issue attendance proof without oversharing",
 ];
 
 const proofSteps = [
-  {
-    number: "01",
-    title: "Join the venue network",
-    description:
-      "The guest connects to the venue Wi-Fi and opens the check-in page that belongs to that specific event.",
-  },
-  {
-    number: "02",
-    title: "Generate proof locally",
-    description:
-      "Their device proves proximity to the venue on-device, so the exact coordinates never have to leave the phone.",
-  },
-  {
-    number: "03",
-    title: "Issue attendance without oversharing",
-    description:
-      "The event mints a non-transferable proof of attendance instead of building a dossier on the guest.",
-  },
+  ["Arrive", "Connect to the venue network and open the event page."],
+  ["Prove", "Your device generates the proximity proof locally."],
+  ["Check in", "The event issues proof of attendance instead of collecting extra identity data."],
 ];
 
 export default function Features() {
   return (
-    <section id="problem" className="bg-[#f3ede4] px-6 py-24 text-[#1f1b17]">
-      <div className="mx-auto max-w-6xl space-y-20">
-        <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr]">
+    <section id="story" className="bg-[#f4f8ff] px-6 py-24 text-[#10233f]">
+      <div className="mx-auto max-w-6xl space-y-16">
+        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="max-w-2xl"
           >
-            <p className="section-kicker">The check-in problem</p>
-            <h2 className="display-type mt-4 text-4xl leading-tight tracking-[-0.03em] text-[#1f1b17] md:text-6xl">
-              The only question a venue really needs answered is: were you here?
+            <p className="section-kicker">The story</p>
+            <h2 className="display-type mt-4 text-4xl leading-tight tracking-[-0.03em] text-[#10233f] md:text-6xl">
+              People arrive and ask for Wi-Fi. That is the anchor.
             </h2>
-            <p className="mt-6 text-lg leading-8 text-[#5f564d]">
-              Most check-in flows collect identity by default because that is the
-              easiest product pattern on the web. WiFiProof starts from the
-              opposite premise: attendance should be verifiable without turning
-              guests into a row in a marketing database.
+            <p className="mt-6 text-lg leading-8 text-[#52637e]">
+              At hackathons, conferences, and venues, the first question is usually
+              “what’s the Wi-Fi password?” WiFiProof uses that real-world behavior
+              to prove someone was actually there, without turning check-in into a
+              data collection form.
             </p>
-
-            <blockquote className="paper-panel mt-8 rounded-[2rem] p-6 text-lg leading-8 text-[#372f28]">
-              “Presence is the thing being proven. Everything else is optional,
-              and most of it should stay private.”
-            </blockquote>
+            <p className="mt-6 text-base leading-7 text-[#61728d]">
+              The point is simple: prove presence, not identity exhaust.
+            </p>
           </motion.div>
 
           <motion.div
@@ -63,28 +50,37 @@ export default function Features() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="space-y-3"
+            className="grid gap-4 md:grid-cols-2"
           >
-            {dataRequests.map((item) => (
-              <div
-                key={item}
-                className="flex items-center justify-between gap-4 rounded-[1.4rem] border border-[#2d261d]/10 bg-white/65 px-5 py-4"
-              >
-                <span className="font-medium text-[#2b241f]">{item}</span>
-                <span className="rounded-full bg-[#efe3d2] px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#8c5a36]">
-                  Commonly requested
-                </span>
+            <div className="paper-panel rounded-[2rem] p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2563eb]">
+                Old check-in
+              </p>
+              <div className="mt-5 space-y-3">
+                {oldWay.map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-2xl border border-[#d6e5fb] bg-[#f8fbff] px-4 py-3 text-sm leading-6 text-[#3d5478]"
+                  >
+                    {item}
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
             <div className="ink-panel rounded-[2rem] p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ccb9a2]">
-                WiFiProof instead
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#cfe1ff]">
+                WiFiProof
               </p>
-              <p className="mt-4 text-lg leading-8 text-[#eee2d5]">
-                It reduces the claim to a single statement: this wallet was
-                physically present inside the event boundary during the event
-                window.
-              </p>
+              <div className="mt-5 space-y-3">
+                {newWay.map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm leading-6 text-[#e3edff]"
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
             </div>
           </motion.div>
         </div>
@@ -94,36 +90,34 @@ export default function Features() {
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="rounded-[2.5rem] bg-[#1f1b18] px-6 py-10 text-[#f5efe6] md:px-10 md:py-12"
+          className="rounded-[2.5rem] border border-[#cfe1ff] bg-white/86 px-6 py-10 text-[#10233f] shadow-[0_24px_80px_rgba(37,99,235,0.08)] md:px-10 md:py-12"
         >
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div className="max-w-2xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ccb9a2]">
+              <p className="section-kicker">
                 How it works
               </p>
               <h3 className="display-type mt-3 text-4xl leading-tight tracking-[-0.03em] md:text-5xl">
-                Venue Wi-Fi becomes part of the proof, not just the password
-                everyone keeps asking for.
+                Three steps. One simple claim: you were there.
               </h3>
             </div>
-            <p className="max-w-xl text-sm leading-7 text-[#d7c7b6] md:text-base">
-              The experience stays simple for guests, but the claim is much
-              harder to fake than a QR code shared in a group chat.
+            <p className="max-w-xl text-sm leading-7 text-[#52637e] md:text-base">
+              Easy for guests. Stronger for organizers than QR-only check-ins.
             </p>
           </div>
 
           <div className="mt-10 grid gap-4 lg:grid-cols-3">
-            {proofSteps.map((step) => (
+            {proofSteps.map(([title, description], index) => (
               <div
-                key={step.number}
-                className="rounded-[2rem] border border-white/10 bg-white/5 p-6"
+                key={title}
+                className="rounded-[2rem] border border-[#d6e5fb] bg-[#f8fbff] p-6"
               >
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#ccb9a2]">
-                  {step.number}
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#2563eb]">
+                  0{index + 1}
                 </p>
-                <h4 className="mt-4 text-2xl font-semibold text-white">{step.title}</h4>
-                <p className="mt-4 text-sm leading-7 text-[#ddd0c2] md:text-base">
-                  {step.description}
+                <h4 className="mt-4 text-2xl font-semibold text-[#10233f]">{title}</h4>
+                <p className="mt-4 text-sm leading-7 text-[#52637e] md:text-base">
+                  {description}
                 </p>
               </div>
             ))}
