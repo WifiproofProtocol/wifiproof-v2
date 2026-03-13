@@ -25,8 +25,17 @@ Next.js frontend + API routes for WiFiProof V2.
 - `VERIFIER_ADDRESS`
 - `BASE_RPC_URL`
 - `CHAIN_ID`
+- `SIGNER_MODE` (`key` or `lit`; default `key`)
 - `IP_SIGNER_PRIVATE_KEY`
 - `EVENT_SIGNER_PRIVATE_KEY` (optional fallback to IP signer)
+- `LIT_PKP_PUBLIC_KEY` (required when `SIGNER_MODE=lit`)
+- `LIT_EOA_PRIVATE_KEY` (required when `SIGNER_MODE=lit` for EOA auth context)
+- `LIT_NETWORK` (optional, default `naga-test`)
+- `LIT_PKP_SIGNER_ADDRESS` (optional safety check against PKP pubkey)
+- `LIT_AUTH_STORAGE_PATH` (optional, default `/tmp/wifiproof-lit-auth`)
+- `LIT_APP_NAME` (optional, default `wifiproof`)
+- `LIT_AUTH_DOMAIN` (optional, default `wifiproof.xyz`)
+- `LIT_AUTH_STATEMENT` (optional SIWE statement)
 - `WORLD_CLIENT_SECRET` (optional, depending on World verify configuration)
 - `WORLD_TOKEN_SECRET`
 - `WORLD_TOKEN_TTL_SECONDS` (optional, default `900`)
@@ -60,6 +69,14 @@ Next.js frontend + API routes for WiFiProof V2.
 
 - `GET /api/claims/[eventId]/[wallet]`
   - Returns latest archived artifact row for demo/audit
+
+## Signer Modes
+
+- `SIGNER_MODE=key`:
+  - Uses `IP_SIGNER_PRIVATE_KEY` / `EVENT_SIGNER_PRIVATE_KEY` directly.
+- `SIGNER_MODE=lit`:
+  - Uses Lit V1/Naga PKP signer via `src/lib/lit-signer.ts`.
+  - Server never uses the contract signer private key directly.
 
 ## Local Development
 
