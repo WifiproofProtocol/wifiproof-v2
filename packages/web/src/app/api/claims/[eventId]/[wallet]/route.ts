@@ -31,7 +31,7 @@ export async function GET(
     const { data, error } = await supabase
       .from("attendance_artifacts")
       .select(
-        "event_id, wallet, tx_hash, attestation_uid, proof_hash, public_inputs_hash, world_nullifier_hash, cid, network, created_at"
+        "event_id, wallet, tx_hash, attestation_uid, proof_hash, public_inputs_hash, cid, network, created_at"
       )
       .eq("event_id", eventId)
       .eq("wallet", wallet)
