@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import QRCode from "qrcode";
 import {
@@ -139,6 +140,33 @@ export default function OrganizerClient() {
     [rpcUrl]
   );
 
+  const stageLabels = [
+    "Connect wallet",
+    "Configure venue",
+    "Authorize event",
+    "Share check-in",
+  ] as const;
+
+  const processingSteps = [
+    { label: "Prepare payload", match: "Preparing event payload" },
+    { label: "Compute venue hash", match: "Computing venue hash" },
+    { label: "Generate organizer proof", match: "Generating organizer proof" },
+    { label: "Check organizer access", match: "Requesting organizer authorization" },
+    { label: "Confirm wallet transaction", match: "Confirm transaction in your wallet" },
+    { label: "Wait for chain confirmation", match: "Waiting for Base Sepolia confirmation" },
+    { label: "Save event metadata", match: "Saving metadata" },
+  ] as const;
+
+  const inputClass =
+    "w-full rounded-[1.25rem] border border-[#d2c5b0] bg-[#fbf7ee] px-4 py-3.5 text-[#1f1b17] placeholder:text-[#948674] shadow-sm transition focus:border-[#8c765b] focus:outline-none";
+  const labelClass =
+    "mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]";
+
+  const processingIndex = Math.max(
+    processingSteps.findIndex((item) => statusMsg.includes(item.match)),
+    0
+  );
+
   async function handleUseCurrentLocation() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -175,6 +203,8 @@ export default function OrganizerClient() {
       const lat = Number(venueLat);
       const lon = Number(venueLon);
       const radius = Number(radiusMeters);
+      const normalizedVenueName = venueName.trim();
+      const normalizedSubnetPrefix = subnetPrefix.trim();
 
       const start = Math.floor(startDateTime.getTime() / 1000);
       const end = Math.floor(endDateTime.getTime() / 1000);
@@ -185,8 +215,11 @@ export default function OrganizerClient() {
       if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end) {
         throw new Error("Invalid event times.");
       }
+      if (!normalizedVenueName || !normalizedSubnetPrefix) {
+        throw new Error("Missing required fields.");
+      }
 
-      const eventSeed = `${venueName}:${start}:${end}`;
+      const eventSeed = `${normalizedVenueName}:${start}:${end}`;
       const derivedEventId = keccak256(toBytes(eventSeed));
       const scaledLat = BigInt(toScaled(lat));
       const scaledLon = BigInt(toScaled(lon));
@@ -243,9 +276,9 @@ export default function OrganizerClient() {
           venueHash: computedVenueHash,
           startTime: start,
           endTime: end,
-          venueName,
+          venueName: normalizedVenueName,
           deadline,
-          subnetPrefix,
+          subnetPrefix: normalizedSubnetPrefix,
           proof: proofHex,
           publicInputs: publicInputsBytes32,
         }),
@@ -254,7 +287,14 @@ export default function OrganizerClient() {
       if (!authorizeResponse.ok) {
         throw new Error(`Authorization failed: ${await authorizeResponse.text()}`);
       }
-      const { signature } = (await authorizeResponse.json()) as { signature: `0x${string}` };
+      const { signature, metadataToken } = (await authorizeResponse.json()) as {
+        signature?: `0x${string}`;
+        metadataToken?: string;
+      };
+
+      if (!signature || !metadataToken) {
+        throw new Error("Authorization response missing required fields.");
+      }
 
       setStatusMsg("Confirm transaction in your wallet...");
       const ethereum = getEthereum();
@@ -275,7 +315,7 @@ export default function OrganizerClient() {
           computedVenueHash,
           BigInt(start),
           BigInt(end),
-          venueName,
+          normalizedVenueName,
           BigInt(deadline),
           signature,
         ],
@@ -292,19 +332,22 @@ export default function OrganizerClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          organizer: walletAddress,
           eventId: derivedEventId,
           venueHash: computedVenueHash,
-          subnetPrefix,
+          subnetPrefix: normalizedSubnetPrefix,
           startTime: start,
           endTime: end,
-          venueName,
+          venueName: normalizedVenueName,
           venueLat: lat,
           venueLon: lon,
           radiusMeters: radius,
+          txHash,
+          metadataToken,
         }),
       });
       if (!saveResponse.ok) {
-        throw new Error("Failed to save event metadata.");
+        throw new Error(`Failed to save event metadata: ${await saveResponse.text()}`);
       }
 
       const eventUrl = `${window.location.origin}/event/${derivedEventId}`;
@@ -322,181 +365,433 @@ export default function OrganizerClient() {
       setStatusMsg("");
     } catch (error) {
       setErrorMsg((error as Error).message);
-      setStep(1);
+      setStep(walletAddress ? 1 : 0);
     }
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight text-white">Event Setup</h1>
-        <p className="text-lg text-slate-400">
-          Secure your venue with zero-knowledge attendance.
+    <div className="mx-auto max-w-6xl space-y-8">
+      <div className="space-y-3">
+        <p className="section-kicker">Organizer setup</p>
+        <h1 className="display-type text-4xl leading-tight tracking-[-0.03em] text-[#1f1b17] md:text-6xl">
+          Build the check-in page your guests will actually trust.
+        </h1>
+        <p className="max-w-3xl text-lg leading-8 text-[#5f564d]">
+          Once your wallet is approved, this form packages the minimum required
+          data into a venue proof flow: event name, venue boundary, Wi-Fi
+          subnet, event window, and the attendee page you will display on-site.
         </p>
       </div>
 
+      <div className="grid gap-3 md:grid-cols-4">
+        {stageLabels.map((label, index) => {
+          const isActive = step === index;
+          const isComplete = step > index;
+
+          return (
+            <div
+              key={label}
+              className={`rounded-[1.4rem] border px-4 py-4 transition-colors ${
+                isActive
+                  ? "border-[#7b684f] bg-[#efe2d0]"
+                  : isComplete
+                    ? "border-[#a8c09b] bg-[#eef4ea]"
+                    : "border-[#d2c5b0] bg-white/55"
+              }`}
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
+                Step {index + 1}
+              </p>
+              <p className="mt-2 text-sm font-semibold text-[#1f1b17]">{label}</p>
+            </div>
+          );
+        })}
+      </div>
+
       {errorMsg && (
-        <div className="flex items-start gap-3 rounded-xl border border-red-900/50 bg-red-950/30 p-4 text-red-400">
+        <div className="flex items-start gap-3 rounded-[1.5rem] border border-[#d8b3ab] bg-[#fff2ef] p-4 text-[#a5483c]">
           <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
-          <p className="text-sm font-medium leading-relaxed">{errorMsg}</p>
+          <p className="text-sm font-medium leading-7">{errorMsg}</p>
         </div>
       )}
 
       {step === 0 && (
-        <WalletCard
-          walletAddress={walletAddress}
-          setWalletAddress={setWalletAddress}
-          onReady={() => setStep(1)}
-        />
+        <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="rounded-[2rem] border border-[#d2c5b0] bg-white/70 p-6 shadow-[0_24px_60px_rgba(57,43,30,0.08)] md:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
+              Step 1
+            </p>
+            <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#1f1b17] md:text-4xl">
+              Connect the wallet that is allowed to create this event.
+            </h2>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-[#5f564d] md:text-base">
+              The organizer wallet is checked against the allowlist before the
+              backend authorizes event creation. Use the same wallet that should
+              own this venue setup.
+            </p>
+            <div className="mt-6">
+              <WalletCard
+                walletAddress={walletAddress}
+                setWalletAddress={setWalletAddress}
+                onReady={() => setStep(1)}
+              />
+            </div>
+          </div>
+
+          <div className="ink-panel rounded-[2rem] p-6 md:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ccb9a2]">
+              What you will create
+            </p>
+            <ul className="mt-6 space-y-4 text-sm leading-7 text-[#e8ddd1] md:text-base">
+              <li className="flex items-start gap-3">
+                <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#ab6c42]" />
+                <span>An event identity that attendees can open on-site.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#ab6c42]" />
+                <span>A venue boundary and Wi-Fi subnet for local verification.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#ab6c42]" />
+                <span>A QR-linked event page to print or display at the venue.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
       )}
 
       {step === 1 && (
-        <div className="space-y-6 rounded-3xl border border-cyan-900/30 bg-slate-900/60 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
-          <div className="mb-6 flex items-center gap-3 border-b border-cyan-900/30 pb-6">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-500/10 font-mono text-sm font-bold text-cyan-400">
-              2
-            </div>
-            <h2 className="text-xl font-bold text-white">Venue Configuration</h2>
-          </div>
-
-          <label className="grid gap-2">
-            <span className="text-sm font-medium text-slate-300">Event Name</span>
-            <input
-              className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:outline-none"
-              value={venueName}
-              onChange={(e) => setVenueName(e.target.value)}
-              placeholder="ETH Safari - Day 1"
-            />
-          </label>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="grid gap-2">
-              <span className="text-sm font-medium text-slate-300">Latitude</span>
-              <input
-                className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 font-mono text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:outline-none"
-                value={venueLat}
-                onChange={(e) => setVenueLat(e.target.value)}
-                placeholder="-1.1018"
-              />
-            </label>
-            <label className="grid gap-2">
-              <span className="text-sm font-medium text-slate-300">Longitude</span>
-              <input
-                className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 font-mono text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:outline-none"
-                value={venueLon}
-                onChange={(e) => setVenueLon(e.target.value)}
-                placeholder="37.0144"
-              />
-            </label>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleUseCurrentLocation}
-            className="flex items-center gap-2 text-sm font-medium text-cyan-400 transition-colors hover:text-cyan-300"
-          >
-            <MapPin className="h-4 w-4" /> Fetch My Current Coordinates
-          </button>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="grid gap-2">
-              <span className="text-sm font-medium text-slate-300">Radius (meters)</span>
-              <input
-                className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 font-mono text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:outline-none"
-                value={radiusMeters}
-                onChange={(e) => setRadiusMeters(e.target.value)}
-              />
-            </label>
-            <label className="grid gap-2">
-              <span className="text-sm font-medium text-slate-300">WiFi Subnet Prefix</span>
-              <input
-                className="w-full rounded-xl border border-cyan-900/30 bg-[#02040A] px-4 py-3 font-mono text-white placeholder:text-slate-600 focus:border-cyan-500/50 focus:outline-none"
-                value={subnetPrefix}
-                onChange={(e) => setSubnetPrefix(e.target.value)}
-                placeholder="192.168.1."
-              />
-            </label>
-          </div>
-
-          <div className="space-y-4 rounded-2xl border border-cyan-900/30 bg-[#02040A]/60 p-4">
-            <h3 className="text-sm font-semibold text-slate-200">Event Schedule</h3>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <DateTimePicker
-                label="Start"
-                value={startDateTime}
-                onChange={setStartDateTime}
-              />
-              <DateTimePicker
-                label="End"
-                value={endDateTime}
-                onChange={setEndDateTime}
-                minDate={startDateTime ?? undefined}
-              />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_340px]">
+          <div className="rounded-[2rem] border border-[#d2c5b0] bg-white/70 p-6 shadow-[0_24px_60px_rgba(57,43,30,0.08)] md:p-8">
+            <div className="flex flex-col gap-4 border-b border-[#d8cebf] pb-6 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
+                  Step 2
+                </p>
+                <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#1f1b17] md:text-4xl">
+                  Configure the venue and event boundary.
+                </h2>
+              </div>
+              <div className="rounded-full bg-[#efe2d0] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#7b684f]">
+                Approved organizer
+              </div>
             </div>
 
-            <p className="text-xs text-slate-500">
-              Times are in your local timezone.
-            </p>
+            <div className="mt-8 space-y-6">
+              <section className="rounded-[1.75rem] border border-[#ded4c5] bg-[#fbf7ee] p-5">
+                <h3 className="text-lg font-semibold text-[#1f1b17]">Event identity</h3>
+                <p className="mt-2 text-sm leading-7 text-[#5f564d]">
+                  Use the name attendees should recognize when they land on the
+                  event page.
+                </p>
+
+                <label className="mt-5 block">
+                  <span className={labelClass}>Event name</span>
+                  <input
+                    className={inputClass}
+                    value={venueName}
+                    onChange={(e) => setVenueName(e.target.value)}
+                    placeholder="ETH Safari - Day 1"
+                  />
+                </label>
+              </section>
+
+              <section className="rounded-[1.75rem] border border-[#ded4c5] bg-[#fbf7ee] p-5">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#1f1b17]">Venue boundary</h3>
+                    <p className="mt-2 text-sm leading-7 text-[#5f564d]">
+                      Guests prove that they were inside this radius when they
+                      checked in.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleUseCurrentLocation}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#d2c5b0] bg-white px-4 py-2 text-sm font-medium text-[#1f1b17] transition hover:bg-[#f3ebdf]"
+                  >
+                    <MapPin className="h-4 w-4" /> Use current location
+                  </button>
+                </div>
+
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <label className="block">
+                    <span className={labelClass}>Latitude</span>
+                    <input
+                      className={`${inputClass} font-mono`}
+                      value={venueLat}
+                      onChange={(e) => setVenueLat(e.target.value)}
+                      placeholder="-1.1018"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className={labelClass}>Longitude</span>
+                    <input
+                      className={`${inputClass} font-mono`}
+                      value={venueLon}
+                      onChange={(e) => setVenueLon(e.target.value)}
+                      placeholder="37.0144"
+                    />
+                  </label>
+                </div>
+
+                <div className="mt-4 max-w-xs">
+                  <label className="block">
+                    <span className={labelClass}>Radius (meters)</span>
+                    <input
+                      className={`${inputClass} font-mono`}
+                      value={radiusMeters}
+                      onChange={(e) => setRadiusMeters(e.target.value)}
+                    />
+                  </label>
+                </div>
+              </section>
+
+              <section className="rounded-[1.75rem] border border-[#ded4c5] bg-[#fbf7ee] p-5">
+                <h3 className="text-lg font-semibold text-[#1f1b17]">
+                  Network and time window
+                </h3>
+                <p className="mt-2 text-sm leading-7 text-[#5f564d]">
+                  Attendees must be on the venue subnet during this event
+                  window.
+                </p>
+
+                <label className="mt-5 block">
+                  <span className={labelClass}>WiFi subnet prefix</span>
+                  <input
+                    className={`${inputClass} font-mono`}
+                    value={subnetPrefix}
+                    onChange={(e) => setSubnetPrefix(e.target.value)}
+                    placeholder="192.168.1."
+                  />
+                </label>
+
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <DateTimePicker
+                    label="Start"
+                    value={startDateTime}
+                    onChange={setStartDateTime}
+                  />
+                  <DateTimePicker
+                    label="End"
+                    value={endDateTime}
+                    onChange={setEndDateTime}
+                    minDate={startDateTime ?? undefined}
+                  />
+                </div>
+
+                <p className="mt-4 text-xs leading-6 text-[#7a7063]">
+                  Times use the organizer’s local timezone while you configure
+                  the event.
+                </p>
+              </section>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleCreateEvent}
+              className="mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-[#201b18] px-5 py-4 text-sm font-semibold text-[#f7f1e7] transition hover:bg-[#362e27] active:scale-[0.99]"
+            >
+              Create organizer proof and event page <ChevronRight className="h-5 w-5" />
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={handleCreateEvent}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-4 font-bold text-slate-900 transition-all hover:bg-cyan-400 active:scale-[0.98]"
-          >
-            Generate ZK Proof & Mint Event <ChevronRight className="h-5 w-5" />
-          </button>
+          <div className="space-y-4">
+            <aside className="rounded-[1.75rem] border border-[#d2c5b0] bg-white/70 p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
+                What gets written
+              </p>
+              <ul className="mt-4 space-y-3 text-sm leading-7 text-[#5f564d]">
+                <li>Event ID and venue hash</li>
+                <li>Venue name and event schedule</li>
+                <li>Shareable attendee page and QR code</li>
+              </ul>
+            </aside>
+
+            <aside className="ink-panel rounded-[1.75rem] p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#ccb9a2]">
+                What stays private
+              </p>
+              <ul className="mt-4 space-y-3 text-sm leading-7 text-[#e8ddd1]">
+                <li>Exact attendee coordinates</li>
+                <li>Raw device location history</li>
+                <li>Guest emails, phones, and identity fields</li>
+              </ul>
+            </aside>
+
+            <aside className="rounded-[1.75rem] border border-[#d2c5b0] bg-[#efe2d0] p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#7b684f]">
+                Before you click create
+              </p>
+              <p className="mt-4 text-sm leading-7 text-[#5b5249]">
+                Make sure you know the venue subnet prefix and that the connected
+                wallet is on Base Sepolia. The final step asks the wallet to sign
+                and publish the event.
+              </p>
+            </aside>
+          </div>
         </div>
       )}
 
       {step === 2 && (
-        <div className="space-y-6 rounded-3xl border border-cyan-900/30 bg-slate-900/60 p-12 text-center shadow-2xl backdrop-blur-xl">
-          <Loader2 className="mx-auto h-12 w-12 animate-spin text-cyan-400" />
-          <h2 className="text-2xl font-bold text-white tracking-tight">Processing Setup</h2>
-          <p className="font-mono text-sm text-slate-400">{statusMsg}</p>
+        <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+          <div className="ink-panel rounded-[2rem] p-8">
+            <Loader2 className="h-12 w-12 animate-spin text-[#ccb9a2]" />
+            <p className="mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-[#ccb9a2]">
+              Step 3
+            </p>
+            <h2 className="display-type mt-3 text-4xl leading-tight tracking-[-0.03em] text-white md:text-5xl">
+              Publishing your event.
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-[#d7c7b6] md:text-base">
+              We are generating the organizer proof, checking access, waiting
+              for the Base Sepolia transaction, and saving the attendee page
+              metadata.
+            </p>
+            <div className="mt-8 rounded-[1.5rem] border border-white/10 bg-white/5 p-4 font-mono text-sm text-[#f5efe6]">
+              {statusMsg}
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-[#d2c5b0] bg-white/70 p-6 shadow-[0_24px_60px_rgba(57,43,30,0.08)] md:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
+              Current progress
+            </p>
+            <div className="mt-6 space-y-4">
+              {processingSteps.map((item, index) => {
+                const isComplete = processingIndex > index;
+                const isCurrent = processingIndex === index;
+
+                return (
+                  <div
+                    key={item.label}
+                    className={`flex items-center gap-4 rounded-[1.25rem] border px-4 py-4 ${
+                      isCurrent
+                        ? "border-[#7b684f] bg-[#efe2d0]"
+                        : isComplete
+                          ? "border-[#b9cfad] bg-[#eef4ea]"
+                          : "border-[#e0d6c8] bg-[#fbf7ee]"
+                    }`}
+                  >
+                    <div
+                      className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold ${
+                        isCurrent
+                          ? "bg-[#201b18] text-[#f5efe6]"
+                          : isComplete
+                            ? "bg-[#5f6f52] text-[#f5efe6]"
+                            : "bg-white text-[#6c6459]"
+                      }`}
+                    >
+                      {index + 1}
+                    </div>
+                    <p className="text-sm font-medium text-[#1f1b17]">{item.label}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
       {step === 3 && (
-        <div className="space-y-8 rounded-3xl border border-green-500/30 bg-slate-900/60 p-8 text-center shadow-[0_0_40px_rgba(34,197,94,0.1)] backdrop-blur-xl sm:p-12">
-          <CheckCircle2 className="mx-auto h-16 w-16 text-green-400" />
-          <div>
-            <h2 className="mb-2 text-3xl font-bold text-white">Event Secured</h2>
-            <p className="text-slate-400">Your event is live on Base Sepolia.</p>
-          </div>
+        <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="ink-panel rounded-[2rem] p-8">
+            <CheckCircle2 className="h-16 w-16 text-[#9dc28d]" />
+            <p className="mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-[#ccb9a2]">
+              Step 4
+            </p>
+            <h2 className="display-type mt-3 text-4xl leading-tight tracking-[-0.03em] text-white md:text-5xl">
+              Event secured and ready to share.
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-[#d7c7b6] md:text-base">
+              Your event is live on Base Sepolia. The next step is simple:
+              display the QR or attendee page at the venue so guests can check
+              in on-site.
+            </p>
 
-          <div className="mx-auto max-w-md space-y-4 rounded-2xl border border-cyan-900/30 bg-[#02040A] p-6 text-left">
-            <div>
-              <span className="mb-1 block font-mono text-xs text-slate-500">EVENT ID</span>
-              <span className="block break-all font-mono text-sm text-cyan-400">
-                {eventId}
-              </span>
-            </div>
-            <div>
-              <span className="mb-1 block font-mono text-xs text-slate-500">VENUE HASH</span>
-              <span className="block break-all font-mono text-sm text-cyan-400">
-                {venueHash}
-              </span>
-            </div>
-          </div>
-
-          {qrDataUrl && (
-            <div className="flex flex-col items-center justify-center space-y-4 border-t border-cyan-900/30 pt-6">
-              <span className="text-sm font-medium text-slate-300">Print & display at venue</span>
-              <div className="rounded-2xl bg-white p-4 shadow-xl">
-                <img src={qrDataUrl} alt="Event Check-in QR code" className="h-48 w-48" />
+            <div className="mt-8 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
+                <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-[#ccb9a2]">
+                  Event ID
+                </span>
+                <span className="block break-all font-mono text-sm text-[#f5efe6]">
+                  {eventId}
+                </span>
               </div>
+              <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
+                <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-[#ccb9a2]">
+                  Venue hash
+                </span>
+                <span className="block break-all font-mono text-sm text-[#f5efe6]">
+                  {venueHash}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <a
                 href={`/event/${eventId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-mono text-sm text-cyan-400 underline underline-offset-4 hover:text-cyan-300"
+                className="inline-flex items-center justify-center rounded-full bg-[#f5efe6] px-5 py-3 text-sm font-semibold text-[#1f1b17] transition hover:bg-white"
               >
-                {typeof window !== "undefined" ? window.location.origin : ""}/event/{eventId}
+                Open attendee page
               </a>
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="inline-flex items-center justify-center rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-[#f5efe6] transition hover:bg-white/6"
+              >
+                Edit event details
+              </button>
             </div>
-          )}
+          </div>
+
+          <div className="rounded-[2rem] border border-[#d2c5b0] bg-white/70 p-6 text-center shadow-[0_24px_60px_rgba(57,43,30,0.08)] md:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
+              Print or display at the venue
+            </p>
+
+            {qrDataUrl && (
+              <div className="mt-6 flex flex-col items-center">
+                <div className="rounded-[1.75rem] bg-white p-4 shadow-[0_18px_40px_rgba(57,43,30,0.12)]">
+                  <Image
+                    src={qrDataUrl}
+                    alt="Event Check-in QR code"
+                    width={224}
+                    height={224}
+                    unoptimized
+                    className="h-56 w-56"
+                  />
+                </div>
+              </div>
+            )}
+
+            <p className="mt-6 text-sm leading-7 text-[#5f564d]">
+              Guests land on the attendee page, connect on-site, and generate
+              their proof from there.
+            </p>
+
+            <a
+              href={`/event/${eventId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 block break-all font-mono text-sm text-[#7b4d2e] underline underline-offset-4"
+            >
+              {typeof window !== "undefined" ? window.location.origin : ""}/event/{eventId}
+            </a>
+
+            <div className="mt-8 rounded-[1.5rem] border border-[#ded4c5] bg-[#fbf7ee] p-5 text-left">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
+                Next steps
+              </p>
+              <ul className="mt-4 space-y-3 text-sm leading-7 text-[#5f564d]">
+                <li>Display the QR or attendee page at the venue entrance.</li>
+                <li>Make sure guests can connect to the venue Wi-Fi.</li>
+                <li>Keep the event page open during the event window.</li>
+              </ul>
+            </div>
+          </div>
         </div>
       )}
     </div>
