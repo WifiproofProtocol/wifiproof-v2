@@ -3,11 +3,13 @@ import {
   createPublicClient,
   encodeAbiParameters,
   keccak256,
-  toBytes,
   http,
 } from "viem";
 import { baseSepolia } from "viem/chains";
-import { privateKeyToAccount } from "viem/accounts";
+
+import { issueEventMetadataToken } from "@/lib/event-metadata-token";
+import { signEventAuthorization } from "@/lib/signer";
+import { getTrustedClientIp } from "@/lib/trusted-ip";
 
 const VERIFIER_ABI = [
   {
@@ -55,26 +57,6 @@ type AuthorizeRequest = {
   publicInputs: `0x${string}`[];
 };
 
-function normalizeIp(ip: string): string {
-  return ip.replace(/^::ffff:/i, "").trim();
-}
-
-function getClientIp(request: Request): string | null {
-  const vercelIp = request.headers.get("x-vercel-forwarded-for");
-  if (vercelIp) {
-    return normalizeIp(vercelIp.split(",")[0].trim());
-  }
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  if (forwardedFor) {
-    return normalizeIp(forwardedFor.split(",")[0].trim());
-  }
-  const realIp = request.headers.get("x-real-ip");
-  if (realIp) {
-    return normalizeIp(realIp.trim());
-  }
-  return null;
-}
-
 function eventIdToField(eventId: `0x${string}`) {
   const value = BigInt(eventId) % FIELD_MODULUS;
   return `0x${value.toString(16).padStart(64, "0")}` as `0x${string}`;
@@ -95,6 +77,9 @@ export async function POST(request: Request) {
       proof,
       publicInputs,
     } = body;
+    const normalizedVenueName = typeof venueName === "string" ? venueName.trim() : "";
+    const normalizedSubnetPrefix =
+      typeof subnetPrefix === "string" ? subnetPrefix.trim() : "";
 
     if (
       !organizer ||
@@ -102,17 +87,17 @@ export async function POST(request: Request) {
       !venueHash ||
       !startTime ||
       !endTime ||
-      !venueName ||
+      !normalizedVenueName ||
       !deadline ||
-      !subnetPrefix ||
+      !normalizedSubnetPrefix ||
       !proof ||
       !publicInputs?.length
     ) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    const clientIp = getClientIp(request);
-    if (!clientIp || !clientIp.startsWith(subnetPrefix)) {
+    const clientIp = getTrustedClientIp(request);
+    if (!clientIp || !clientIp.startsWith(normalizedSubnetPrefix)) {
       return NextResponse.json({ error: "Not on venue subnet" }, { status: 403 });
     }
 
@@ -210,50 +195,31 @@ export async function POST(request: Request) {
       );
     }
 
-    const privateKey = (
-      (process.env.EVENT_SIGNER_PRIVATE_KEY?.trim() as `0x${string}` | undefined) ??
-      (process.env.IP_SIGNER_PRIVATE_KEY?.trim() as `0x${string}` | undefined)
-    );
-    if (!privateKey) {
-      return NextResponse.json({ error: "Signer not configured" }, { status: 500 });
-    }
-
     const chainId = Number(process.env.CHAIN_ID?.trim() ?? 84532);
 
-    const venueNameHash = keccak256(toBytes(venueName));
-
-    const account = privateKeyToAccount(privateKey);
-    const signature = await account.signTypedData({
-      domain: {
-        name: "WiFiProof",
-        version: "2",
-        chainId,
-        verifyingContract,
-      },
-      types: {
-        EventAuthorization: [
-          { name: "organizer", type: "address" },
-          { name: "eventId", type: "bytes32" },
-          { name: "venueHash", type: "bytes32" },
-          { name: "startTime", type: "uint64" },
-          { name: "endTime", type: "uint64" },
-          { name: "venueNameHash", type: "bytes32" },
-          { name: "deadline", type: "uint64" },
-        ],
-      },
-      primaryType: "EventAuthorization",
-      message: {
-        organizer,
-        eventId,
-        venueHash,
-        startTime: BigInt(startTime),
-        endTime: BigInt(endTime),
-        venueNameHash,
-        deadline: BigInt(deadline),
-      },
+    const signature = await signEventAuthorization({
+      organizer,
+      eventId,
+      venueHash,
+      startTime,
+      endTime,
+      venueName: normalizedVenueName,
+      deadline,
+      chainId,
+      verifyingContract,
     });
 
-    return NextResponse.json({ signature });
+    const { token: metadataToken } = issueEventMetadataToken({
+      organizer,
+      eventId,
+      venueHash,
+      startTime,
+      endTime,
+      venueName: normalizedVenueName,
+      subnetPrefix: normalizedSubnetPrefix,
+    });
+
+    return NextResponse.json({ signature, metadataToken });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error("[authorize] unexpected error:", msg, error);
