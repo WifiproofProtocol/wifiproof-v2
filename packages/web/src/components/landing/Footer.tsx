@@ -12,7 +12,7 @@ const XIcon = ({ className }: { className?: string }) => (
 
 export default function Footer() {
   return (
-    <footer className="border-t border-[#2d261d]/10 bg-[#191612] py-12 text-[#f5efe6]">
+    <footer className="border-t border-[#cfe1ff] bg-[#eaf3ff] py-12 text-[#10233f]">
       <div className="mx-auto max-w-6xl px-6">
         <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
           <div className="text-center md:text-left">
@@ -25,26 +25,26 @@ export default function Footer() {
                   className="object-contain"
                 />
               </div>
-              <span className="text-xl font-semibold text-white">WiFiProof</span>
+              <span className="text-xl font-semibold text-[#10233f]">WiFiProof</span>
             </Link>
-            <p className="max-w-sm text-sm leading-7 text-[#cdbfab]">
+            <p className="max-w-sm text-sm leading-7 text-[#52637e]">
               Proof of presence for venues that want real attendance without
-              turning guests into another data source.
+              turning guests into a data funnel.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-[#d7c9b8] md:justify-end">
-            <Link href="/organizer" className="transition hover:text-white">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-[#52637e] md:justify-end">
+            <Link href="/organizer" className="transition hover:text-[#2563eb]">
               Organizer guide
             </Link>
-            <Link href="/events" className="transition hover:text-white">
+            <Link href="/events" className="transition hover:text-[#2563eb]">
               Live events
             </Link>
             <a
               href="https://x.com/WiFiProof"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition hover:text-white"
+              className="transition hover:text-[#2563eb]"
             >
               <span className="sr-only">X (Twitter)</span>
               <XIcon className="w-5 h-5" />
@@ -53,7 +53,7 @@ export default function Footer() {
               href="https://github.com/WifiproofProtocol"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition hover:text-white"
+              className="transition hover:text-[#2563eb]"
             >
               <span className="sr-only">GitHub</span>
               <Github className="w-5 h-5" />
@@ -61,11 +61,11 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/8 pt-8 text-sm text-[#9e9384] md:flex-row">
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-[#cfe1ff] pt-8 text-sm text-[#6b7f9e] md:flex-row">
           <p>© 2026 WiFiProof Protocol. All rights reserved.</p>
           <div className="flex gap-6">
-            <a href="#" className="transition hover:text-white">Privacy Policy</a>
-            <a href="#" className="transition hover:text-white">Terms of Service</a>
+            <a href="#" className="transition hover:text-[#2563eb]">Privacy Policy</a>
+            <a href="#" className="transition hover:text-[#2563eb]">Terms of Service</a>
           </div>
         </div>
       </div>
