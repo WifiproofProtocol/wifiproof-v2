@@ -10,7 +10,7 @@ import {
   nagaStaging,
   nagaTest,
 } from "@lit-protocol/networks";
-import { type Hex, hashTypedData, keccak256, toBytes } from "viem";
+import { getAddress, type Hex, hashTypedData, keccak256, recoverAddress, toBytes } from "viem";
 import { privateKeyToAccount, publicKeyToAddress } from "viem/accounts";
 import { base, baseSepolia } from "viem/chains";
 
@@ -84,7 +84,7 @@ async function signTypedDataWithChipotle(params: {
   typedData: TypedDataPayload;
 }): Promise<Hex> {
   const apiKey = requireEnvChipotle("LIT_CHIPOTLE_API_KEY");
-  const pkpAddress = getChipotlePkpAddress();
+  const pkpAddress = getAddress(getChipotlePkpAddress());
   const baseUrl = getChipotleBaseUrl();
   const digest = hashTypedData(params.typedData as never);
 
@@ -125,7 +125,15 @@ async function signTypedDataWithChipotle(params: {
     );
   }
 
-  return sig as Hex;
+  const signature = sig as Hex;
+  const recovered = getAddress(await recoverAddress({ hash: digest, signature }));
+  if (recovered !== pkpAddress) {
+    throw new Error(
+      `Chipotle signer mismatch. Recovered ${recovered} but expected ${pkpAddress}`
+    );
+  }
+
+  return signature;
 }
 
 type LocalAccount = ReturnType<typeof privateKeyToAccount>;
