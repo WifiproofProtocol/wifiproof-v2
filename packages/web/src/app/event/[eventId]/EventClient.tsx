@@ -138,6 +138,8 @@ export default function EventClient({ eventId }: { eventId: string }) {
     [rpcUrl]
   );
 
+  const handleWalletReady = useCallback(() => setStep(1), []);
+
   const fetchEvent = useCallback(async () => {
     try {
       const res = await fetch(`/api/events/${eventId}`);
@@ -448,7 +450,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
               <WalletCard
                 walletAddress={walletAddress}
                 setWalletAddress={setWalletAddress}
-                onReady={() => setStep(1)}
+                onReady={handleWalletReady}
               />
             </div>
           )}
