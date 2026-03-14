@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { privateKeyToAccount } from "viem/accounts";
 
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { signIPVerification } from "@/lib/signer";
+import { getTrustedClientIp } from "@/lib/trusted-ip";
 import { verifyWorldToken } from "@/lib/world";
 
 export const runtime = "nodejs";
@@ -15,27 +16,6 @@ type VerifyIpRequest = {
   deadline: number;
   worldToken: string;
 };
-
-function normalizeIp(ip: string): string {
-  // Strip IPv6-mapped IPv4 prefix: ::ffff:102.205.238.245 -> 102.205.238.245
-  return ip.replace(/^::ffff:/i, "").trim();
-}
-
-function getClientIp(request: Request): string | null {
-  const vercelIp = request.headers.get("x-vercel-forwarded-for");
-  if (vercelIp) {
-    return normalizeIp(vercelIp.split(",")[0].trim());
-  }
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  if (forwardedFor) {
-    return normalizeIp(forwardedFor.split(",")[0].trim());
-  }
-  const realIp = request.headers.get("x-real-ip");
-  if (realIp) {
-    return normalizeIp(realIp.trim());
-  }
-  return null;
-}
 
 export async function POST(request: Request) {
   try {
@@ -63,7 +43,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const rateKey = `${normalizedWallet}:${getClientIp(request) ?? "unknown"}`;
+    const clientIp = getTrustedClientIp(request);
+    const rateKey = `${normalizedWallet}:${clientIp ?? "unknown"}`;
     const rateWindowSeconds = Number(process.env.RATE_LIMIT_WINDOW_SECONDS ?? 120);
     const rateMax = Number(process.env.RATE_LIMIT_MAX ?? 5);
     const rateResult = checkRateLimit(rateKey, rateMax, rateWindowSeconds * 1000);
@@ -71,14 +52,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
     }
 
-    const privateKey = process.env.IP_SIGNER_PRIVATE_KEY?.trim() as
-      | `0x${string}`
-      | undefined;
-    if (!privateKey) {
-      return NextResponse.json({ error: "Signer not configured" }, { status: 500 });
-    }
-
-    const clientIp = getClientIp(request);
     if (!clientIp) {
       return NextResponse.json({ error: "IP validation unavailable" }, { status: 400 });
     }
@@ -127,29 +100,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing WIFIPROOF_ADDRESS" }, { status: 500 });
     }
 
-    const account = privateKeyToAccount(privateKey);
-    const signature = await account.signTypedData({
-      domain: {
-        name: "WiFiProof",
-        version: "2",
-        chainId,
-        verifyingContract,
-      },
-      types: {
-        IPVerification: [
-          { name: "wallet", type: "address" },
-          { name: "eventId", type: "bytes32" },
-          { name: "venueHash", type: "bytes32" },
-          { name: "deadline", type: "uint64" },
-        ],
-      },
-      primaryType: "IPVerification",
-      message: {
-        wallet,
-        eventId,
-        venueHash,
-        deadline: BigInt(deadline),
-      },
+    const signature = await signIPVerification({
+      wallet,
+      eventId,
+      venueHash,
+      deadline,
+      chainId,
+      verifyingContract,
     });
 
     return NextResponse.json({ signature });

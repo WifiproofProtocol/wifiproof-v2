@@ -5,6 +5,7 @@ import {
   uploadAttendanceArtifact,
   type AttendanceArtifactPayload,
 } from "@/lib/storacha";
+import { verifyAttendanceClaimTransaction } from "@/lib/wifiproof-chain";
 
 type ArchiveRequest = {
   eventId: `0x${string}`;
@@ -13,7 +14,6 @@ type ArchiveRequest = {
   attestationUid: `0x${string}`;
   proofHash: `0x${string}`;
   publicInputsHash: `0x${string}`;
-  worldNullifierHash?: `0x${string}`;
   network?: string;
 };
 
@@ -25,10 +25,6 @@ export const dynamic = "force-dynamic";
 
 function normalize(value: string) {
   return value.trim().toLowerCase();
-}
-
-function validOptionalHex(value: unknown): value is `0x${string}` {
-  return typeof value === "string" && /^0x[0-9a-f]+$/.test(value);
 }
 
 export async function POST(request: Request) {
@@ -57,11 +53,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
-    const worldNullifierHash =
-      body.worldNullifierHash && validOptionalHex(normalize(body.worldNullifierHash))
-        ? normalize(body.worldNullifierHash)
-        : undefined;
-
     const payload: AttendanceArtifactPayload = {
       eventId: eventId as `0x${string}`,
       wallet: wallet as `0x${string}`,
@@ -69,7 +60,6 @@ export async function POST(request: Request) {
       attestationUid: attestationUid as `0x${string}`,
       proofHash: proofHash as `0x${string}`,
       publicInputsHash: publicInputsHash as `0x${string}`,
-      worldNullifierHash: worldNullifierHash as `0x${string}` | undefined,
       network: body.network?.trim() || "base-sepolia",
       timestamp: Math.floor(Date.now() / 1000),
     };
@@ -101,6 +91,59 @@ export async function POST(request: Request) {
       );
     }
 
+    try {
+      await verifyAttendanceClaimTransaction({
+        txHash: payload.txHash,
+        wallet: payload.wallet,
+        eventId: payload.eventId,
+        attestationUid: payload.attestationUid,
+        proofHash: payload.proofHash,
+        publicInputsHash: payload.publicInputsHash,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Attendance claim verification failed";
+      return NextResponse.json(
+        { error: "Attendance claim verification failed", detail: message },
+        { status: 403 }
+      );
+    }
+
+    const { data: existingArtifact, error: artifactLookupError } = await supabase
+      .from("attendance_artifacts")
+      .select(
+        "event_id, wallet, tx_hash, attestation_uid, proof_hash, public_inputs_hash, cid, network"
+      )
+      .eq("tx_hash", payload.txHash)
+      .maybeSingle();
+
+    if (artifactLookupError) {
+      return NextResponse.json(
+        { error: "Failed to check existing artifact", detail: artifactLookupError.message },
+        { status: 500 }
+      );
+    }
+
+    if (existingArtifact) {
+      const matchesExisting =
+        existingArtifact.event_id === payload.eventId &&
+        existingArtifact.wallet === payload.wallet &&
+        existingArtifact.tx_hash === payload.txHash &&
+        existingArtifact.attestation_uid === payload.attestationUid &&
+        existingArtifact.proof_hash === payload.proofHash &&
+        existingArtifact.public_inputs_hash === payload.publicInputsHash &&
+        existingArtifact.network === payload.network;
+
+      if (!matchesExisting) {
+        return NextResponse.json(
+          { error: "Artifact already exists with different values" },
+          { status: 409 }
+        );
+      }
+
+      return NextResponse.json({ ok: true, cid: existingArtifact.cid });
+    }
+
     let cid = "";
     try {
       cid = await uploadAttendanceArtifact(payload);
@@ -124,7 +167,6 @@ export async function POST(request: Request) {
       attestation_uid: payload.attestationUid,
       proof_hash: payload.proofHash,
       public_inputs_hash: payload.publicInputsHash,
-      world_nullifier_hash: payload.worldNullifierHash ?? null,
       cid,
       network: payload.network,
     });

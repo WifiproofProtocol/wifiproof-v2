@@ -69,7 +69,6 @@ type EventRecord = {
 type WorldVerifyResponse = {
   ok: boolean;
   token: string;
-  nullifierHash: string;
   expiresAt: number;
 };
 
@@ -116,7 +115,6 @@ export default function EventClient({ eventId }: { eventId: string }) {
   const [errorMsg, setErrorMsg] = useState("");
   const [attestationUid, setAttestationUid] = useState("");
   const [worldToken, setWorldToken] = useState("");
-  const [worldNullifierHash, setWorldNullifierHash] = useState("");
   const [worldStatus, setWorldStatus] = useState("");
   const [isPreparingWorld, setIsPreparingWorld] = useState(false);
   const [isVerifyingWorld, setIsVerifyingWorld] = useState(false);
@@ -140,6 +138,8 @@ export default function EventClient({ eventId }: { eventId: string }) {
     [rpcUrl]
   );
 
+  const handleWalletReady = useCallback(() => setStep(1), []);
+
   const fetchEvent = useCallback(async () => {
     try {
       const res = await fetch(`/api/events/${eventId}`);
@@ -159,7 +159,6 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
   useEffect(() => {
     setWorldToken("");
-    setWorldNullifierHash("");
     setWorldStatus("");
     setRpContext(null);
     setIsWorldModalOpen(false);
@@ -234,11 +233,9 @@ export default function EventClient({ eventId }: { eventId: string }) {
       }
 
       setWorldToken(result.token);
-      setWorldNullifierHash(result.nullifierHash);
       setWorldStatus("Humanity verified.");
     } catch (error) {
       setWorldToken("");
-      setWorldNullifierHash("");
       setWorldStatus("");
       setErrorMsg((error as Error).message);
     } finally {
@@ -369,7 +366,6 @@ export default function EventClient({ eventId }: { eventId: string }) {
             attestationUid: foundUid,
             proofHash,
             publicInputsHash,
-            worldNullifierHash: worldNullifierHash || undefined,
             network: "base-sepolia",
           }),
         });
@@ -454,7 +450,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
               <WalletCard
                 walletAddress={walletAddress}
                 setWalletAddress={setWalletAddress}
-                onReady={() => setStep(1)}
+                onReady={handleWalletReady}
               />
             </div>
           )}
@@ -500,11 +496,6 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 <p className="text-xs text-slate-500">
                   Desktop: scan QR in World App. Mobile: World App opens directly.
                 </p>
-                {worldNullifierHash && (
-                  <p className="break-all font-mono text-[11px] text-slate-500">
-                    nullifier: {worldNullifierHash}
-                  </p>
-                )}
               </div>
 
               <button

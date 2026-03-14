@@ -56,6 +56,11 @@ This branch adds two sponsor-facing integrations for the hackathon:
 - New lookup route: `GET /api/claims/:eventId/:wallet`
 - Stores claim artifact metadata + CID in Supabase `attendance_artifacts`
 
+3. **Lit PKP signer mode (V1/Naga)**
+- New signer abstraction in `packages/web/src/lib/signer.ts`
+- `SIGNER_MODE=key|lit` toggle (default: `key`)
+- In `lit` mode, API routes sign EIP-712 payloads through Lit PKP instead of raw server signer keys
+
 ## Quick Start
 
 ### 1. Clone & Install

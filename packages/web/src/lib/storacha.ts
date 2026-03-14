@@ -10,7 +10,6 @@ export type AttendanceArtifactPayload = {
   attestationUid: `0x${string}`;
   proofHash: `0x${string}`;
   publicInputsHash: `0x${string}`;
-  worldNullifierHash?: `0x${string}`;
   network: string;
   timestamp: number;
 };

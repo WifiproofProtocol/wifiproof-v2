@@ -20,9 +20,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    // TODO: Verify WebAuthn assertion and bind passkey to wallet.
-    // For now, this is a stub to unblock integration.
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(
+      { error: "Passkey verification is not implemented on the server" },
+      { status: 501 }
+    );
   } catch {
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }

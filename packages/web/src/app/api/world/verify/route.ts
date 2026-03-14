@@ -106,7 +106,6 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       token,
-      nullifierHash: claims.nullifierHash,
       expiresAt: claims.exp,
     });
   } catch (error) {

@@ -25,8 +25,20 @@ Next.js frontend + API routes for WiFiProof V2.
 - `VERIFIER_ADDRESS`
 - `BASE_RPC_URL`
 - `CHAIN_ID`
+- `SIGNER_MODE` (`key` or `lit`; default `key`)
 - `IP_SIGNER_PRIVATE_KEY`
 - `EVENT_SIGNER_PRIVATE_KEY` (optional fallback to IP signer)
+- `LIT_NETWORK` (optional; `chipotle` or legacy Naga variants, default `naga-test`)
+- `LIT_CHIPOTLE_API_KEY` (required when `SIGNER_MODE=lit` and `LIT_NETWORK=chipotle`)
+- `LIT_CHIPOTLE_PKP_ADDRESS` (required when `SIGNER_MODE=lit` and `LIT_NETWORK=chipotle`)
+- `LIT_CHIPOTLE_API_BASE_URL` (optional override; default `https://api.dev.litprotocol.com/core/v1`)
+- `LIT_PKP_SIGNER_ADDRESS` (optional expected signer address; also used as a fallback alias for `LIT_CHIPOTLE_PKP_ADDRESS`)
+- `LIT_PKP_PUBLIC_KEY` (required only for legacy Naga mode)
+- `LIT_EOA_PRIVATE_KEY` (required only for legacy Naga mode)
+- `LIT_AUTH_STORAGE_PATH` (optional, default `/tmp/wifiproof-lit-auth`)
+- `LIT_APP_NAME` (optional, default `wifiproof`)
+- `LIT_AUTH_DOMAIN` (optional, default `wifiproof.xyz`)
+- `LIT_AUTH_STATEMENT` (optional SIWE statement)
 - `WORLD_CLIENT_SECRET` (optional, depending on World verify configuration)
 - `WORLD_TOKEN_SECRET`
 - `WORLD_TOKEN_TTL_SECONDS` (optional, default `900`)
@@ -60,6 +72,15 @@ Next.js frontend + API routes for WiFiProof V2.
 
 - `GET /api/claims/[eventId]/[wallet]`
   - Returns latest archived artifact row for demo/audit
+
+## Signer Modes
+
+- `SIGNER_MODE=key`:
+  - Uses `IP_SIGNER_PRIVATE_KEY` / `EVENT_SIGNER_PRIVATE_KEY` directly.
+- `SIGNER_MODE=lit`:
+  - `LIT_NETWORK=chipotle`: signs through Lit Core V1 / Chipotle with a PKP-backed Lit Action.
+  - `LIT_NETWORK=naga-*`: uses the legacy Naga PKP signer flow in `src/lib/lit-signer.ts`.
+  - The returned signature is verified server-side before use.
 
 ## Local Development
 
