@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import {
   createPublicClient,
@@ -112,6 +112,7 @@ function getEthereum() {
 export default function OrganizerClient() {
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
   const [walletAddress, setWalletAddress] = useState("");
+  const handleWalletReady = useCallback(() => setStep(1), []);
 
   const [venueName, setVenueName] = useState("");
   const [venueLat, setVenueLat] = useState("");
@@ -433,7 +434,7 @@ export default function OrganizerClient() {
               <WalletCard
                 walletAddress={walletAddress}
                 setWalletAddress={setWalletAddress}
-                onReady={() => setStep(1)}
+                onReady={handleWalletReady}
               />
             </div>
           </div>
