@@ -2,21 +2,21 @@
 import { motion } from "framer-motion";
 
 const oldWay = [
-  "Ask for email, name, phone, maybe ID",
-  "Trust a QR code by itself",
-  "Store more personal data than the proof needs",
+  "Email, name, phone, maybe ID",
+  "A QR code that can be screenshotted and shared",
+  "Data stored that has nothing to do with attendance",
 ];
 
 const newWay = [
-  "Use venue Wi-Fi as a real on-site signal",
-  "Prove proximity with ZK geolocation",
-  "Issue attendance proof without oversharing",
+  "Venue Wi-Fi as a real on-site signal",
+  "ZK geolocation, proved on your device, not sent anywhere",
+  "An on-chain attestation, not a data collection form",
 ];
 
-const proofSteps = [
-  ["Arrive", "Connect to the venue network and open the event page."],
-  ["Prove", "Your device generates the proximity proof locally."],
-  ["Check in", "The event issues proof of attendance instead of collecting extra identity data."],
+const proofSteps: [string, string][] = [
+  ["Arrive", "Connect to the venue Wi-Fi and open the event link."],
+  ["Prove", "Your device generates a zero-knowledge proximity proof locally. Nothing leaves."],
+  ["Claim", "An attestation is minted on-chain. You proved you were there. That is it."],
 ];
 
 export default function Features() {
@@ -30,18 +30,19 @@ export default function Features() {
             viewport={{ once: true }}
             className="max-w-2xl"
           >
-            <p className="section-kicker">The story</p>
+            <p className="section-kicker">What sets WiFiProof apart</p>
             <h2 className="display-type mt-4 text-4xl leading-tight tracking-[-0.03em] text-[#10233f] md:text-6xl">
-              People arrive and ask for Wi-Fi. That is the anchor.
+              You only need to prove one thing.
             </h2>
             <p className="mt-6 text-lg leading-8 text-[#52637e]">
-              At hackathons, conferences, and venues, the first question is usually
-              “what’s the Wi-Fi password?” WiFiProof uses that real-world behavior
-              to prove someone was actually there, without turning check-in into a
-              data collection form.
+              Most check-in flows collect far more than they need. As a privacy
+              maxi, you know that giving away your email, name, and location to
+              prove you attended an event makes no sense. WiFiProof proves the
+              only thing that matters: that you were physically there, without
+              the rest.
             </p>
             <p className="mt-6 text-base leading-7 text-[#61728d]">
-              The point is simple: prove presence, not identity exhaust.
+              Why hand over your identity when presence is all that is needed?
             </p>
           </motion.div>
 
@@ -54,7 +55,7 @@ export default function Features() {
           >
             <div className="paper-panel rounded-[2rem] p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2563eb]">
-                Old check-in
+                Every other check-in
               </p>
               <div className="mt-5 space-y-3">
                 {oldWay.map((item) => (
@@ -94,15 +95,13 @@ export default function Features() {
         >
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div className="max-w-2xl">
-              <p className="section-kicker">
-                How it works
-              </p>
+              <p className="section-kicker">How it works</p>
               <h3 className="display-type mt-3 text-4xl leading-tight tracking-[-0.03em] md:text-5xl">
-                Three steps. One simple claim: you were there.
+                Three steps. One claim: you were there.
               </h3>
             </div>
             <p className="max-w-xl text-sm leading-7 text-[#52637e] md:text-base">
-              Easy for guests. Stronger for organizers than QR-only check-ins.
+              Works in your browser. No app install. No account.
             </p>
           </div>
 
