@@ -23,25 +23,24 @@ export default function Hero() {
           transition={{ duration: 0.7 }}
           className="max-w-2xl"
         >
-          <p className="section-kicker">Simple story, stronger proof</p>
           <h1 className="display-type mt-4 text-5xl leading-[0.95] tracking-[-0.04em] text-[#10233f] md:text-7xl">
             The first thing people ask for at an event is the Wi-Fi password.
           </h1>
           <p className="mt-6 text-lg leading-8 text-[#52637e] md:text-xl">
-            WiFiProof turns that moment into proof of presence. Guests connect at
-            the venue, prove proximity privately, and check in without giving away
-            extra personal data.
+            WiFiProof turns that moment into proof of presence. Connect at the
+            venue, prove proximity with ZK geolocation, and check in without
+            giving away anything extra.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3 text-sm font-medium text-[#1f3f78]">
             <span className="rounded-full border border-[#93b7e8]/35 bg-white/82 px-4 py-2">
-              No email wall
+              Venue Wi-Fi
             </span>
             <span className="rounded-full border border-[#93b7e8]/35 bg-white/82 px-4 py-2">
-              No raw location leak
+              ZK geolocation
             </span>
             <span className="rounded-full border border-[#93b7e8]/35 bg-white/82 px-4 py-2">
-              Just proof you were there
+              Prove one thing only
             </span>
           </div>
 
@@ -83,7 +82,7 @@ export default function Hero() {
                   Problem
                 </p>
                 <p className="mt-3 text-base leading-7 text-[#e3edff]">
-                  Events ask for too much data just to confirm someone showed up.
+                  We give away too much personal data just to prove one thing — that we showed up.
                 </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/8 p-5">
@@ -91,7 +90,7 @@ export default function Hero() {
                   Solution
                 </p>
                 <p className="mt-3 text-base leading-7 text-[#e3edff]">
-                  Use venue Wi-Fi and private geolocation proofs to verify presence.
+                  Use venue Wi-Fi and ZK geolocation proofs to verify presence without oversharing.
                 </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/8 p-5">
@@ -99,7 +98,7 @@ export default function Hero() {
                   Result
                 </p>
                 <p className="mt-3 text-base leading-7 text-[#e3edff]">
-                  Organizers get stronger attendance proof. Guests keep their privacy.
+                  Organizers get a stronger attendance signal. Guests get an on-chain attestation — not an NFT, a cryptographic record that they were there — and nothing more leaves their device.
                 </p>
               </div>
             </div>
@@ -117,7 +116,7 @@ export default function Hero() {
               </div>
               <div className="flex items-center gap-3">
                 <ShieldCheck className="h-4 w-4 text-[#2563eb]" />
-                <span>The final claim is privacy-preserving</span>
+                <span>On-chain attestation, not a data form</span>
               </div>
             </div>
           </div>
