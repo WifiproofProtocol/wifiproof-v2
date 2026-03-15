@@ -5,24 +5,24 @@ import { CheckCircle2, Shield, Users } from "lucide-react";
 
 const cards = [
   {
-    title: "Stronger than QR-only",
-    desc: "Presence is tied to the venue itself, not just a code that can be shared around.",
+    title: "Not just a QR code",
+    desc: "Presence is anchored to the venue itself. The Wi-Fi subnet and your location prove you were on-site, not just holding a screenshot.",
     icon: <Shield className="h-7 w-7" />,
     tone:
       "bg-[#0f2747] text-white border-white/10 [&_p]:text-[#d7e6ff] [&_svg]:text-[#9fc0ff]",
     className: "md:col-span-1",
   },
   {
-    title: "Better guest experience",
-    desc: "Guests prove they were there without a heavy sign-up wall or unnecessary data collection.",
+    title: "No doxing, no forms",
+    desc: "Guests prove they were there without handing over their email, name, or any personal data that has nothing to do with showing up.",
     icon: <Users className="h-7 w-7" />,
     tone:
       "bg-white/88 text-[#10233f] border-[#cfe1ff] [&_p]:text-[#52637e] [&_svg]:text-[#2563eb]",
     className: "md:col-span-1",
   },
   {
-    title: "Approved organizer access",
-    desc: "Official event creation stays tied to approved wallets for the demo and beyond.",
+    title: "An attestation, not an NFT",
+    desc: "You get a cryptographic record on-chain via EAS that says you were there. No collection, no speculative asset, just a verifiable fact.",
     icon: <CheckCircle2 className="h-7 w-7" />,
     tone:
       "bg-[#dbeafe] text-[#10233f] border-[#bfdbfe] [&_p]:text-[#425779] [&_svg]:text-[#1d4ed8]",
@@ -40,13 +40,13 @@ export default function BentoGrid() {
           viewport={{ once: true }}
           className="mb-12 max-w-3xl"
         >
-          <p className="section-kicker">For organizers</p>
+          <p className="section-kicker">For organizers and attendees</p>
           <h2 className="display-type mt-4 text-4xl leading-tight tracking-[-0.03em] md:text-6xl">
-            A simple organizer story.
+            Why WiFiProof over anything else?
           </h2>
           <p className="mt-5 text-lg leading-8 text-[#52637e]">
-            If you run the venue, you get a stronger attendance signal. If you are
-            the guest, you keep more of your privacy.
+            Other platforms make you choose between a good attendee experience
+            and a trustworthy attendance signal. WiFiProof gives you both.
           </p>
         </motion.div>
 
