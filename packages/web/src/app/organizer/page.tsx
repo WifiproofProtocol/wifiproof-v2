@@ -2,19 +2,19 @@ import OrganizerClient from "./OrganizerClient";
 
 const organizerBenefits = [
   {
-    title: "Stronger attendance signal",
+    title: "A stronger attendance signal",
     description:
-      "Tie the check-in to the venue itself instead of trusting a QR code alone.",
+      "The check-in is tied to the venue Wi-Fi and on-site location, not just a QR code someone could screenshot at home.",
   },
   {
-    title: "Less guest data",
+    title: "Respect your guests' privacy",
     description:
-      "Prove presence without asking for more personal data than the venue actually needs.",
+      "No email walls, no forms, no collecting data that has nothing to do with attendance. Guests prove presence, that is all.",
   },
   {
-    title: "Approved organizer access",
+    title: "Your wallet, your events",
     description:
-      "Official event creation stays tied to approved organizer wallets.",
+      "Event creation is tied to an approved organizer wallet. No shared logins, no admin dashboards, no centralized bottleneck.",
   },
 ];
 
@@ -49,13 +49,13 @@ export default function OrganizerPage() {
         <div className="relative mx-auto max-w-6xl space-y-16">
           <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
             <div className="max-w-3xl">
-              <p className="section-kicker">Organizer guide</p>
+              <p className="section-kicker">For organizers</p>
               <h1 className="display-type mt-4 text-5xl leading-[0.96] tracking-[-0.04em] text-[#10233f] md:text-7xl">
-                Run a privacy-first event with a simpler check-in story.
+                Run your event without turning check-in into a data harvest.
               </h1>
               <p className="mt-6 text-lg leading-8 text-[#52637e] md:text-xl">
-                Start here if you want real proof of attendance without asking guests
-                for a pile of unnecessary personal data.
+                WiFiProof gives you verifiable attendance proof without asking
+                guests for anything they should not have to share.
               </p>
 
               <div className="mt-8 flex flex-col gap-4 sm:flex-row">
@@ -82,12 +82,13 @@ export default function OrganizerPage() {
             </div>
 
             <div className="paper-panel rounded-[2rem] p-7 md:p-8">
-              <p className="section-kicker">How it works</p>
+              <p className="section-kicker">How to get started</p>
               <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#10233f]">
-                Learn the flow first. Then move into setup.
+                Three steps to a live event.
               </h2>
               <p className="mt-4 text-base leading-8 text-[#52637e]">
-                The guide is open, but final event creation is only authorized for approved wallets.
+                Event creation requires an approved wallet. Request access first,
+                then come back to set up your event.
               </p>
 
               <div className="mt-6 space-y-4">
