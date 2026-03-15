@@ -2,12 +2,12 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 
-const techStack = [
-  { name: "Noir", desc: "On-device proving", logo: "/brand/noirlang.png" },
+const techStack: { name: string; desc: string; logo: string | null }[] = [
+  { name: "Noir", desc: "On-device ZK proving", logo: "/brand/noirlang.png" },
   { name: "Base", desc: "Settlement layer", logo: "/brand/logo-base.svg" },
   { name: "EAS", desc: "Attendance attestations", logo: "/brand/eas-attestation.png" },
-  { name: "Human checks", desc: "Sybil resistance", logo: null },
-  { name: "Foundry", desc: "Contract tooling", logo: null },
+  { name: "World ID", desc: "Sybil resistance", logo: null },
+  { name: "Noya", desc: "Key management", logo: null },
 ];
 
 export default function TechStack() {
@@ -22,7 +22,7 @@ export default function TechStack() {
         >
           <p className="section-kicker">Under the hood</p>
           <h2 className="display-type mt-4 max-w-3xl text-3xl leading-tight tracking-[-0.03em] md:text-4xl">
-            Simple on the surface, serious underneath.
+            Real cryptography, real infrastructure.
           </h2>
         </motion.div>
 
