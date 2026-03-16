@@ -1,4 +1,3 @@
-// WiFiProof V2: ZK Geolocation Prover
 // Proves user is within radius R of venue without revealing exact location
 
 use std::field::bn254::lt;
