@@ -17,12 +17,16 @@ import {
   AlertCircle,
   CheckCircle2,
   ChevronRight,
+  ImagePlus,
   Loader2,
   MapPin,
+  Wifi,
+  X,
 } from "lucide-react";
 
 import WalletCard from "@/components/wallet/WalletCard";
 import DateTimePicker from "@/components/DateTimePicker";
+import { preparePosterImage } from "@/lib/poster-image";
 
 const WIFI_PROOF_ABI = [
   {
@@ -109,12 +113,22 @@ function getEthereum() {
   ).ethereum);
 }
 
+type NetworkPrefixResponse = {
+  ok: true;
+  ip: string;
+  suggestedPrefix: string;
+  source: "request" | "ipify";
+  family: "ipv4" | "ipv6" | "unknown";
+  scope: "private" | "public" | "loopback" | "unknown";
+};
+
 export default function OrganizerClient() {
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
   const [walletAddress, setWalletAddress] = useState("");
   const handleWalletReady = useCallback(() => setStep(1), []);
 
   const [venueName, setVenueName] = useState("");
+  const [eventDescription, setEventDescription] = useState("");
   const [venueLat, setVenueLat] = useState("");
   const [venueLon, setVenueLon] = useState("");
   const [radiusMeters, setRadiusMeters] = useState("150");
@@ -123,6 +137,11 @@ export default function OrganizerClient() {
     () => new Date(Date.now() + 2 * 60 * 60 * 1000)
   );
   const [subnetPrefix, setSubnetPrefix] = useState("");
+  const [posterImageUrl, setPosterImageUrl] = useState("");
+  const [posterFileName, setPosterFileName] = useState("");
+  const [isPosterProcessing, setIsPosterProcessing] = useState(false);
+  const [isResolvingPrefix, setIsResolvingPrefix] = useState(false);
+  const [detectedNetworkHint, setDetectedNetworkHint] = useState("");
 
   const [statusMsg, setStatusMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -178,6 +197,45 @@ export default function OrganizerClient() {
     );
   }
 
+  async function handlePosterSelection(file: File | null) {
+    if (!file) {
+      return;
+    }
+
+    try {
+      setErrorMsg("");
+      setIsPosterProcessing(true);
+      const preparedPoster = await preparePosterImage(file);
+      setPosterImageUrl(preparedPoster);
+      setPosterFileName(file.name);
+    } catch (error) {
+      setErrorMsg((error as Error).message);
+    } finally {
+      setIsPosterProcessing(false);
+    }
+  }
+
+  async function handleUseCurrentPrefix() {
+    try {
+      setErrorMsg("");
+      setIsResolvingPrefix(true);
+      const response = await fetch("/api/network/prefix", { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`Failed to detect network prefix: ${await response.text()}`);
+      }
+
+      const result = (await response.json()) as NetworkPrefixResponse;
+      setSubnetPrefix(result.suggestedPrefix);
+      setDetectedNetworkHint(
+        `Detected ${result.ip} via ${result.source === "request" ? "request IP" : "ipify"}.`
+      );
+    } catch (error) {
+      setErrorMsg((error as Error).message);
+    } finally {
+      setIsResolvingPrefix(false);
+    }
+  }
+
   async function handleCreateEvent() {
     try {
       setErrorMsg("");
@@ -205,6 +263,7 @@ export default function OrganizerClient() {
       const lon = Number(venueLon);
       const radius = Number(radiusMeters);
       const normalizedVenueName = venueName.trim();
+      const normalizedEventDescription = eventDescription.trim();
       const normalizedSubnetPrefix = subnetPrefix.trim();
 
       const start = Math.floor(startDateTime.getTime() / 1000);
@@ -278,8 +337,10 @@ export default function OrganizerClient() {
           startTime: start,
           endTime: end,
           venueName: normalizedVenueName,
+          eventDescription: normalizedEventDescription,
           deadline,
           subnetPrefix: normalizedSubnetPrefix,
+          posterImageUrl,
           proof: proofHex,
           publicInputs: publicInputsBytes32,
         }),
@@ -340,9 +401,11 @@ export default function OrganizerClient() {
           startTime: start,
           endTime: end,
           venueName: normalizedVenueName,
+          eventDescription: normalizedEventDescription,
           venueLat: lat,
           venueLon: lon,
           radiusMeters: radius,
+          posterImageUrl,
           txHash,
           metadataToken,
         }),
@@ -495,6 +558,102 @@ export default function OrganizerClient() {
                     placeholder="ETH Safari - Day 1"
                   />
                 </label>
+
+                <label className="mt-5 block">
+                  <span className={labelClass}>Short description</span>
+                  <textarea
+                    className={`${inputClass} min-h-[132px] resize-y`}
+                    value={eventDescription}
+                    onChange={(e) => setEventDescription(e.target.value)}
+                    placeholder="Tell attendees what this event is, what room they are checking into, or what they should expect before minting."
+                    maxLength={500}
+                  />
+                  <span className="mt-2 block text-right text-xs leading-6 text-[#6a7891]">
+                    {eventDescription.trim().length}/500
+                  </span>
+                </label>
+              </section>
+
+              <section className="rounded-[1.75rem] border border-[#ded4c5] bg-[#fbf7ee] p-5">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#1f1b17]">Event poster</h3>
+                    <p className="mt-2 text-sm leading-7 text-[#5f564d]">
+                      Upload the artwork guests should see on the event page and
+                      in the events list. The image is compressed in the browser
+                      before it is saved with the event metadata.
+                    </p>
+                  </div>
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-[#d2c5b0] bg-white px-4 py-2 text-sm font-medium text-[#1f1b17] transition hover:bg-[#f3ebdf]">
+                    {isPosterProcessing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <ImagePlus className="h-4 w-4" />
+                        Upload poster
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null;
+                        void handlePosterSelection(file);
+                        event.currentTarget.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+
+                {posterImageUrl ? (
+                  <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-[#d7e4f6] bg-white">
+                    <div className="relative aspect-[16/9] bg-[#eaf2ff]">
+                      <Image
+                        src={posterImageUrl}
+                        alt="Poster preview"
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-[#1f1b17]">
+                          {posterFileName || "Event poster ready"}
+                        </p>
+                        <p className="text-xs leading-6 text-[#6a7891]">
+                          This artwork will appear on the attendee page and the
+                          events index.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPosterImageUrl("");
+                          setPosterFileName("");
+                        }}
+                        className="inline-flex items-center gap-2 rounded-full border border-[#d8c6bc] px-3 py-2 text-sm font-medium text-[#7b4d2e] transition hover:bg-[#fff6f0]"
+                      >
+                        <X className="h-4 w-4" />
+                        Remove poster
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-5 rounded-[1.5rem] border border-dashed border-[#c8d9f2] bg-white/70 px-4 py-8 text-center">
+                    <p className="text-sm font-medium text-[#1f1b17]">
+                      No poster uploaded yet
+                    </p>
+                    <p className="mt-2 text-xs leading-6 text-[#6a7891]">
+                      A wide poster works best. PNG, JPEG, and WebP are
+                      accepted.
+                    </p>
+                  </div>
+                )}
               </section>
 
               <section className="rounded-[1.75rem] border border-[#ded4c5] bg-[#fbf7ee] p-5">
@@ -567,6 +726,36 @@ export default function OrganizerClient() {
                   />
                 </label>
 
+                <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <button
+                    type="button"
+                    onClick={handleUseCurrentPrefix}
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-[#d2c5b0] bg-white px-4 py-2 text-sm font-medium text-[#1f1b17] transition hover:bg-[#f3ebdf]"
+                  >
+                    {isResolvingPrefix ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Detecting network...
+                      </>
+                    ) : (
+                      <>
+                        <Wifi className="h-4 w-4" />
+                        Use current network prefix
+                      </>
+                    )}
+                  </button>
+                  <p className="text-xs leading-6 text-[#6a7891]">
+                    Uses the same request-IP path the backend checks during
+                    verification.
+                  </p>
+                </div>
+
+                {detectedNetworkHint && (
+                  <p className="mt-3 text-xs leading-6 text-[#4870ad]">
+                    {detectedNetworkHint}
+                  </p>
+                )}
+
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <DateTimePicker
                     label="Start"
@@ -604,7 +793,8 @@ export default function OrganizerClient() {
               </p>
               <ul className="mt-4 space-y-3 text-sm leading-7 text-[#5f564d]">
                 <li>Event ID and venue hash</li>
-                <li>Venue name and event schedule</li>
+                <li>Event name, summary, and schedule</li>
+                <li>Poster artwork for the attendee page</li>
                 <li>Shareable attendee page and QR code</li>
               </ul>
             </aside>
@@ -625,9 +815,9 @@ export default function OrganizerClient() {
                 Before you click create
               </p>
               <p className="mt-4 text-sm leading-7 text-[#5b5249]">
-                Make sure you know the venue subnet prefix and that the connected
-                wallet is on Base Sepolia. The final step asks the wallet to sign
-                and publish the event.
+                Make sure the connected wallet is on Base Sepolia, confirm the
+                poster looks right, and double-check the detected network
+                prefix before publishing the event.
               </p>
             </aside>
           </div>
@@ -763,6 +953,20 @@ export default function OrganizerClient() {
                     height={224}
                     unoptimized
                     className="h-56 w-56"
+                  />
+                </div>
+              </div>
+            )}
+
+            {posterImageUrl && (
+              <div className="mt-8 overflow-hidden rounded-[1.5rem] border border-[#d7e4f6] bg-white">
+                <div className="relative aspect-[16/9] bg-[#eaf2ff]">
+                  <Image
+                    src={posterImageUrl}
+                    alt="Event poster preview"
+                    fill
+                    unoptimized
+                    className="object-cover"
                   />
                 </div>
               </div>
