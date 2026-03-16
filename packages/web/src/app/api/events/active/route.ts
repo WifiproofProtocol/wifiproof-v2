@@ -7,6 +7,8 @@ type EventRow = {
   start_time: number;
   end_time: number;
   venue_name: string;
+  event_description: string | null;
+  poster_image_url: string | null;
 };
 
 export const dynamic = "force-dynamic";
@@ -56,13 +58,13 @@ export async function GET(request: Request) {
     const [liveResult, todayResult] = await Promise.all([
       supabase
         .from("events")
-        .select("event_id, start_time, end_time, venue_name")
+        .select("*")
         .lte("start_time", now)
         .gte("end_time", now)
         .order("start_time", { ascending: true }),
       supabase
         .from("events")
-        .select("event_id, start_time, end_time, venue_name")
+        .select("*")
         .gte("start_time", dayStart)
         .lte("start_time", dayEnd)
         .order("start_time", { ascending: true }),

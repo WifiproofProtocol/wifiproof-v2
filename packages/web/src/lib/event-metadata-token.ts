@@ -7,7 +7,9 @@ type EventMetadataClaims = {
   startTime: number;
   endTime: number;
   venueName: string;
+  eventDescription: string;
   subnetPrefix: string;
+  posterImageUrl: string;
   iat: number;
   exp: number;
 };
@@ -55,7 +57,9 @@ export function issueEventMetadataToken(input: {
   startTime: number;
   endTime: number;
   venueName: string;
+  eventDescription: string;
   subnetPrefix: string;
+  posterImageUrl: string;
   ttlSeconds?: number;
 }): { token: string; claims: EventMetadataClaims } {
   const now = Math.floor(Date.now() / 1000);
@@ -71,7 +75,9 @@ export function issueEventMetadataToken(input: {
     startTime: Number(input.startTime),
     endTime: Number(input.endTime),
     venueName: input.venueName.trim(),
+    eventDescription: input.eventDescription.trim(),
     subnetPrefix: input.subnetPrefix.trim(),
+    posterImageUrl: input.posterImageUrl.trim(),
     iat: now,
     exp: now + ttlSeconds,
   };
@@ -130,7 +136,9 @@ export function verifyEventMetadataToken(token: string): EventMetadataClaims | n
       startTime: claims.startTime,
       endTime: claims.endTime,
       venueName: claims.venueName.trim(),
+      eventDescription: claims.eventDescription.trim(),
       subnetPrefix: claims.subnetPrefix.trim(),
+      posterImageUrl: claims.posterImageUrl.trim(),
       iat: claims.iat,
       exp: claims.exp,
     };

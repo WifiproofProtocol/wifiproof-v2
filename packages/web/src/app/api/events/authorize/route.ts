@@ -51,8 +51,10 @@ type AuthorizeRequest = {
   startTime: number;
   endTime: number;
   venueName: string;
+  eventDescription?: string;
   deadline: number;
   subnetPrefix: string;
+  posterImageUrl?: string;
   proof: `0x${string}`;
   publicInputs: `0x${string}`[];
 };
@@ -72,14 +74,20 @@ export async function POST(request: Request) {
       startTime,
       endTime,
       venueName,
+      eventDescription,
       deadline,
       subnetPrefix,
+      posterImageUrl,
       proof,
       publicInputs,
     } = body;
     const normalizedVenueName = typeof venueName === "string" ? venueName.trim() : "";
+    const normalizedEventDescription =
+      typeof eventDescription === "string" ? eventDescription.trim() : "";
     const normalizedSubnetPrefix =
       typeof subnetPrefix === "string" ? subnetPrefix.trim() : "";
+    const normalizedPosterImageUrl =
+      typeof posterImageUrl === "string" ? posterImageUrl.trim() : "";
 
     if (
       !organizer ||
@@ -91,7 +99,9 @@ export async function POST(request: Request) {
       !deadline ||
       !normalizedSubnetPrefix ||
       !proof ||
-      !publicInputs?.length
+      !publicInputs?.length ||
+      normalizedEventDescription.length > 500 ||
+      normalizedPosterImageUrl.length > 900_000
     ) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
@@ -216,7 +226,9 @@ export async function POST(request: Request) {
       startTime,
       endTime,
       venueName: normalizedVenueName,
+      eventDescription: normalizedEventDescription,
       subnetPrefix: normalizedSubnetPrefix,
+      posterImageUrl: normalizedPosterImageUrl,
     });
 
     return NextResponse.json({ signature, metadataToken });

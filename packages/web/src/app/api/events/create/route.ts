@@ -15,15 +15,18 @@ type CreateEventBody = {
   startTime: number;
   endTime: number;
   venueName: string;
+  eventDescription?: string;
   venueLat: number;
   venueLon: number;
   radiusMeters: number;
+  posterImageUrl?: string;
   txHash: string;
   metadataToken: string;
 };
 
 const ADDRESS_RE = /^0x[0-9a-f]{40}$/;
 const BYTES32_RE = /^0x[0-9a-f]{64}$/;
+const POSTER_RE = /^(data:image\/(?:png|jpeg|jpg|webp);base64,|https?:\/\/)/i;
 
 function normalize(value: string) {
   return value.trim().toLowerCase();
@@ -40,9 +43,11 @@ export async function POST(request: Request) {
       startTime,
       endTime,
       venueName,
+      eventDescription,
       venueLat,
       venueLon,
       radiusMeters,
+      posterImageUrl,
       txHash,
       metadataToken,
     } = body;
@@ -55,8 +60,12 @@ export async function POST(request: Request) {
       typeof venueHash === "string" ? normalize(venueHash) : "";
     const normalizedTxHash = typeof txHash === "string" ? normalize(txHash) : "";
     const normalizedVenueName = typeof venueName === "string" ? venueName.trim() : "";
+    const normalizedEventDescription =
+      typeof eventDescription === "string" ? eventDescription.trim() : "";
     const normalizedSubnetPrefix =
       typeof subnetPrefix === "string" ? subnetPrefix.trim() : "";
+    const normalizedPosterImageUrl =
+      typeof posterImageUrl === "string" ? posterImageUrl.trim() : "";
 
     if (
       !ADDRESS_RE.test(normalizedOrganizer) ||
@@ -68,9 +77,13 @@ export async function POST(request: Request) {
       !Number.isInteger(startTime) ||
       !Number.isInteger(endTime) ||
       !normalizedVenueName ||
+      normalizedEventDescription.length > 500 ||
       !Number.isFinite(venueLat) ||
       !Number.isFinite(venueLon) ||
-      !Number.isFinite(radiusMeters)
+      !Number.isFinite(radiusMeters) ||
+      (normalizedPosterImageUrl.length > 0 &&
+        (!POSTER_RE.test(normalizedPosterImageUrl) ||
+          normalizedPosterImageUrl.length > 900_000))
     ) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
@@ -87,7 +100,9 @@ export async function POST(request: Request) {
       metadataClaims.startTime !== startTime ||
       metadataClaims.endTime !== endTime ||
       metadataClaims.venueName !== normalizedVenueName ||
-      metadataClaims.subnetPrefix !== normalizedSubnetPrefix
+      metadataClaims.eventDescription !== normalizedEventDescription ||
+      metadataClaims.subnetPrefix !== normalizedSubnetPrefix ||
+      metadataClaims.posterImageUrl !== normalizedPosterImageUrl
     ) {
       return NextResponse.json({ error: "Metadata token mismatch" }, { status: 403 });
     }
@@ -130,15 +145,17 @@ export async function POST(request: Request) {
       start_time: startTime,
       end_time: endTime,
       venue_name: normalizedVenueName,
+      event_description: normalizedEventDescription || null,
       venue_lat: venueLat,
       venue_lon: venueLon,
       radius_meters: radiusMeters,
+      poster_image_url: normalizedPosterImageUrl || null,
     };
 
     const { data: existing, error: lookupError } = await supabase
       .from("events")
       .select(
-        "event_id, venue_hash, subnet_prefix, start_time, end_time, venue_name, venue_lat, venue_lon, radius_meters"
+        "*"
       )
       .eq("event_id", normalizedEventId)
       .maybeSingle();
@@ -159,9 +176,11 @@ export async function POST(request: Request) {
         Number(existing.start_time) === eventRow.start_time &&
         Number(existing.end_time) === eventRow.end_time &&
         (existing.venue_name ?? "") === eventRow.venue_name &&
+        (existing.event_description ?? null) === eventRow.event_description &&
         Number(existing.venue_lat) === eventRow.venue_lat &&
         Number(existing.venue_lon) === eventRow.venue_lon &&
-        Number(existing.radius_meters) === eventRow.radius_meters;
+        Number(existing.radius_meters) === eventRow.radius_meters &&
+        (existing.poster_image_url ?? null) === eventRow.poster_image_url;
 
       if (!matchesExisting) {
         return NextResponse.json(

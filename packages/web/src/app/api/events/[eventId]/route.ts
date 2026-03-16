@@ -16,9 +16,7 @@ export async function GET(
     const supabase = getSupabaseAdmin();
     const { data, error } = await supabase
       .from("events")
-      .select(
-        "event_id, venue_hash, subnet_prefix, start_time, end_time, venue_name, venue_lat, venue_lon, radius_meters"
-      )
+      .select("*")
       .eq("event_id", eventId)
       .maybeSingle();
 
@@ -30,7 +28,7 @@ export async function GET(
     }
 
     return NextResponse.json({ event: data });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }
