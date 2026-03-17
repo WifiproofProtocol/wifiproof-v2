@@ -27,6 +27,7 @@ import {
 import WalletCard from "@/components/wallet/WalletCard";
 import DateTimePicker from "@/components/DateTimePicker";
 import { preparePosterImage } from "@/lib/poster-image";
+import { getInjectedEthereum } from "@/lib/wallet-provider";
 
 const WIFI_PROOF_ABI = [
   {
@@ -100,17 +101,6 @@ function uint8ArrayToHex(bytes: Uint8Array) {
 async function loadCircuit() {
   const mod = await import("@wifiproof/proof-app/circuit/target/circuit.json");
   return mod.default ?? mod;
-}
-
-function getEthereum() {
-  if (typeof window === "undefined") {
-    return undefined;
-  }
-  return ((
-    window as Window & {
-      ethereum?: EIP1193Provider;
-    }
-  ).ethereum);
 }
 
 type NetworkPrefixResponse = {
@@ -255,7 +245,7 @@ export default function OrganizerClient() {
       if (!walletAddress) {
         throw new Error("Wallet not connected.");
       }
-      if (!getEthereum()) {
+      if (!getInjectedEthereum()) {
         throw new Error("Wallet connection lost.");
       }
 
@@ -359,7 +349,7 @@ export default function OrganizerClient() {
       }
 
       setStatusMsg("Confirm transaction in your wallet...");
-      const ethereum = getEthereum();
+      const ethereum = getInjectedEthereum() as EIP1193Provider | undefined;
       if (!ethereum) throw new Error("Wallet connection lost.");
       const walletClient = createWalletClient({
         chain: baseSepolia,

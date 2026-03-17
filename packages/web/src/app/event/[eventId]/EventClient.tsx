@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 
 import WalletCard from "@/components/wallet/WalletCard";
+import { getInjectedEthereum } from "@/lib/wallet-provider";
 
 const WIFI_PROOF_ABI = [
   {
@@ -98,17 +99,6 @@ function uint8ArrayToHex(bytes: Uint8Array) {
 async function loadCircuit() {
   const mod = await import("@wifiproof/proof-app/circuit/target/circuit.json");
   return mod.default ?? mod;
-}
-
-function getEthereum() {
-  if (typeof window === "undefined") {
-    return undefined;
-  }
-  return ((
-    window as Window & {
-      ethereum?: EIP1193Provider;
-    }
-  ).ethereum);
 }
 
 function formatEventWindow(start: number, end: number) {
@@ -297,7 +287,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
       if (!event) throw new Error("Event data not loaded.");
       if (!walletAddress) throw new Error("Wallet not connected.");
       if (!worldToken) throw new Error("World verification is required before claiming.");
-      if (!getEthereum()) throw new Error("Wallet connection lost.");
+      if (!getInjectedEthereum()) throw new Error("Wallet connection lost.");
 
       setStatusMsg("Verifying venue subnet...");
       const deadline = Math.floor(Date.now() / 1000) + 90;
@@ -355,7 +345,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
       );
 
       setStatusMsg("Preparing mint transaction...");
-      const ethereum = getEthereum();
+      const ethereum = getInjectedEthereum() as EIP1193Provider | undefined;
       if (!ethereum) throw new Error("Wallet connection lost.");
       const walletClient = createWalletClient({
         chain: baseSepolia,

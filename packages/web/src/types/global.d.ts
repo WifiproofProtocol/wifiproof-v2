@@ -5,5 +5,14 @@ interface Window {
     removeListener: (event: string, handler: (...args: unknown[]) => void) => void;
     isMetaMask?: boolean;
     isCoinbaseWallet?: boolean;
+    isRabby?: boolean;
+    providers?: Array<{
+      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+      on?: (event: string, handler: (...args: unknown[]) => void) => void;
+      removeListener?: (event: string, handler: (...args: unknown[]) => void) => void;
+      isMetaMask?: boolean;
+      isCoinbaseWallet?: boolean;
+      isRabby?: boolean;
+    }>;
   };
 }
