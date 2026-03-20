@@ -1,18 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import {
   createPublicClient,
-  createWalletClient,
-  custom,
   http,
   keccak256,
   toBytes,
 } from "viem";
-import type { EIP1193Provider } from "viem";
 import { baseSepolia } from "viem/chains";
+import { useAccount, useWalletClient } from "wagmi";
 import {
   AlertCircle,
   CheckCircle2,
@@ -27,7 +25,6 @@ import {
 import WalletCard from "@/components/wallet/WalletCard";
 import DateTimePicker from "@/components/DateTimePicker";
 import { preparePosterImage } from "@/lib/poster-image";
-import { getInjectedEthereum } from "@/lib/wallet-provider";
 
 const WIFI_PROOF_ABI = [
   {
@@ -114,8 +111,9 @@ type NetworkPrefixResponse = {
 
 export default function OrganizerClient() {
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
-  const [walletAddress, setWalletAddress] = useState("");
   const handleWalletReady = useCallback(() => setStep(1), []);
+  const { address } = useAccount();
+  const walletAddress = address ?? "";
 
   const [venueName, setVenueName] = useState("");
   const [eventDescription, setEventDescription] = useState("");
@@ -138,6 +136,7 @@ export default function OrganizerClient() {
   const [eventId, setEventId] = useState("");
   const [venueHash, setVenueHash] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
+  const { data: walletClient } = useWalletClient();
   const wifiproofAddress = (
     process.env.NEXT_PUBLIC_WIFIPROOF_ADDRESS ??
     "0xbcEfE9B5a2f1C0FA6f0E02c8c678CF41884e3f7C"
@@ -149,6 +148,12 @@ export default function OrganizerClient() {
     () => createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) }),
     [rpcUrl]
   );
+
+  useEffect(() => {
+    if (!walletAddress && step !== 0) {
+      setStep(0);
+    }
+  }, [step, walletAddress]);
 
   const stageLabels = [
     "Connect wallet",
@@ -245,7 +250,7 @@ export default function OrganizerClient() {
       if (!walletAddress) {
         throw new Error("Wallet not connected.");
       }
-      if (!getInjectedEthereum()) {
+      if (!walletClient) {
         throw new Error("Wallet connection lost.");
       }
 
@@ -349,13 +354,6 @@ export default function OrganizerClient() {
       }
 
       setStatusMsg("Confirm transaction in your wallet...");
-      const ethereum = getInjectedEthereum() as EIP1193Provider | undefined;
-      if (!ethereum) throw new Error("Wallet connection lost.");
-      const walletClient = createWalletClient({
-        chain: baseSepolia,
-        transport: custom(ethereum),
-      });
-
       const txHash = await walletClient.writeContract({
         address: wifiproofAddress as `0x${string}`,
         abi: WIFI_PROOF_ABI,
@@ -486,7 +484,6 @@ export default function OrganizerClient() {
             <div className="mt-6">
               <WalletCard
                 walletAddress={walletAddress}
-                setWalletAddress={setWalletAddress}
                 onReady={handleWalletReady}
               />
             </div>
