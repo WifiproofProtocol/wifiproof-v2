@@ -10,15 +10,13 @@ import {
 } from "@worldcoin/idkit";
 import {
   createPublicClient,
-  createWalletClient,
-  custom,
   decodeEventLog,
   encodeAbiParameters,
   http,
   keccak256,
 } from "viem";
-import type { EIP1193Provider } from "viem";
 import { baseSepolia } from "viem/chains";
+import { useAccount, useWalletClient } from "wagmi";
 import {
   ArrowUpRight,
   AlertCircle,
@@ -30,7 +28,6 @@ import {
 } from "lucide-react";
 
 import WalletCard from "@/components/wallet/WalletCard";
-import { getInjectedEthereum } from "@/lib/wallet-provider";
 
 const WIFI_PROOF_ABI = [
   {
@@ -125,7 +122,8 @@ function formatEventWindow(start: number, end: number) {
 
 export default function EventClient({ eventId }: { eventId: string }) {
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
-  const [walletAddress, setWalletAddress] = useState("");
+  const { address } = useAccount();
+  const walletAddress = address ?? "";
 
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [statusMsg, setStatusMsg] = useState("");
@@ -139,6 +137,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
   const [rpContext, setRpContext] = useState<RpContext | null>(null);
   const [artifactCid, setArtifactCid] = useState("");
   const [archiveWarning, setArchiveWarning] = useState("");
+  const { data: walletClient } = useWalletClient();
 
   const wifiproofAddress = (
     process.env.NEXT_PUBLIC_WIFIPROOF_ADDRESS ??
@@ -156,6 +155,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
   );
 
   const handleWalletReady = useCallback(() => setStep(1), []);
+  const isHumanityVerified = Boolean(worldToken);
   const stageLabels = [
     "Connect wallet",
     "Verify attendee",
@@ -191,6 +191,12 @@ export default function EventClient({ eventId }: { eventId: string }) {
   useEffect(() => {
     void fetchEvent();
   }, [fetchEvent]);
+
+  useEffect(() => {
+    if (!walletAddress && step !== 0) {
+      setStep(0);
+    }
+  }, [step, walletAddress]);
 
   useEffect(() => {
     setWorldToken("");
@@ -287,7 +293,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
       if (!event) throw new Error("Event data not loaded.");
       if (!walletAddress) throw new Error("Wallet not connected.");
       if (!worldToken) throw new Error("World verification is required before claiming.");
-      if (!getInjectedEthereum()) throw new Error("Wallet connection lost.");
+      if (!walletClient) throw new Error("Wallet connection lost.");
 
       setStatusMsg("Verifying venue subnet...");
       const deadline = Math.floor(Date.now() / 1000) + 90;
@@ -345,13 +351,6 @@ export default function EventClient({ eventId }: { eventId: string }) {
       );
 
       setStatusMsg("Preparing mint transaction...");
-      const ethereum = getInjectedEthereum() as EIP1193Provider | undefined;
-      if (!ethereum) throw new Error("Wallet connection lost.");
-      const walletClient = createWalletClient({
-        chain: baseSepolia,
-        transport: custom(ethereum),
-      });
-
       const txHash = await walletClient.writeContract({
         address: wifiproofAddress as `0x${string}`,
         abi: WIFI_PROOF_ABI,
@@ -579,7 +578,6 @@ export default function EventClient({ eventId }: { eventId: string }) {
               <div className="mt-6">
                 <WalletCard
                   walletAddress={walletAddress}
-                  setWalletAddress={setWalletAddress}
                   onReady={handleWalletReady}
                 />
               </div>
@@ -662,17 +660,32 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   )}
                 </button>
 
-                {worldStatus && (
+                {isHumanityVerified ? (
+                  <div className="mt-4 rounded-[1.2rem] border border-[#b9d8be] bg-[#edf7ef] px-4 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1d6f42] text-white">
+                        <CheckCircle2 className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[#155734]">Humanity verified</p>
+                        <p className="text-xs leading-6 text-[#35634a]">
+                          World verification is complete. You can now generate the attendance
+                          proof and mint.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : worldStatus ? (
                   <p className="mt-4 text-sm font-medium text-[#1d6f42]">{worldStatus}</p>
-                )}
+                ) : null}
                 {!isWorldConfigured && (
                   <p className="mt-4 text-sm font-medium text-[#9c6a0a]">
                     World ID is not configured in this environment.
                   </p>
                 )}
                 <p className="mt-3 text-xs leading-6 text-[#6a7891]">
-                  Desktop: scan the QR in World App. Mobile: World App opens
-                  directly.
+                  Desktop: scan the QR in World App. Mobile: approve in World App, then
+                  return to this page to continue.
                 </p>
               </div>
 
