@@ -10,12 +10,16 @@
     "insert-event": "tsx scripts/insert-event.ts"
   },
   "dependencies": {
+    "@base-org/account": "^2.5.2",
     "@lit-protocol/auth": "^8.2.3",
     "@lit-protocol/constants": "^9.0.1",
     "@lit-protocol/lit-client": "^8.3.1",
     "@lit-protocol/networks": "^8.4.1",
+    "@reown/appkit": "^1.8.19",
+    "@reown/appkit-adapter-wagmi": "^1.8.19",
     "@storacha/client": "^2.1.1",
     "@supabase/supabase-js": "^2.90.1",
+    "@tanstack/react-query": "^5.91.3",
     "@wifiproof/common": "workspace:*",
     "@wifiproof/proof-app": "workspace:*",
     "@worldcoin/idkit": "^4.0.8",
@@ -27,7 +31,8 @@
     "react": "19.2.3",
     "react-datepicker": "^9.1.0",
     "react-dom": "19.2.3",
-    "viem": "^2.21.0"
+    "viem": "^2.21.0",
+    "wagmi": "^3.5.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
