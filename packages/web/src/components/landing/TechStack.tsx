@@ -7,7 +7,7 @@ const techStack: { name: string; desc: string; logo: string | null }[] = [
   { name: "Base", desc: "Settlement layer", logo: "/brand/logo-base.svg" },
   { name: "EAS", desc: "Attendance attestations", logo: "/brand/eas-attestation.png" },
   { name: "World ID", desc: "Sybil resistance", logo: null },
-  { name: "Noya", desc: "Key management", logo: null },
+  { name: "Lit", desc: "Signer infrastructure", logo: null },
 ];
 
 export default function TechStack() {
@@ -20,9 +20,9 @@ export default function TechStack() {
           viewport={{ once: true }}
           className="mb-10"
         >
-          <p className="section-kicker">Under the hood</p>
+          <p className="section-kicker">Built with</p>
           <h2 className="display-type mt-4 max-w-3xl text-3xl leading-tight tracking-[-0.03em] md:text-4xl">
-            Real cryptography, real infrastructure.
+            Real infrastructure, not a mock protocol.
           </h2>
         </motion.div>
 
