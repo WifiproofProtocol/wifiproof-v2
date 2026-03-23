@@ -36,6 +36,13 @@ const WIFI_PROOF_ABI = [
   },
   {
     type: "function",
+    name: "isOrganizer",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "address" }],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    type: "function",
     name: "computeVenueHashFromScaled",
     stateMutability: "pure",
     inputs: [
@@ -109,9 +116,13 @@ type NetworkPrefixResponse = {
   scope: "private" | "public" | "loopback" | "unknown";
 };
 
+type OrganizerAccessState = "idle" | "checking" | "approved" | "rejected";
+
 export default function OrganizerClient() {
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
-  const handleWalletReady = useCallback(() => setStep(1), []);
+  const [walletReady, setWalletReady] = useState(false);
+  const [organizerAccess, setOrganizerAccess] = useState<OrganizerAccessState>("idle");
+  const handleWalletReady = useCallback(() => setWalletReady(true), []);
   const { address } = useAccount();
   const walletAddress = address ?? "";
 
@@ -141,6 +152,11 @@ export default function OrganizerClient() {
     process.env.NEXT_PUBLIC_WIFIPROOF_ADDRESS ??
     "0xbcEfE9B5a2f1C0FA6f0E02c8c678CF41884e3f7C"
   ).trim();
+  const organizerContactEmail = process.env.NEXT_PUBLIC_ORGANIZER_CONTACT_EMAIL?.trim();
+  const organizerContactHref = organizerContactEmail
+    ? `mailto:${organizerContactEmail}?subject=WiFiProof organizer access`
+    : "https://x.com/WiFiProof";
+  const organizerContactLabel = organizerContactEmail ?? "@WiFiProof on X";
 
   const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL ?? "https://sepolia.base.org";
 
@@ -153,7 +169,62 @@ export default function OrganizerClient() {
     if (!walletAddress && step !== 0) {
       setStep(0);
     }
+    if (!walletAddress) {
+      setWalletReady(false);
+      setOrganizerAccess("idle");
+    }
   }, [step, walletAddress]);
+
+  useEffect(() => {
+    if (!walletAddress) {
+      return;
+    }
+
+    let cancelled = false;
+    setOrganizerAccess("checking");
+
+    void Promise.all([
+      publicClient.readContract({
+        address: wifiproofAddress as `0x${string}`,
+        abi: WIFI_PROOF_ABI,
+        functionName: "owner",
+      }),
+      publicClient.readContract({
+        address: wifiproofAddress as `0x${string}`,
+        abi: WIFI_PROOF_ABI,
+        functionName: "isOrganizer",
+        args: [walletAddress as `0x${string}`],
+      }),
+    ])
+      .then(([owner, allowed]) => {
+        if (cancelled) return;
+        const approved =
+          owner.toLowerCase() === walletAddress.toLowerCase() || Boolean(allowed);
+        setOrganizerAccess(approved ? "approved" : "rejected");
+      })
+      .catch((error) => {
+        console.error("[organizer] allowlist check failed", error);
+        if (!cancelled) {
+          setOrganizerAccess("rejected");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [publicClient, walletAddress, wifiproofAddress]);
+
+  useEffect(() => {
+    if (walletReady && organizerAccess === "approved" && step === 0) {
+      setStep(1);
+    }
+  }, [organizerAccess, step, walletReady]);
+
+  useEffect(() => {
+    if (step > 0 && organizerAccess !== "approved") {
+      setStep(0);
+    }
+  }, [organizerAccess, step]);
 
   const stageLabels = [
     "Connect wallet",
@@ -425,13 +496,12 @@ export default function OrganizerClient() {
     <div className="mx-auto max-w-6xl space-y-8">
       <div className="space-y-3">
         <p className="section-kicker">Organizer setup</p>
-        <h1 className="display-type text-4xl leading-tight tracking-[-0.03em] text-[#1f1b17] md:text-6xl">
-          Build the check-in page your guests will actually trust.
+        <h1 className="display-type text-4xl leading-tight tracking-[-0.03em] text-[#1f1b17] md:text-5xl">
+          Create your event.
         </h1>
-        <p className="max-w-3xl text-lg leading-8 text-[#5f564d]">
-          Once your wallet is approved, this form packages the minimum required
-          data into a venue proof flow: event name, venue boundary, Wi-Fi
-          subnet, event window, and the attendee page you will display on-site.
+        <p className="max-w-2xl text-base leading-8 text-[#5f564d] md:text-lg">
+          Approved organizers can set the venue, publish the attendee page, and
+          share the QR from here.
         </p>
       </div>
 
@@ -474,12 +544,11 @@ export default function OrganizerClient() {
               Step 1
             </p>
             <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#1f1b17] md:text-4xl">
-              Connect the wallet that is allowed to create this event.
+              Connect your organizer wallet.
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-[#5f564d] md:text-base">
-              The organizer wallet is checked against the allowlist before the
-              backend authorizes event creation. Use the same wallet that should
-              own this venue setup.
+              We will check whether the connected wallet is approved before the
+              event form is unlocked.
             </p>
             <div className="mt-6">
               <WalletCard
@@ -489,24 +558,72 @@ export default function OrganizerClient() {
             </div>
           </div>
 
-          <div className="ink-panel rounded-[2rem] p-6 md:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ccb9a2]">
-              What you will create
-            </p>
-            <ul className="mt-6 space-y-4 text-sm leading-7 text-[#e8ddd1] md:text-base">
-              <li className="flex items-start gap-3">
-                <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#ab6c42]" />
-                <span>An event identity that attendees can open on-site.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#ab6c42]" />
-                <span>A venue boundary and Wi-Fi subnet for local verification.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#ab6c42]" />
-                <span>A QR-linked event page to print or display at the venue.</span>
-              </li>
-            </ul>
+          <div className="space-y-4">
+            <aside className="rounded-[1.75rem] border border-[#d2c5b0] bg-white/70 p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
+                Status
+              </p>
+
+              {!walletAddress && (
+                <p className="mt-4 text-sm leading-7 text-[#5f564d]">
+                  Connect a wallet to check access.
+                </p>
+              )}
+
+              {walletAddress && organizerAccess === "checking" && (
+                <div className="mt-4 flex items-center gap-3 text-sm font-medium text-[#1f1b17]">
+                  <Loader2 className="h-4 w-4 animate-spin text-[#2563eb]" />
+                  Checking organizer access...
+                </div>
+              )}
+
+              {walletAddress && organizerAccess === "approved" && (
+                <div className="mt-4 rounded-[1.35rem] border border-[#b9cfad] bg-[#eef4ea] p-4">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-[#5f6f52]" />
+                    <div>
+                      <p className="text-sm font-semibold text-[#1f1b17]">
+                        Organizer approved
+                      </p>
+                      <p className="text-xs leading-6 text-[#52604a]">
+                        Your setup form is ready.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {walletAddress && organizerAccess === "rejected" && (
+                <div className="mt-4 rounded-[1.35rem] border border-[#e2cbc4] bg-[#fff3ef] p-4">
+                  <p className="text-sm font-semibold text-[#7d3f33]">
+                    This wallet is not approved yet.
+                  </p>
+                  <p className="mt-2 text-xs leading-6 text-[#7b5c53]">
+                    Request organizer access first, then come back to setup.
+                  </p>
+                  <a
+                    href={organizerContactHref}
+                    target={organizerContactEmail ? undefined : "_blank"}
+                    rel={organizerContactEmail ? undefined : "noreferrer noopener"}
+                    className="mt-4 inline-flex rounded-full border border-[#dfb4ab] bg-white px-4 py-2 text-sm font-semibold text-[#7d3f33] transition hover:bg-[#fff9f7]"
+                  >
+                    Contact {organizerContactLabel}
+                  </a>
+                </div>
+              )}
+            </aside>
+
+            <aside className="ink-panel rounded-[1.75rem] p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ccb9a2]">
+                Setup includes
+              </p>
+              <ul className="mt-4 space-y-3 text-sm leading-7 text-[#e8ddd1]">
+                <li>Event details and poster</li>
+                <li>Venue location and radius</li>
+                <li>Wi-Fi subnet and schedule</li>
+                <li>Shareable attendee page and QR</li>
+              </ul>
+            </aside>
           </div>
         </div>
       )}
@@ -520,7 +637,7 @@ export default function OrganizerClient() {
                   Step 2
                 </p>
                 <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#1f1b17] md:text-4xl">
-                  Configure the venue and event boundary.
+                  Set the event details.
                 </h2>
               </div>
               <div className="rounded-full bg-[#efe2d0] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#7b684f]">
@@ -531,10 +648,6 @@ export default function OrganizerClient() {
             <div className="mt-8 space-y-6">
               <section className="rounded-[1.75rem] border border-[#ded4c5] bg-[#fbf7ee] p-5">
                 <h3 className="text-lg font-semibold text-[#1f1b17]">Event identity</h3>
-                <p className="mt-2 text-sm leading-7 text-[#5f564d]">
-                  Use the name attendees should recognize when they land on the
-                  event page.
-                </p>
 
                 <label className="mt-5 block">
                   <span className={labelClass}>Event name</span>
@@ -565,11 +678,7 @@ export default function OrganizerClient() {
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-[#1f1b17]">Event poster</h3>
-                    <p className="mt-2 text-sm leading-7 text-[#5f564d]">
-                      Upload the artwork guests should see on the event page and
-                      in the events list. The image is compressed in the browser
-                      before it is saved with the event metadata.
-                    </p>
+                    <p className="mt-2 text-sm leading-7 text-[#5f564d]">Shown on the event page and list.</p>
                   </div>
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-[#d2c5b0] bg-white px-4 py-2 text-sm font-medium text-[#1f1b17] transition hover:bg-[#f3ebdf]">
                     {isPosterProcessing ? (
@@ -647,10 +756,7 @@ export default function OrganizerClient() {
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-[#1f1b17]">Venue boundary</h3>
-                    <p className="mt-2 text-sm leading-7 text-[#5f564d]">
-                      Guests prove that they were inside this radius when they
-                      checked in.
-                    </p>
+                    <p className="mt-2 text-sm leading-7 text-[#5f564d]">Guests must be inside this radius.</p>
                   </div>
                   <button
                     type="button"
@@ -699,8 +805,7 @@ export default function OrganizerClient() {
                   Network and time window
                 </h3>
                 <p className="mt-2 text-sm leading-7 text-[#5f564d]">
-                  Attendees must be on the venue subnet during this event
-                  window.
+                  Attendees must be on the venue network during this window.
                 </p>
 
                 <label className="mt-5 block">
@@ -732,8 +837,7 @@ export default function OrganizerClient() {
                     )}
                   </button>
                   <p className="text-xs leading-6 text-[#6a7891]">
-                    Uses the same request-IP path the backend checks during
-                    verification.
+                    Uses the same request IP check as the backend.
                   </p>
                 </div>
 
@@ -758,8 +862,7 @@ export default function OrganizerClient() {
                 </div>
 
                 <p className="mt-4 text-xs leading-6 text-[#7a7063]">
-                  Times use the organizer’s local timezone while you configure
-                  the event.
+                  Times use your local timezone while configuring.
                 </p>
               </section>
             </div>
@@ -775,9 +878,7 @@ export default function OrganizerClient() {
 
           <div className="space-y-4">
             <aside className="rounded-[1.75rem] border border-[#d2c5b0] bg-white/70 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
-                What gets written
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">Saved</p>
               <ul className="mt-4 space-y-3 text-sm leading-7 text-[#5f564d]">
                 <li>Event ID and venue hash</li>
                 <li>Event name, summary, and schedule</li>
@@ -787,9 +888,7 @@ export default function OrganizerClient() {
             </aside>
 
             <aside className="ink-panel rounded-[1.75rem] p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#ccb9a2]">
-                What stays private
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#ccb9a2]">Private</p>
               <ul className="mt-4 space-y-3 text-sm leading-7 text-[#e8ddd1]">
                 <li>Exact attendee coordinates</li>
                 <li>Raw device location history</li>
@@ -798,13 +897,9 @@ export default function OrganizerClient() {
             </aside>
 
             <aside className="rounded-[1.75rem] border border-[#d2c5b0] bg-[#efe2d0] p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#7b684f]">
-                Before you click create
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#7b684f]">Before publish</p>
               <p className="mt-4 text-sm leading-7 text-[#5b5249]">
-                Make sure the connected wallet is on Base Sepolia, confirm the
-                poster looks right, and double-check the detected network
-                prefix before publishing the event.
+                Check the poster, network prefix, and schedule one more time.
               </p>
             </aside>
           </div>
@@ -822,9 +917,7 @@ export default function OrganizerClient() {
               Publishing your event.
             </h2>
             <p className="mt-4 text-sm leading-7 text-[#d7c7b6] md:text-base">
-              We are generating the organizer proof, checking access, waiting
-              for the Base Sepolia transaction, and saving the attendee page
-              metadata.
+              Generating the organizer proof, sending the transaction, and saving the event.
             </p>
             <div className="mt-8 rounded-[1.5rem] border border-white/10 bg-white/5 p-4 font-mono text-sm text-[#f5efe6]">
               {statusMsg}
@@ -882,9 +975,7 @@ export default function OrganizerClient() {
               Event secured and ready to share.
             </h2>
             <p className="mt-4 text-sm leading-7 text-[#d7c7b6] md:text-base">
-              Your event is live on Base Sepolia. The next step is simple:
-              display the QR or attendee page at the venue so guests can check
-              in on-site.
+              Your event is live on Base Sepolia. Share the QR or attendee page on-site.
             </p>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -960,8 +1051,7 @@ export default function OrganizerClient() {
             )}
 
             <p className="mt-6 text-sm leading-7 text-[#5f564d]">
-              Guests land on the attendee page, connect on-site, and generate
-              their proof from there.
+              Guests open this page on-site and complete check-in from there.
             </p>
 
             <a
