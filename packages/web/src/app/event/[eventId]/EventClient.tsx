@@ -458,7 +458,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
             <p className="max-w-2xl text-base leading-8 text-[#52637e] md:text-lg">
               {event?.event_description?.trim()
                 ? event.event_description
-                : "Verify humanity, prove on-site presence, and mint your attendance attestation without exposing your exact coordinates."}
+                : "Check in privately and mint your attendance attestation."}
             </p>
 
             <div className="flex flex-wrap items-center gap-3 text-sm text-[#486284]">
@@ -568,12 +568,10 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 Step 1
               </p>
               <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#10233f] md:text-4xl">
-                Connect the wallet you want the attendance attestation tied to.
+                Connect the wallet for this attestation.
               </h2>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-[#52637e] md:text-base">
-                This wallet becomes the attestation recipient on Base Sepolia.
-                After connecting, you will verify humanity and then generate the
-                proof locally on your device.
+                This wallet will receive the attestation on Base Sepolia.
               </p>
               <div className="mt-6">
                 <WalletCard
@@ -585,22 +583,19 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
             <div className="ink-panel rounded-[2rem] p-6 md:p-8">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d6e7ff]">
-                What happens next
+                Flow
               </p>
-              <ul className="mt-6 space-y-4 text-sm leading-7 text-[#e8f1ff] md:text-base">
-                <li className="flex items-start gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#8fc0ff]" />
-                  <span>Verify you are a unique attendee before claiming.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#8fc0ff]" />
-                  <span>Generate the proximity proof in your browser.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#8fc0ff]" />
-                  <span>Mint the attendance attestation on Base Sepolia.</span>
-                </li>
-              </ul>
+              <div className="mt-5 flex flex-wrap gap-3 text-sm text-[#e8f1ff]">
+                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
+                  Verify humanity
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
+                  Generate proof
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
+                  Mint attestation
+                </span>
+              </div>
             </div>
           </div>
         )}
@@ -614,7 +609,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                     Step 2
                   </p>
                   <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#10233f] md:text-4xl">
-                    Verify humanity, then mint your proof of presence.
+                    Verify and mint.
                   </h2>
                 </div>
                 <div className="rounded-full bg-[#e8f0ff] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#2563eb]">
@@ -669,8 +664,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                       <div>
                         <p className="text-sm font-semibold text-[#155734]">Humanity verified</p>
                         <p className="text-xs leading-6 text-[#35634a]">
-                          World verification is complete. You can now generate the attendance
-                          proof and mint.
+                          You can continue to claim.
                         </p>
                       </div>
                     </div>
@@ -684,8 +678,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   </p>
                 )}
                 <p className="mt-3 text-xs leading-6 text-[#6a7891]">
-                  Desktop: scan the QR in World App. Mobile: approve in World App, then
-                  return to this page to continue.
+                  Desktop: scan in World App. Mobile: approve and return here.
                 </p>
               </div>
 
@@ -701,19 +694,19 @@ export default function EventClient({ eventId }: { eventId: string }) {
             <div className="space-y-4">
               <aside className="rounded-[1.75rem] border border-[#cfe1ff] bg-white/86 p-5 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
-                  What we verify before minting
+                  Checks
                 </p>
                 <ul className="mt-4 space-y-3 text-sm leading-7 text-[#52637e]">
-                  <li>World-based humanity check</li>
-                  <li>Venue network presence via signed IP check</li>
-                  <li>Local zero-knowledge proximity proof</li>
-                  <li>Event binding and on-chain contract verification</li>
+                  <li>Humanity</li>
+                  <li>Venue network</li>
+                  <li>Location proof</li>
+                  <li>On-chain verification</li>
                 </ul>
               </aside>
 
               <aside className="ink-panel rounded-[1.75rem] p-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#d6e7ff]">
-                  Event details
+                  Event
                 </p>
                 <div className="mt-4 space-y-4 text-sm leading-7 text-[#e8f1ff]">
                   <div>
