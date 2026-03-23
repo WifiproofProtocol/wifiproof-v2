@@ -1018,27 +1018,12 @@ export default function OrganizerClient() {
 
           <div className="rounded-[2rem] border border-[#d2c5b0] bg-white/70 p-6 text-center shadow-[0_24px_60px_rgba(57,43,30,0.08)] md:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
-              Print or display at the venue
+              Ready to display
             </p>
 
-            {qrDataUrl && (
-              <div className="mt-6 flex flex-col items-center">
-                <div className="rounded-[1.75rem] bg-white p-4 shadow-[0_18px_40px_rgba(57,43,30,0.12)]">
-                  <Image
-                    src={qrDataUrl}
-                    alt="Event Check-in QR code"
-                    width={224}
-                    height={224}
-                    unoptimized
-                    className="h-56 w-56"
-                  />
-                </div>
-              </div>
-            )}
-
-            {posterImageUrl && (
-              <div className="mt-8 overflow-hidden rounded-[1.5rem] border border-[#d7e4f6] bg-white">
-                <div className="relative aspect-[16/9] bg-[#eaf2ff]">
+            <div className="mt-6 overflow-hidden rounded-[1.9rem] border border-[#d7e4f6] bg-white text-left shadow-[0_18px_40px_rgba(57,43,30,0.12)]">
+              {posterImageUrl && (
+                <div className="relative aspect-[16/8] bg-[#eaf2ff]">
                   <Image
                     src={posterImageUrl}
                     alt="Event poster preview"
@@ -1047,21 +1032,51 @@ export default function OrganizerClient() {
                     className="object-cover"
                   />
                 </div>
+              )}
+
+              <div className="grid gap-6 p-6 md:grid-cols-[1fr_220px] md:items-start">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2563eb]">
+                    WiFiProof check-in
+                  </p>
+                  <h3 className="mt-3 text-2xl font-semibold leading-tight text-[#1f1b17]">
+                    {venueName}
+                  </h3>
+                  {eventDescription.trim() && (
+                    <p className="mt-3 text-sm leading-7 text-[#5f564d]">
+                      {eventDescription}
+                    </p>
+                  )}
+                  <div className="mt-5 space-y-2 text-xs leading-6 text-[#6a7891]">
+                    <p>Open the attendee page, connect on-site, and complete the proof flow.</p>
+                    <p className="font-mono text-[#7b4d2e]">
+                      {typeof window !== "undefined" ? window.location.origin : ""}/event/{eventId}
+                    </p>
+                  </div>
+                  <p className="mt-5 text-xs font-semibold uppercase tracking-[0.14em] text-[#7b684f]">
+                    Powered by WiFiProof
+                  </p>
+                </div>
+
+                {qrDataUrl && (
+                  <div className="flex flex-col items-center rounded-[1.5rem] bg-[#f8fbff] p-4 text-center">
+                    <div className="rounded-[1.4rem] bg-white p-3 shadow-[0_10px_24px_rgba(37,99,235,0.12)]">
+                      <Image
+                        src={qrDataUrl}
+                        alt="Event Check-in QR code"
+                        width={196}
+                        height={196}
+                        unoptimized
+                        className="h-48 w-48"
+                      />
+                    </div>
+                    <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#5e7ca8]">
+                      Scan to check in
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
-
-            <p className="mt-6 text-sm leading-7 text-[#5f564d]">
-              Guests open this page on-site and complete check-in from there.
-            </p>
-
-            <a
-              href={`/event/${eventId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 block break-all font-mono text-sm text-[#7b4d2e] underline underline-offset-4"
-            >
-              {typeof window !== "undefined" ? window.location.origin : ""}/event/{eventId}
-            </a>
+            </div>
 
             <div className="mt-8 rounded-[1.5rem] border border-[#ded4c5] bg-[#fbf7ee] p-5 text-left">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
