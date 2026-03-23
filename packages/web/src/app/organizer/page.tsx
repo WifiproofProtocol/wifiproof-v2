@@ -1,27 +1,7 @@
-import OrganizerClient from "./OrganizerClient";
-
-const organizerBenefits = [
-  {
-    title: "A stronger attendance signal",
-    description:
-      "The check-in is tied to the venue Wi-Fi and on-site location, not just a QR code someone could screenshot at home.",
-  },
-  {
-    title: "Respect your guests' privacy",
-    description:
-      "No email walls, no forms, no collecting data that has nothing to do with attendance. Guests prove presence, that is all.",
-  },
-  {
-    title: "Your wallet, your events",
-    description:
-      "Event creation is tied to an approved organizer wallet. No shared logins, no admin dashboards, no centralized bottleneck.",
-  },
-];
-
-const launchSteps = [
-  "Request access for the wallet you want to use.",
-  "Set your venue, Wi-Fi subnet, and event window.",
-  "Share the generated event page or QR code on-site.",
+const organizerNotes = [
+  "Approved wallet required",
+  "Venue Wi-Fi + location check",
+  "Poster, details, and QR in one flow",
 ];
 
 export default function OrganizerPage() {
@@ -46,105 +26,79 @@ export default function OrganizerPage() {
           }}
         />
 
-        <div className="relative mx-auto max-w-6xl space-y-16">
-          <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
-            <div className="max-w-3xl">
-              <p className="section-kicker">For organizers</p>
-              <h1 className="display-type mt-4 text-5xl leading-[0.96] tracking-[-0.04em] text-[#10233f] md:text-7xl">
-                Run your event without turning check-in into a data harvest.
-              </h1>
-              <p className="mt-6 text-lg leading-8 text-[#52637e] md:text-xl">
-                WiFiProof gives you verifiable attendance proof without asking
-                guests for anything they should not have to share.
-              </p>
+        <div className="relative mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+          <div className="max-w-3xl">
+            <p className="section-kicker">For organizers</p>
+            <h1 className="display-type mt-4 text-5xl leading-[0.96] tracking-[-0.04em] text-[#10233f] md:text-7xl">
+              Create the event. Share the check-in.
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-[#52637e] md:text-xl">
+              WiFiProof keeps event setup tight: approved wallet, venue boundary,
+              network check, and a shareable attendee page.
+            </p>
 
-              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-                <a
-                  href={contactHref}
-                  {...contactProps}
-                  className="inline-flex items-center justify-center rounded-full bg-[#2563eb] px-6 py-3.5 text-sm font-medium text-white transition hover:bg-[#1d4ed8]"
+            <div className="mt-8 flex flex-wrap gap-3">
+              {organizerNotes.map((note) => (
+                <span
+                  key={note}
+                  className="rounded-full border border-[#cfe1ff] bg-white/86 px-4 py-2 text-sm font-medium text-[#31517f]"
                 >
-                  Request organizer access
-                </a>
-                <a
-                  href="#organizer-setup"
-                  className="inline-flex items-center justify-center rounded-full border border-[#93b7e8]/30 bg-white/82 px-6 py-3.5 text-sm font-medium text-[#10233f] transition hover:bg-white"
-                >
-                  Already approved? Continue to setup
-                </a>
-              </div>
-
-              <p className="mt-4 text-sm leading-7 text-[#61728d]">
-                Organizer creation is allowlisted for the demo. If your wallet
-                is not approved yet, contact {contactLabel} and we can enable it
-                before the event goes live.
-              </p>
+                  {note}
+                </span>
+              ))}
             </div>
 
-            <div className="paper-panel rounded-[2rem] p-7 md:p-8">
-              <p className="section-kicker">How to get started</p>
-              <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#10233f]">
-                Three steps to a live event.
-              </h2>
-              <p className="mt-4 text-base leading-8 text-[#52637e]">
-                Event creation requires an approved wallet. Request access first,
-                then come back to set up your event.
-              </p>
-
-              <div className="mt-6 space-y-4">
-                {launchSteps.map((step, index) => (
-                  <div
-                    key={step}
-                    className="rounded-[1.5rem] border border-[#d6e5fb] bg-[#f8fbff] px-4 py-4"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#2563eb] text-sm font-semibold text-white">
-                        0{index + 1}
-                      </div>
-                      <p className="text-sm leading-7 text-[#425779] md:text-base">{step}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-3">
-            {organizerBenefits.map((benefit, index) => (
-              <div
-                key={benefit.title}
-                className={`rounded-[1.8rem] border p-6 shadow-[0_20px_50px_rgba(57,43,30,0.08)] ${
-                  index === 1
-                    ? "bg-[#0f2747] text-white border-white/8"
-                    : "border-[#cfe1ff] bg-white/88 text-[#10233f]"
-                }`}
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+              <a
+                href="/organizer/setup"
+                className="inline-flex items-center justify-center rounded-full bg-[#2563eb] px-6 py-3.5 text-sm font-medium text-white transition hover:bg-[#1d4ed8]"
               >
-                <p
-                  className={`text-xs font-semibold uppercase tracking-[0.16em] ${
-                    index === 1 ? "text-[#cfe1ff]" : "text-[#2563eb]"
-                  }`}
-                >
-                  Why it matters
+                Open organizer setup
+              </a>
+              <a
+                href={contactHref}
+                {...contactProps}
+                className="inline-flex items-center justify-center rounded-full border border-[#93b7e8]/30 bg-white/82 px-6 py-3.5 text-sm font-medium text-[#10233f] transition hover:bg-white"
+              >
+                Request access
+              </a>
+            </div>
+
+            <p className="mt-4 text-sm leading-7 text-[#61728d]">
+              Demo event creation is allowlisted. If your wallet is not approved yet,
+              contact {contactLabel}.
+            </p>
+          </div>
+
+          <div className="paper-panel rounded-[2rem] p-7 md:p-8">
+            <p className="section-kicker">Flow</p>
+            <div className="mt-5 space-y-4">
+              <div className="rounded-[1.5rem] border border-[#d6e5fb] bg-[#f8fbff] px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
+                  01
                 </p>
-                <h3 className="mt-4 text-2xl font-semibold leading-tight">
-                  {benefit.title}
-                </h3>
-                <p
-                  className={`mt-4 text-sm leading-7 md:text-base ${
-                    index === 1 ? "text-[#d7e6ff]" : "text-[#52637e]"
-                  }`}
-                >
-                  {benefit.description}
+                <p className="mt-2 text-sm leading-7 text-[#425779] md:text-base">
+                  Connect the organizer wallet and confirm it is approved.
                 </p>
               </div>
-            ))}
+              <div className="rounded-[1.5rem] border border-[#d6e5fb] bg-[#f8fbff] px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
+                  02
+                </p>
+                <p className="mt-2 text-sm leading-7 text-[#425779] md:text-base">
+                  Add the event details, poster, location, and network prefix.
+                </p>
+              </div>
+              <div className="rounded-[1.5rem] border border-[#d6e5fb] bg-[#f8fbff] px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
+                  03
+                </p>
+                <p className="mt-2 text-sm leading-7 text-[#425779] md:text-base">
+                  Publish the attendee page and display the generated QR on-site.
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
-
-      <section id="organizer-setup" className="px-6">
-        <div className="mx-auto max-w-6xl rounded-[2.5rem] border border-[#cfe1ff] bg-white/86 p-4 shadow-[0_28px_80px_rgba(37,99,235,0.08)] md:p-6">
-          <OrganizerClient />
         </div>
       </section>
     </main>
