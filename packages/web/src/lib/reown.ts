@@ -31,7 +31,7 @@ export const appKitConfig = {
   networks: reownNetworks,
   defaultNetwork: baseSepolia,
   projectId: reownProjectId,
-  allowUnsupportedChain: false,
+  allowUnsupportedChain: true,
   coinbasePreference: "all" as const,
   features: {
     analytics: true,
