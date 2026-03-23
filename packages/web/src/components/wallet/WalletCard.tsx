@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppKit } from "@reown/appkit/react";
 import { AlertTriangle, CheckCircle2, Loader2, Smartphone, Wallet2 } from "lucide-react";
-import { useAccount, useChainId, useSwitchChain } from "wagmi";
+import { useAccount, useChainId, useDisconnect, useSwitchChain } from "wagmi";
 
 import { targetChainId } from "@/lib/reown";
 
@@ -26,6 +26,7 @@ export default function WalletCard({
 }: WalletCardProps) {
   const { open } = useAppKit();
   const { address, isConnected, status } = useAccount();
+  const { disconnectAsync, isPending: isDisconnecting } = useDisconnect();
   const chainId = useChainId();
   const { switchChainAsync, isPending: isSwitching } = useSwitchChain();
 
@@ -38,7 +39,6 @@ export default function WalletCard({
       ? false
       : window.sessionStorage.getItem(MOBILE_PENDING_KEY) === "1"
   );
-  const [shouldAutoSwitch, setShouldAutoSwitch] = useState(false);
   const lastReadyAddressRef = useRef<string>("");
 
   const isMobile = useMemo(() => isMobileUserAgent(userAgent), [userAgent]);
@@ -89,30 +89,6 @@ export default function WalletCard({
   }, [address, isConnected, setWalletAddress]);
 
   useEffect(() => {
-    if (!shouldAutoSwitch || !isWrongNetwork || !switchChainAsync) {
-      return;
-    }
-
-    let cancelled = false;
-
-    void switchChainAsync({ chainId: targetChainId })
-      .catch((error) => {
-        if (!cancelled) {
-          console.error("[wallet] auto switch failed", error);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setShouldAutoSwitch(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isWrongNetwork, shouldAutoSwitch, switchChainAsync]);
-
-  useEffect(() => {
     if (!address || !isConnected || isWrongNetwork) {
       return;
     }
@@ -133,11 +109,9 @@ export default function WalletCard({
       }
 
       setIsOpeningWallet(true);
-      setShouldAutoSwitch(true);
       await open({ view: "Connect" });
     } catch (error) {
       console.error("[wallet] failed to open wallet modal", error);
-      setShouldAutoSwitch(false);
     } finally {
       setIsOpeningWallet(false);
     }
@@ -150,6 +124,20 @@ export default function WalletCard({
       await switchChainAsync({ chainId: targetChainId });
     } catch (error) {
       console.error("[wallet] switch network failed", error);
+    }
+  }
+
+  async function handleDisconnect() {
+    try {
+      if (typeof window !== "undefined") {
+        window.sessionStorage.removeItem(MOBILE_PENDING_KEY);
+      }
+      lastReadyAddressRef.current = "";
+      setPendingMobileReturn(false);
+      setIsOpeningWallet(false);
+      await disconnectAsync();
+    } catch (error) {
+      console.error("[wallet] disconnect failed", error);
     }
   }
 
@@ -181,7 +169,7 @@ export default function WalletCard({
           <h3 className="text-lg font-semibold text-[#1f1b17]">Switch to Base Sepolia</h3>
         </div>
         <p className="text-sm leading-7 text-[#5f564d]">
-          Your wallet is connected, but the app needs Base Sepolia before it can continue.
+          Your wallet is connected on the wrong network.
         </p>
         <button
           type="button"
@@ -198,6 +186,24 @@ export default function WalletCard({
             "Switch to Base Sepolia"
           )}
         </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={handleChangeWallet}
+            disabled={isOpeningWallet || isDisconnecting}
+            className="flex-1 rounded-[1rem] border border-[#d2c5b0] bg-white px-4 py-3 text-sm font-semibold text-[#1f1b17] transition-colors hover:bg-[#f6ede2] disabled:opacity-50"
+          >
+            {isOpeningWallet ? "Opening..." : "Choose different wallet"}
+          </button>
+          <button
+            type="button"
+            onClick={handleDisconnect}
+            disabled={isDisconnecting || isOpeningWallet}
+            className="flex-1 rounded-[1rem] border border-[#e5c5bd] bg-[#fffaf8] px-4 py-3 text-sm font-semibold text-[#8d4134] transition-colors hover:bg-[#ffefe9] disabled:opacity-50"
+          >
+            {isDisconnecting ? "Disconnecting..." : "Disconnect"}
+          </button>
+        </div>
       </div>
     );
   }
@@ -210,8 +216,7 @@ export default function WalletCard({
           <h3 className="text-lg font-semibold">Connect wallet</h3>
         </div>
         <p className="text-sm leading-7 text-[#5f564d]">
-          Open the wallet modal, choose your wallet, approve the connection, and we will
-          continue automatically once the session is ready.
+          Choose a wallet to continue.
         </p>
         <button
           type="button"
@@ -236,13 +241,11 @@ export default function WalletCard({
               Mobile flow
             </p>
             <p className="mt-2">
-              Choose MetaMask, Base App, or another wallet in the modal. If your wallet
-              opens in a separate app, approve there and return to this tab.
+              If your wallet opens in a separate app, approve there and return here.
             </p>
             {isAwaitingMobileReturn && (
               <p className="mt-3 rounded-[1rem] bg-[#eef4ff] px-3 py-3 text-[#25559a]">
-                Waiting for wallet approval. Return here after approving and we will refresh
-                the connection automatically.
+                Waiting for wallet approval. Return here after approving.
               </p>
             )}
           </div>
@@ -266,10 +269,18 @@ export default function WalletCard({
         <button
           type="button"
           onClick={handleChangeWallet}
-          disabled={isOpeningWallet}
+          disabled={isOpeningWallet || isDisconnecting}
           className="rounded-full border border-[#d2c5b0] bg-white px-4 py-2 text-sm font-semibold text-[#1f1b17] transition-colors hover:bg-[#f3ebdf] disabled:opacity-50"
         >
           {isOpeningWallet ? "Opening..." : "Change wallet"}
+        </button>
+        <button
+          type="button"
+          onClick={handleDisconnect}
+          disabled={isDisconnecting || isOpeningWallet}
+          className="rounded-full border border-[#e5c5bd] bg-[#fffaf8] px-4 py-2 text-sm font-semibold text-[#8d4134] transition-colors hover:bg-[#ffefe9] disabled:opacity-50"
+        >
+          {isDisconnecting ? "Disconnecting..." : "Disconnect"}
         </button>
         <button
           type="button"
