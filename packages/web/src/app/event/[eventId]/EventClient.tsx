@@ -143,6 +143,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
   const [proofBytes, setProofBytes] = useState<number | null>(null);
   const [claimTxHash, setClaimTxHash] = useState("");
   const [claimedAt, setClaimedAt] = useState("");
+  const [copiedUid, setCopiedUid] = useState(false);
   const { data: walletClient } = useWalletClient();
 
   const wifiproofAddress = (
@@ -391,6 +392,11 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
       setStatusMsg("Waiting for confirmation...");
       const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+      if (receipt.status === "reverted") {
+        throw new Error("AlreadyClaimed");
+      }
+
       setClaimedAt(new Date().toISOString());
 
       let foundUid = "";
@@ -457,7 +463,12 @@ export default function EventClient({ eventId }: { eventId: string }) {
       setStatusMsg("");
       setStep(3);
     } catch (error) {
-      setErrorMsg((error as Error).message);
+      const msg = (error as Error).message ?? "";
+      if (msg.includes("AlreadyClaimed") || msg.includes("already claimed")) {
+        setErrorMsg("You have already claimed this event with this wallet.");
+      } else {
+        setErrorMsg(msg);
+      }
       setStep(1);
     }
   }
@@ -488,12 +499,21 @@ export default function EventClient({ eventId }: { eventId: string }) {
   }
 
   async function handleCopyUid() {
-    if (!attestationUid || typeof navigator === "undefined" || !navigator.clipboard) {
-      return;
-    }
+    if (!attestationUid) return;
 
     try {
-      await navigator.clipboard.writeText(attestationUid);
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(attestationUid);
+      } else {
+        const el = document.createElement("textarea");
+        el.value = attestationUid;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+      }
+      setCopiedUid(true);
+      setTimeout(() => setCopiedUid(false), 1500);
     } catch (error) {
       console.error("[claim] copy uid failed", error);
     }
@@ -896,72 +916,44 @@ export default function EventClient({ eventId }: { eventId: string }) {
         )}
 
         {step === 3 && (
-          <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="ink-panel rounded-[2rem] p-8">
-              <CheckCircle2 className="h-16 w-16 text-[#a7d99a]" />
-              <p className="mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-[#d6e7ff]">
-                Step 4
-              </p>
-              <h2 className="display-type mt-3 text-4xl leading-tight tracking-[-0.03em] text-white md:text-5xl">
-                Presence verified.
-              </h2>
-              <p className="mt-4 text-sm leading-7 text-[#d6e7ff] md:text-base">
-                This is your permanent, on-chain record that you were at{" "}
-                {event?.venue_name ?? "this event"}.
-              </p>
+          <div className="space-y-6">
+            <div className="ink-panel rounded-[2.25rem] p-8 md:p-10">
+              <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
+                <div>
+                  <CheckCircle2 className="h-16 w-16 text-[#a7d99a]" />
+                  <p className="mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-[#d6e7ff]">
+                    Step 4
+                  </p>
+                  <h2 className="display-type mt-3 max-w-3xl text-4xl leading-[0.94] tracking-[-0.04em] text-white md:text-6xl">
+                    Presence verified.
+                  </h2>
+                  <p className="mt-4 max-w-2xl text-sm leading-7 text-[#d6e7ff] md:text-base">
+                    This is your permanent, on-chain record that you were at{" "}
+                    {event?.venue_name ?? "this event"}.
+                  </p>
+                </div>
 
-              <div className="mt-8 rounded-[1.75rem] border border-white/10 bg-white/5 p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#d6e7ff]">
-                  Attestation card
-                </p>
-                <div className="mt-4 grid gap-4 rounded-[1.5rem] border border-white/10 bg-[#163354] p-5 md:grid-cols-2">
-                  <div>
-                    <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-[#a8c8f5]">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-[1.6rem] border border-white/10 bg-white/5 p-4">
+                    <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-[#d6e7ff]">
                       Event
                     </span>
-                    <span className="mt-2 block text-lg font-semibold text-white">
+                    <span className="block text-lg font-semibold text-white">
                       {event?.venue_name ?? "-"}
                     </span>
                   </div>
-                  <div>
-                    <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-[#a8c8f5]">
-                      Wallet
-                    </span>
-                    <span className="mt-2 block font-mono text-sm text-[#f5f9ff]">
-                      {walletAddress}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-[#a8c8f5]">
+                  <div className="rounded-[1.6rem] border border-white/10 bg-white/5 p-4">
+                    <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-[#d6e7ff]">
                       Minted
                     </span>
-                    <span className="mt-2 block text-sm text-[#f5f9ff]">
+                    <span className="block text-sm leading-7 text-[#f5f9ff]">
                       {claimedAt
                         ? new Date(claimedAt).toLocaleString()
                         : new Date().toLocaleString()}
                     </span>
                   </div>
-                  <div>
-                    <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-[#a8c8f5]">
-                      Attestation UID
-                    </span>
-                    <span className="mt-2 block break-all font-mono text-sm text-[#f5f9ff]">
-                      {attestationUid}
-                    </span>
-                  </div>
                 </div>
               </div>
-
-              {artifactCid && (
-                <div className="mt-4 rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
-                  <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-[#d6e7ff]">
-                    Archive CID
-                  </span>
-                  <span className="block break-all font-mono text-sm text-[#f5f9ff]">
-                    {artifactCid}
-                  </span>
-                </div>
-              )}
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 {easScanUrl && (
@@ -1002,74 +994,128 @@ export default function EventClient({ eventId }: { eventId: string }) {
                     onClick={handleCopyUid}
                     className="inline-flex items-center justify-center gap-2 rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-[#f5f9ff] transition hover:bg-white/6"
                   >
-                    Copy UID
+                    {copiedUid ? "Copied!" : "Copy UID"}
                     <Copy className="h-4 w-4" />
                   </button>
-                )}
-                {artifactCid && (
-                  <a
-                    href={`https://ipfs.io/ipfs/${artifactCid}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-[#f5f9ff] transition hover:bg-white/6"
-                  >
-                    View archived payload
-                    <ArrowUpRight className="h-4 w-4" />
-                  </a>
                 )}
               </div>
             </div>
 
-            <div className="space-y-4">
-              {event?.poster_image_url && (
-                <div className="overflow-hidden rounded-[1.75rem] border border-[#cfe1ff] bg-white/86 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
-                  <div className="relative aspect-[16/10] bg-[#dcecff]">
-                    <Image
-                      src={event.poster_image_url}
-                      alt={`${event.venue_name} poster`}
-                      fill
-                      unoptimized
-                      className="object-cover"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="rounded-[1.75rem] border border-[#cfe1ff] bg-white/86 p-5 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
+            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="rounded-[2rem] border border-[#cfe1ff] bg-white/88 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.08)] md:p-8">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
-                  Receipt summary
+                  Attestation card
                 </p>
-                <div className="mt-4 space-y-4 text-sm leading-7 text-[#52637e]">
-                  <div>
-                    <span className="block text-xs uppercase tracking-[0.14em] text-[#6a89b6]">
-                      Event
-                    </span>
-                    <span>{event?.venue_name ?? "-"}</span>
-                  </div>
-                  <div>
-                    <span className="block text-xs uppercase tracking-[0.14em] text-[#6a89b6]">
-                      Event window
-                    </span>
-                    <span>
-                      {event ? formatEventWindow(event.start_time, event.end_time) : "-"}
-                    </span>
-                  </div>
-                  {event?.event_description?.trim() && (
+                <div className="mt-6 rounded-[1.8rem] border border-[#dbe8fb] bg-[#f8fbff] p-5 md:p-6">
+                  <div className="grid gap-5 md:grid-cols-2">
                     <div>
-                      <span className="block text-xs uppercase tracking-[0.14em] text-[#6a89b6]">
-                        Description
+                      <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-[#6a89b6]">
+                        Event
                       </span>
-                      <span>{event.event_description}</span>
+                      <span className="mt-2 block text-2xl font-semibold text-[#10233f]">
+                        {event?.venue_name ?? "-"}
+                      </span>
                     </div>
-                  )}
+                    <div>
+                      <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-[#6a89b6]">
+                        Wallet
+                      </span>
+                      <span className="mt-2 block break-all font-mono text-sm leading-7 text-[#10233f]">
+                        {walletAddress}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-[#6a89b6]">
+                        Minted
+                      </span>
+                      <span className="mt-2 block text-sm leading-7 text-[#52637e]">
+                        {claimedAt
+                          ? new Date(claimedAt).toLocaleString()
+                          : new Date().toLocaleString()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-[#6a89b6]">
+                        Attestation UID
+                      </span>
+                      <span className="mt-2 block break-all font-mono text-sm leading-7 text-[#10233f]">
+                        {attestationUid}
+                      </span>
+                    </div>
+                  </div>
                 </div>
+
+                {artifactCid && (
+                  <div className="mt-5 rounded-[1.5rem] border border-[#dbe8fb] bg-[#f8fbff] p-4">
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-[#6a89b6]">
+                      Archive CID
+                    </span>
+                    <span className="block break-all font-mono text-sm leading-7 text-[#10233f]">
+                      {artifactCid}
+                    </span>
+                  </div>
+                )}
+
+                {artifactCid && (
+                  <div className="mt-5">
+                    <a
+                      href={`https://ipfs.io/ipfs/${artifactCid}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-[#cfe1ff] bg-white px-5 py-3 text-sm font-semibold text-[#10233f] transition hover:bg-[#f8fbff]"
+                    >
+                      View archived payload
+                      <ArrowUpRight className="h-4 w-4" />
+                    </a>
+                  </div>
+                )}
               </div>
 
-              {archiveWarning && (
-                <div className="rounded-[1.75rem] border border-[#edd9a3] bg-[#fff8e8] p-5 text-sm font-medium leading-7 text-[#8d6a00]">
-                  {archiveWarning}
+              <div className="space-y-6">
+                {event?.poster_image_url && (
+                  <div className="overflow-hidden rounded-[1.9rem] border border-[#cfe1ff] bg-white/88 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
+                    <div className="relative aspect-[16/10] bg-[#dcecff]">
+                      <Image
+                        src={event.poster_image_url}
+                        alt={`${event.venue_name} poster`}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-[1.75rem] border border-[#cfe1ff] bg-white/88 p-5 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
+                    Receipt summary
+                  </p>
+                  <div className="mt-4 space-y-4 text-sm leading-7 text-[#52637e]">
+                    <div>
+                      <span className="block text-xs uppercase tracking-[0.14em] text-[#6a89b6]">
+                        Event window
+                      </span>
+                      <span>
+                        {event ? formatEventWindow(event.start_time, event.end_time) : "-"}
+                      </span>
+                    </div>
+                    {event?.event_description?.trim() && (
+                      <div>
+                        <span className="block text-xs uppercase tracking-[0.14em] text-[#6a89b6]">
+                          Description
+                        </span>
+                        <span>{event.event_description}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
+
+                {archiveWarning && (
+                  <div className="rounded-[1.75rem] border border-[#edd9a3] bg-[#fff8e8] p-5 text-sm font-medium leading-7 text-[#8d6a00]">
+                    {archiveWarning}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
