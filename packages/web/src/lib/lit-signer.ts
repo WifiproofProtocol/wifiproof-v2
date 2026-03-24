@@ -20,7 +20,7 @@ const CHIPOTLE_DEFAULT_BASE_URL = "https://api.dev.litprotocol.com/core/v1";
 // then signs the pre-hashed EIP-712 digest using ethers.Wallet.
 // pkpId = wallet address (from js_params), digestHex = 32-byte hex EIP-712 hash.
 const CHIPOTLE_ACTION_CODE = String.raw`
-(async () => {
+async function main() {
   const payload = typeof jsParams !== "undefined" ? jsParams : {};
   const pkpId =
     (typeof pkpAddress !== "undefined" ? pkpAddress : undefined) ||
@@ -39,7 +39,6 @@ const CHIPOTLE_ACTION_CODE = String.raw`
   }
 
   const privateKey = await Lit.Actions.getPrivateKey({ pkpId });
-  const wallet = new ethers.Wallet(privateKey);
 
   // Sign the raw digest directly (no additional hashing — digest is already EIP-712 hash)
   const signingKey = new ethers.utils.SigningKey(privateKey);
@@ -47,7 +46,7 @@ const CHIPOTLE_ACTION_CODE = String.raw`
   const signature = ethers.utils.joinSignature(sig);
 
   Lit.Actions.setResponse({ response: signature });
-})();
+}
 `;
 
 type ChipotleActionResponse = {
