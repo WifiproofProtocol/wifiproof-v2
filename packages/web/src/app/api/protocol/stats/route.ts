@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getAttendanceClaimStats } from "@/lib/wifiproof-chain";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,15 +9,14 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const supabase = getSupabaseAdmin();
-
-    const [eventsResult, attestationsResult, worldResult, latestArtifactResult] =
+    const [eventsResult, worldResult, archivedClaimsResult, latestArtifactResult] =
       await Promise.all([
         supabase.from("events").select("*", { count: "exact", head: true }),
         supabase
-          .from("attendance_artifacts")
+          .from("world_verifications")
           .select("*", { count: "exact", head: true }),
         supabase
-          .from("world_verifications")
+          .from("attendance_artifacts")
           .select("*", { count: "exact", head: true }),
         supabase
           .from("attendance_artifacts")
@@ -26,8 +26,26 @@ export async function GET() {
           .maybeSingle(),
       ]);
 
-    if (eventsResult.error || attestationsResult.error || worldResult.error || latestArtifactResult.error) {
+    if (eventsResult.error || worldResult.error || archivedClaimsResult.error || latestArtifactResult.error) {
       return NextResponse.json({ error: "Stats lookup failed" }, { status: 500 });
+    }
+
+    let attendanceStats: Awaited<ReturnType<typeof getAttendanceClaimStats>> = {
+      count: archivedClaimsResult.count ?? 0,
+      latest: latestArtifactResult.data
+        ? {
+            wallet: latestArtifactResult.data.wallet as `0x${string}`,
+            eventId: latestArtifactResult.data.event_id as `0x${string}`,
+            attestationUid: latestArtifactResult.data.attestation_uid as `0x${string}`,
+            timestamp: latestArtifactResult.data.created_at ?? null,
+          }
+        : null,
+    };
+
+    try {
+      attendanceStats = await getAttendanceClaimStats();
+    } catch (error) {
+      console.error("Failed to fetch on-chain attendance stats", error);
     }
 
     let latestAttestation: {
@@ -39,33 +57,34 @@ export async function GET() {
       easScanUrl: string;
     } | null = null;
 
-    const latestArtifact = latestArtifactResult.data;
-    if (latestArtifact) {
+    const latestClaim = attendanceStats.latest;
+    if (latestClaim) {
       const { data: eventRow } = await supabase
         .from("events")
         .select("venue_name")
-        .eq("event_id", latestArtifact.event_id)
+        .eq("event_id", latestClaim.eventId)
         .maybeSingle();
 
       latestAttestation = {
-        eventId: latestArtifact.event_id,
+        eventId: latestClaim.eventId,
         eventName: eventRow?.venue_name ?? null,
-        wallet: latestArtifact.wallet,
-        attestationUid: latestArtifact.attestation_uid,
-        createdAt: latestArtifact.created_at ?? null,
-        easScanUrl: `https://base-sepolia.easscan.org/attestation/view/${latestArtifact.attestation_uid}`,
+        wallet: latestClaim.wallet,
+        attestationUid: latestClaim.attestationUid,
+        createdAt: latestClaim.timestamp,
+        easScanUrl: `https://base-sepolia.easscan.org/attestation/view/${latestClaim.attestationUid}`,
       };
     }
 
     return NextResponse.json({
       stats: {
         eventsCount: eventsResult.count ?? 0,
-        attestationsCount: attestationsResult.count ?? 0,
+        attestationsCount: attendanceStats.count,
         humanityChecksCount: worldResult.count ?? 0,
       },
       latestAttestation,
     });
-  } catch {
-    return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unexpected error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
