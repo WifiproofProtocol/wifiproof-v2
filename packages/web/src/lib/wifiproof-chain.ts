@@ -5,6 +5,7 @@ import {
   encodeAbiParameters,
   http,
   keccak256,
+  parseAbiItem,
 } from "viem";
 import type { Hex } from "viem";
 import { baseSepolia } from "viem/chains";
@@ -74,6 +75,10 @@ const WIFI_PROOF_ABI = [
   },
 ] as const;
 
+const ATTENDANCE_CLAIMED_EVENT = parseAbiItem(
+  "event AttendanceClaimed(address indexed attendee, bytes32 indexed eventId, bytes32 attestationUid, uint256 timestamp)"
+);
+
 function normalize(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -106,6 +111,19 @@ function getPublicClient() {
     chain: baseSepolia,
     transport: http(requireRpcUrl()),
   });
+}
+
+function getWiFiProofDeploymentBlock(): bigint {
+  const raw =
+    process.env.WIFIPROOF_DEPLOYMENT_BLOCK?.trim() ??
+    process.env.NEXT_PUBLIC_WIFIPROOF_DEPLOYMENT_BLOCK?.trim() ??
+    "0";
+
+  try {
+    return BigInt(raw);
+  } catch {
+    return 0n;
+  }
 }
 
 function toScaled(coord: number) {
@@ -303,4 +321,40 @@ export async function verifyAttendanceClaimTransaction(input: {
   if (!claimLog) {
     throw new Error("Missing AttendanceClaimed log for this transaction");
   }
+}
+
+export async function getAttendanceClaimStats(): Promise<{
+  count: number;
+  latest: {
+    wallet: `0x${string}`;
+    eventId: `0x${string}`;
+    attestationUid: `0x${string}`;
+    timestamp: string | null;
+  } | null;
+}> {
+  const publicClient = getPublicClient();
+  const address = getWiFiProofAddress();
+  const logs = await publicClient.getLogs({
+    address,
+    event: ATTENDANCE_CLAIMED_EVENT,
+    fromBlock: getWiFiProofDeploymentBlock(),
+    toBlock: "latest",
+  });
+
+  const latestLog = logs.at(-1);
+
+  return {
+    count: logs.length,
+    latest: latestLog
+      ? {
+          wallet: latestLog.args.attendee as `0x${string}`,
+          eventId: latestLog.args.eventId as `0x${string}`,
+          attestationUid: latestLog.args.attestationUid as `0x${string}`,
+          timestamp:
+            typeof latestLog.args.timestamp === "bigint"
+              ? new Date(Number(latestLog.args.timestamp) * 1000).toISOString()
+              : null,
+        }
+      : null,
+  };
 }
