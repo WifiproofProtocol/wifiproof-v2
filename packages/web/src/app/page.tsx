@@ -4,6 +4,7 @@ import Stats from "@/components/landing/Stats";
 import Features from "@/components/landing/Features";
 import BentoGrid from "@/components/landing/BentoGrid";
 import TechStack from "@/components/landing/TechStack";
+import FAQ from "@/components/landing/FAQ";
 import FinalCTA from "@/components/landing/Waitlist";
 import Footer from "@/components/landing/Footer";
 
@@ -16,6 +17,7 @@ export default function Home() {
       <Features />
       <BentoGrid />
       <TechStack />
+      <FAQ />
       <FinalCTA />
       <Footer />
     </main>
