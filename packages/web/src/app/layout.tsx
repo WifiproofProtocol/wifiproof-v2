@@ -50,6 +50,9 @@ export const metadata: Metadata = {
       "Privacy-preserving proof of attendance using ZK cryptography.",
     creator: "@WiFiProof",
   },
+  other: {
+    "base:app_id": "69c80097480a9d8cb993adec",
+  },
 };
 
 export default function RootLayout({
