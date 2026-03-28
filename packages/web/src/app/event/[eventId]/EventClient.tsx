@@ -149,6 +149,8 @@ export default function EventClient({ eventId }: { eventId: string }) {
   const [claimTxHash, setClaimTxHash] = useState("");
   const [claimedAt, setClaimedAt] = useState("");
   const [copiedUid, setCopiedUid] = useState(false);
+  const [isCheckingSponsorship, setIsCheckingSponsorship] = useState(false);
+  const [isSponsoredClaimAvailable, setIsSponsoredClaimAvailable] = useState<boolean | null>(null);
   const { data: walletClient } = useWalletClient();
 
   const wifiproofAddress = (
@@ -232,7 +234,44 @@ export default function EventClient({ eventId }: { eventId: string }) {
     setProofBytes(null);
     setClaimTxHash("");
     setClaimedAt("");
+    setIsCheckingSponsorship(false);
+    setIsSponsoredClaimAvailable(null);
   }, [walletAddress, eventId]);
+
+  const checkSponsoredClaimSupport = useCallback(
+    async (account: `0x${string}`) => {
+      setIsCheckingSponsorship(true);
+
+      try {
+        const capabilities = await getCapabilities(wagmiConfig, {
+          account,
+        });
+        const capabilitiesByChain = capabilities as
+          | Record<string, { paymasterService?: { supported?: boolean } } | undefined>
+          | undefined;
+        const supported = Boolean(
+          capabilitiesByChain?.[numberToHex(baseSepolia.id)]?.paymasterService?.supported
+        );
+        setIsSponsoredClaimAvailable(supported);
+        return supported;
+      } catch (error) {
+        console.warn("[claim] capability lookup failed", error);
+        setIsSponsoredClaimAvailable(false);
+        return false;
+      } finally {
+        setIsCheckingSponsorship(false);
+      }
+    },
+    [wagmiConfig]
+  );
+
+  useEffect(() => {
+    if (!walletAddress) {
+      return;
+    }
+
+    void checkSponsoredClaimSupport(walletAddress as `0x${string}`);
+  }, [checkSponsoredClaimSupport, walletAddress]);
 
   async function prepareWorldVerification() {
     try {
@@ -382,18 +421,9 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
       let receipt;
       const builderCodeDataSuffix = getBuilderCodeDataSuffix();
-      const capabilities = await getCapabilities(wagmiConfig, {
-        account: walletAddress as `0x${string}`,
-      }).catch((error: unknown) => {
-        console.warn("[claim] capability lookup failed", error);
-        return undefined;
-      });
-      const capabilitiesByChain = capabilities as
-        | Record<string, { paymasterService?: { supported?: boolean } } | undefined>
-        | undefined;
-      const paymasterSupported = Boolean(
-        capabilitiesByChain?.[numberToHex(baseSepolia.id)]?.paymasterService?.supported
-      );
+      const paymasterSupported =
+        isSponsoredClaimAvailable ??
+        (await checkSponsoredClaimSupport(walletAddress as `0x${string}`));
 
       if (paymasterSupported) {
         try {
@@ -727,6 +757,25 @@ export default function EventClient({ eventId }: { eventId: string }) {
               <p className="mt-4 max-w-2xl text-sm leading-7 text-[#52637e] md:text-base">
                 This wallet will receive the attestation on Base Sepolia.
               </p>
+              <div className="mt-4 rounded-[1.25rem] border border-[#d7e4f6] bg-[#f8fbff] px-4 py-3 text-sm text-[#52637e]">
+                {isCheckingSponsorship ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-[#2563eb]" />
+                    Checking if this wallet can use sponsored claims...
+                  </span>
+                ) : isSponsoredClaimAvailable ? (
+                  <span className="inline-flex items-center gap-2 text-[#155734]">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Smart-wallet sponsorship is available for this wallet.
+                  </span>
+                ) : walletAddress ? (
+                  <span>
+                    This wallet will use a normal transaction and pay gas if you continue.
+                  </span>
+                ) : (
+                  <span>Connect a wallet to see whether gasless claims are supported.</span>
+                )}
+              </div>
               <div className="mt-6">
                 <WalletCard
                   walletAddress={walletAddress}
@@ -786,6 +835,24 @@ export default function EventClient({ eventId }: { eventId: string }) {
                     {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
                   </p>
                 </div>
+              </div>
+
+              <div className="mt-4 rounded-[1.4rem] border border-[#d7e4f6] bg-[#f8fbff] p-4">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
+                  Gasless claim
+                </span>
+                <p className="text-sm font-semibold text-[#10233f]">
+                  {isCheckingSponsorship
+                    ? "Checking wallet capabilities..."
+                    : isSponsoredClaimAvailable
+                      ? "Available for this wallet"
+                      : "Not available on this wallet"}
+                </p>
+                <p className="mt-1 text-xs leading-6 text-[#6a7891]">
+                  {isSponsoredClaimAvailable
+                    ? "WiFiProof will try a sponsored smart-wallet claim first."
+                    : "This wallet will use a standard onchain claim."}
+                </p>
               </div>
 
               <div className="mt-6 rounded-[1.6rem] border border-[#d7e4f6] bg-[#f8fbff] p-5">
