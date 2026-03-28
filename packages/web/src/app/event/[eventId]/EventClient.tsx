@@ -14,9 +14,11 @@ import {
   encodeAbiParameters,
   http,
   keccak256,
+  numberToHex,
 } from "viem";
 import { baseSepolia } from "viem/chains";
-import { useAccount, useWalletClient } from "wagmi";
+import { useAccount, useConfig, useWalletClient } from "wagmi";
+import { getCapabilities, sendCalls, waitForCallsStatus } from "wagmi/actions";
 import {
   ArrowUpRight,
   AlertCircle,
@@ -30,6 +32,8 @@ import {
 } from "lucide-react";
 
 import WalletCard from "@/components/wallet/WalletCard";
+import { getBuilderCodeDataSuffix, withBuilderCode } from "@/lib/builder-codes";
+import { getPaymasterProxyUrl } from "@/lib/paymaster";
 
 const WIFI_PROOF_ABI = [
   {
@@ -124,6 +128,7 @@ function formatEventWindow(start: number, end: number) {
 
 export default function EventClient({ eventId }: { eventId: string }) {
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
+  const wagmiConfig = useConfig();
   const { address } = useAccount();
   const walletAddress = address ?? "";
 
@@ -173,7 +178,9 @@ export default function EventClient({ eventId }: { eventId: string }) {
     { label: "Verify venue network", match: "Verifying venue subnet" },
     { label: "Read GPS location", match: "Getting GPS location" },
     { label: "Generate ZK proof", match: "Generating zero-knowledge proof" },
+    { label: "Request sponsorship", match: "Requesting sponsored claim" },
     { label: "Prepare wallet transaction", match: "Preparing mint transaction" },
+    { label: "Wait for chain confirmation", match: "Waiting for sponsored confirmation" },
     { label: "Wait for chain confirmation", match: "Waiting for confirmation" },
     { label: "Archive claim receipt", match: "Archiving claim receipt" },
   ] as const;
@@ -313,7 +320,6 @@ export default function EventClient({ eventId }: { eventId: string }) {
       if (!event) throw new Error("Event data not loaded.");
       if (!walletAddress) throw new Error("Wallet not connected.");
       if (!worldToken) throw new Error("World verification is required before claiming.");
-      if (!walletClient) throw new Error("Wallet connection lost.");
 
       setStatusMsg("Verifying venue subnet...");
       const deadline = Math.floor(Date.now() / 1000) + 90;
@@ -374,24 +380,90 @@ export default function EventClient({ eventId }: { eventId: string }) {
         encodeAbiParameters([{ type: "bytes32[]" }], [publicInputsBytes32])
       );
 
-      setStatusMsg("Preparing mint transaction...");
-      const txHash = await walletClient.writeContract({
-        address: wifiproofAddress as `0x${string}`,
-        abi: WIFI_PROOF_ABI,
-        functionName: "claimAttendance",
+      let receipt;
+      const builderCodeDataSuffix = getBuilderCodeDataSuffix();
+      const capabilities = await getCapabilities(wagmiConfig, {
         account: walletAddress as `0x${string}`,
-        args: [
-          proofHex,
-          publicInputsBytes32,
-          ipSignature,
-          BigInt(deadline),
-          eventId as `0x${string}`,
-        ],
+      }).catch((error: unknown) => {
+        console.warn("[claim] capability lookup failed", error);
+        return undefined;
       });
-      setClaimTxHash(txHash);
+      const capabilitiesByChain = capabilities as
+        | Record<string, { paymasterService?: { supported?: boolean } } | undefined>
+        | undefined;
+      const paymasterSupported = Boolean(
+        capabilitiesByChain?.[numberToHex(baseSepolia.id)]?.paymasterService?.supported
+      );
 
-      setStatusMsg("Waiting for confirmation...");
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+      if (paymasterSupported) {
+        try {
+          setStatusMsg("Requesting sponsored claim...");
+          const sponsoredCall = await sendCalls(wagmiConfig, {
+            account: walletAddress as `0x${string}`,
+            chainId: baseSepolia.id,
+            calls: [
+              {
+                to: wifiproofAddress as `0x${string}`,
+                abi: WIFI_PROOF_ABI,
+                functionName: "claimAttendance",
+                args: [
+                  proofHex,
+                  publicInputsBytes32,
+                  ipSignature,
+                  BigInt(deadline),
+                  eventId as `0x${string}`,
+                ],
+                ...(builderCodeDataSuffix ? { dataSuffix: builderCodeDataSuffix } : {}),
+              },
+            ],
+            capabilities: {
+              paymasterService: {
+                url: getPaymasterProxyUrl(),
+              },
+            },
+          });
+
+          setStatusMsg("Waiting for sponsored confirmation...");
+          const callsStatus = await waitForCallsStatus(wagmiConfig, {
+            id: sponsoredCall.id,
+          });
+          const firstReceipt = callsStatus.receipts?.[0];
+
+          if (!firstReceipt) {
+            throw new Error("Sponsored claim did not return a transaction receipt.");
+          }
+
+          receipt = firstReceipt;
+        } catch (error) {
+          console.warn("[claim] sponsored path failed, falling back to wallet tx", error);
+        }
+      }
+
+      if (!receipt) {
+        if (!walletClient) throw new Error("Wallet connection lost.");
+
+        setStatusMsg("Preparing mint transaction...");
+        const txHash = await walletClient.writeContract(withBuilderCode({
+          address: wifiproofAddress as `0x${string}`,
+          abi: WIFI_PROOF_ABI,
+          functionName: "claimAttendance",
+          account: walletAddress as `0x${string}`,
+          args: [
+            proofHex,
+            publicInputsBytes32,
+            ipSignature,
+            BigInt(deadline),
+            eventId as `0x${string}`,
+          ],
+        }));
+        setClaimTxHash(txHash);
+
+        setStatusMsg("Waiting for confirmation...");
+        receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+      }
+
+      const txHash = receipt.transactionHash;
+      setClaimTxHash(txHash);
 
       if (receipt.status === "reverted") {
         throw new Error("AlreadyClaimed");
@@ -405,7 +477,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
           const decoded = decodeEventLog({
             abi: WIFI_PROOF_ABI,
             data: log.data,
-            topics: log.topics,
+            topics: log.topics as [signature: `0x${string}`, ...args: `0x${string}`[]],
           });
           if (decoded.eventName === "AttendanceClaimed") {
             foundUid = decoded.args.attestationUid as string;
