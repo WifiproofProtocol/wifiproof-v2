@@ -13,6 +13,7 @@ Next.js frontend + API routes for WiFiProof V2.
 
 ### Public (client)
 - `NEXT_PUBLIC_BASE_RPC_URL`
+- `NEXT_PUBLIC_BASE_BUILDER_CODE` (optional ERC-8021 Builder Code for Base attribution)
 - `NEXT_PUBLIC_WIFIPROOF_ADDRESS`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
@@ -25,6 +26,7 @@ Next.js frontend + API routes for WiFiProof V2.
 - `VERIFIER_ADDRESS`
 - `BASE_RPC_URL`
 - `CHAIN_ID`
+- `CDP_PAYMASTER_URL` (optional; server-side CDP paymaster endpoint used by `/api/paymaster`)
 - `SIGNER_MODE` (`key` or `lit`; default `key`)
 - `IP_SIGNER_PRIVATE_KEY`
 - `EVENT_SIGNER_PRIVATE_KEY` (optional fallback to IP signer)
@@ -49,6 +51,14 @@ Next.js frontend + API routes for WiFiProof V2.
 - `STORACHA_KEY` (agent private key, starts with `Mg...`)
 - `STORACHA_PROOF` (base64 delegation proof from CLI)
 - `STORACHA_SPACE_DID` (optional safety check)
+
+If you enable smart-wallet gas sponsorship, set the paymaster endpoint in your local server env only:
+
+```env
+CDP_PAYMASTER_URL=https://api.developer.coinbase.com/rpc/v1/base-sepolia/<your-client-api-key>
+```
+
+Do not expose this as `NEXT_PUBLIC_*` or commit the live value to the repo.
 
 ## API Routes Added for PL_Genesis
 
