@@ -1,5 +1,13 @@
 # WiFiProof
 
+**Live:** [wifiproof.xyz](https://wifiproof.xyz)
+
+**Contract:** [`0x9EE31e7c48Fe84ad888d4Bf2d5DF809C7E137A4A`](https://sepolia.basescan.org/address/0x9EE31e7c48Fe84ad888d4Bf2d5DF809C7E137A4A) — Base Sepolia
+
+**EAS Schema:** [`0x205141ca00c9cf450dd494ed27fe04106e3be40c805e8e3c1257d5d005f2b80c`](https://base-sepolia.easscan.org/schema/view/0x205141ca00c9cf450dd494ed27fe04106e3be40c805e8e3c1257d5d005f2b80c) — `bytes32 eventId, string venueName, uint64 timestamp, bool verifiedLocation, bool verifiedNetwork`
+
+---
+
 When people arrive at a hackathon, conference, or venue, one of the first things they ask is:
 
 **What is the Wi-Fi password?**
@@ -211,6 +219,12 @@ The next implementation phase is:
 4. **classroom mode**
    - institutional identity and anti-fraud lecture attendance
 
+## The proof system
+
+The ZK circuit is written in Noir and proves Euclidean distance — that the attendee's GPS coordinates are within the configured venue radius — without revealing the exact coordinates.
+
+The circuit is compiled with Noir and the verifier is generated using Barretenberg's UltraHonk backend. Proofs are approximately 28KB, generated client-side in WebAssembly in a few seconds on a mobile browser, and verified on-chain by the deployed UltraHonk verifier contract.
+
 ## Quick start
 
 ### Install
@@ -223,6 +237,45 @@ pnpm install
 
 ```bash
 pnpm --filter web dev
+```
+
+### Required environment variables
+
+Create `packages/web/.env.local` with:
+
+```bash
+# Contract
+NEXT_PUBLIC_WIFIPROOF_ADDRESS=0x9EE31e7c48Fe84ad888d4Bf2d5DF809C7E137A4A
+NEXT_PUBLIC_WIFIPROOF_DEPLOYMENT_BLOCK=38377983
+NEXT_PUBLIC_BASE_RPC_URL=https://sepolia.base.org
+
+# Lit Protocol
+LIT_NETWORK=chipotle
+LIT_CHIPOTLE_PKP_ADDRESS=<your pkp address>
+LIT_PKP_PRIVATE_KEY=<your pkp private key>
+LIT_API_URL=https://api.dev.litprotocol.com
+
+# World ID
+NEXT_PUBLIC_WORLD_APP_ID=<your world app id>
+NEXT_PUBLIC_WORLD_ACTION_ID=<your world action id>
+
+# Supabase
+SUPABASE_URL=<your supabase url>
+SUPABASE_SERVICE_ROLE_KEY=<your service role key>
+NEXT_PUBLIC_SUPABASE_URL=<your supabase url>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your anon key>
+
+# Storacha
+STORACHA_PROOF=<your storacha proof>
+STORACHA_SPACE_DID=<your space did>
+
+# Reown (WalletConnect)
+NEXT_PUBLIC_REOWN_PROJECT_ID=<your project id>
+
+# Base (optional — for sponsored claims)
+CDP_PAYMASTER_URL=<your cdp paymaster url>
+NEXT_PUBLIC_BASE_BUILDER_CODE=<your builder code>
+NEXT_PUBLIC_APP_URL=https://wifiproof.xyz
 ```
 
 ### Useful package commands
