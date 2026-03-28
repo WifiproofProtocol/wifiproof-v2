@@ -6,8 +6,8 @@ const techStack: { name: string; desc: string; logo: string | null }[] = [
   { name: "Noir", desc: "On-device ZK proving", logo: "/brand/noirlang.png" },
   { name: "Base", desc: "Settlement layer", logo: "/brand/logo-base.svg" },
   { name: "EAS", desc: "Attendance attestations", logo: "/brand/eas-attestation.png" },
-  { name: "World ID", desc: "Sybil resistance", logo: null },
-  { name: "Noya", desc: "Key management", logo: null },
+  { name: "World ID", desc: "Humanity checks", logo: null },
+  { name: "Lit", desc: "Programmable signing", logo: null },
 ];
 
 export default function TechStack() {
@@ -20,10 +20,13 @@ export default function TechStack() {
           viewport={{ once: true }}
           className="mb-10"
         >
-          <p className="section-kicker">Under the hood</p>
+          <p className="section-kicker">Built with</p>
           <h2 className="display-type mt-4 max-w-3xl text-3xl leading-tight tracking-[-0.03em] md:text-4xl">
-            Real cryptography, real infrastructure.
+            The stack behind the check-in.
           </h2>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-[#52637e]">
+            These are the main pieces powering the current WiFiProof flow.
+          </p>
         </motion.div>
 
         <motion.div

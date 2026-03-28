@@ -14,9 +14,10 @@ const newWay = [
 ];
 
 const proofSteps: [string, string][] = [
-  ["Arrive", "Connect to the venue Wi-Fi and open the event link."],
-  ["Prove", "Your device generates a zero-knowledge proximity proof locally. Nothing leaves."],
-  ["Claim", "An attestation is minted on-chain. You proved you were there. That is it."],
+  ["Humanity", "World ID checks that the attendee is a unique person for that event."],
+  ["Venue network", "The backend only signs if the request comes through the expected venue network."],
+  ["Local proof", "The browser generates the ZK location proof locally and only the proof leaves the device."],
+  ["Attestation", "The contract verifies the checks and mints the attendance attestation on Base."],
 ];
 
 export default function Features() {
@@ -32,17 +33,12 @@ export default function Features() {
           >
             <p className="section-kicker">What sets WiFiProof apart</p>
             <h2 className="display-type mt-4 text-4xl leading-tight tracking-[-0.03em] text-[#10233f] md:text-6xl">
-              You only need to prove one thing.
+              Attendance without the data grab.
             </h2>
             <p className="mt-6 text-lg leading-8 text-[#52637e]">
-              Most check-in flows collect far more than they need. As a privacy
-              maxi, you know that giving away your email, name, and location to
-              prove you attended an event makes no sense. WiFiProof proves the
-              only thing that matters: that you were physically there, without
-              the rest.
-            </p>
-            <p className="mt-6 text-base leading-7 text-[#61728d]">
-              Why hand over your identity when presence is all that is needed?
+              Most check-in tools over-collect because they can. WiFiProof is built
+              around a smaller claim: verify presence, mint the record, and leave
+              everything else out of it.
             </p>
           </motion.div>
 
@@ -97,15 +93,15 @@ export default function Features() {
             <div className="max-w-2xl">
               <p className="section-kicker">How it works</p>
               <h3 className="display-type mt-3 text-4xl leading-tight tracking-[-0.03em] md:text-5xl">
-                Three steps. One claim: you were there.
+                Four checks, one stronger attendance signal.
               </h3>
             </div>
             <p className="max-w-xl text-sm leading-7 text-[#52637e] md:text-base">
-              Works in your browser. No app install. No account.
+              This is what makes it more than a QR redemption flow.
             </p>
           </div>
 
-          <div className="mt-10 grid gap-4 lg:grid-cols-3">
+          <div className="mt-10 grid gap-4 lg:grid-cols-4">
             {proofSteps.map(([title, description], index) => (
               <div
                 key={title}

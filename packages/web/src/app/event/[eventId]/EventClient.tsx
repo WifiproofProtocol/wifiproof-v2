@@ -10,27 +10,30 @@ import {
 } from "@worldcoin/idkit";
 import {
   createPublicClient,
-  createWalletClient,
-  custom,
   decodeEventLog,
   encodeAbiParameters,
   http,
   keccak256,
+  numberToHex,
 } from "viem";
-import type { EIP1193Provider } from "viem";
 import { baseSepolia } from "viem/chains";
+import { useAccount, useConfig, useWalletClient } from "wagmi";
+import { getCapabilities, sendCalls, waitForCallsStatus } from "wagmi/actions";
 import {
   ArrowUpRight,
   AlertCircle,
   CheckCircle2,
+  Copy,
   Loader2,
   MapPin,
+  Share2,
   ShieldCheck,
   Wifi,
 } from "lucide-react";
 
 import WalletCard from "@/components/wallet/WalletCard";
-import { getInjectedEthereum } from "@/lib/wallet-provider";
+import { getBuilderCodeDataSuffix, withBuilderCode } from "@/lib/builder-codes";
+import { getPaymasterProxyUrl } from "@/lib/paymaster";
 
 const WIFI_PROOF_ABI = [
   {
@@ -125,7 +128,9 @@ function formatEventWindow(start: number, end: number) {
 
 export default function EventClient({ eventId }: { eventId: string }) {
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
-  const [walletAddress, setWalletAddress] = useState("");
+  const wagmiConfig = useConfig();
+  const { address } = useAccount();
+  const walletAddress = address ?? "";
 
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [statusMsg, setStatusMsg] = useState("");
@@ -139,6 +144,14 @@ export default function EventClient({ eventId }: { eventId: string }) {
   const [rpContext, setRpContext] = useState<RpContext | null>(null);
   const [artifactCid, setArtifactCid] = useState("");
   const [archiveWarning, setArchiveWarning] = useState("");
+  const [proofDurationMs, setProofDurationMs] = useState<number | null>(null);
+  const [proofBytes, setProofBytes] = useState<number | null>(null);
+  const [claimTxHash, setClaimTxHash] = useState("");
+  const [claimedAt, setClaimedAt] = useState("");
+  const [copiedUid, setCopiedUid] = useState(false);
+  const [isCheckingSponsorship, setIsCheckingSponsorship] = useState(false);
+  const [isSponsoredClaimAvailable, setIsSponsoredClaimAvailable] = useState<boolean | null>(null);
+  const { data: walletClient } = useWalletClient();
 
   const wifiproofAddress = (
     process.env.NEXT_PUBLIC_WIFIPROOF_ADDRESS ??
@@ -156,6 +169,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
   );
 
   const handleWalletReady = useCallback(() => setStep(1), []);
+  const isHumanityVerified = Boolean(worldToken);
   const stageLabels = [
     "Connect wallet",
     "Verify attendee",
@@ -166,7 +180,9 @@ export default function EventClient({ eventId }: { eventId: string }) {
     { label: "Verify venue network", match: "Verifying venue subnet" },
     { label: "Read GPS location", match: "Getting GPS location" },
     { label: "Generate ZK proof", match: "Generating zero-knowledge proof" },
+    { label: "Request sponsorship", match: "Requesting sponsored claim" },
     { label: "Prepare wallet transaction", match: "Preparing mint transaction" },
+    { label: "Wait for chain confirmation", match: "Waiting for sponsored confirmation" },
     { label: "Wait for chain confirmation", match: "Waiting for confirmation" },
     { label: "Archive claim receipt", match: "Archiving claim receipt" },
   ] as const;
@@ -174,6 +190,15 @@ export default function EventClient({ eventId }: { eventId: string }) {
     processingSteps.findIndex((item) => statusMsg.includes(item.match)),
     0
   );
+  const progressValue = Math.round(((processingIndex + 1) / processingSteps.length) * 100);
+  const easScanUrl =
+    attestationUid && attestationUid.startsWith("0x")
+      ? `https://base-sepolia.easscan.org/attestation/view/${attestationUid}`
+      : "";
+  const txExplorerUrl =
+    claimTxHash && claimTxHash.startsWith("0x")
+      ? `https://sepolia.basescan.org/tx/${claimTxHash}`
+      : "";
 
   const fetchEvent = useCallback(async () => {
     try {
@@ -193,13 +218,60 @@ export default function EventClient({ eventId }: { eventId: string }) {
   }, [fetchEvent]);
 
   useEffect(() => {
+    if (!walletAddress && step !== 0) {
+      setStep(0);
+    }
+  }, [step, walletAddress]);
+
+  useEffect(() => {
     setWorldToken("");
     setWorldStatus("");
     setRpContext(null);
     setIsWorldModalOpen(false);
     setArtifactCid("");
     setArchiveWarning("");
+    setProofDurationMs(null);
+    setProofBytes(null);
+    setClaimTxHash("");
+    setClaimedAt("");
+    setIsCheckingSponsorship(false);
+    setIsSponsoredClaimAvailable(null);
   }, [walletAddress, eventId]);
+
+  const checkSponsoredClaimSupport = useCallback(
+    async (account: `0x${string}`) => {
+      setIsCheckingSponsorship(true);
+
+      try {
+        const capabilities = await getCapabilities(wagmiConfig, {
+          account,
+        });
+        const capabilitiesByChain = capabilities as
+          | Record<string, { paymasterService?: { supported?: boolean } } | undefined>
+          | undefined;
+        const supported = Boolean(
+          capabilitiesByChain?.[numberToHex(baseSepolia.id)]?.paymasterService?.supported
+        );
+        setIsSponsoredClaimAvailable(supported);
+        return supported;
+      } catch (error) {
+        console.warn("[claim] capability lookup failed", error);
+        setIsSponsoredClaimAvailable(false);
+        return false;
+      } finally {
+        setIsCheckingSponsorship(false);
+      }
+    },
+    [wagmiConfig]
+  );
+
+  useEffect(() => {
+    if (!walletAddress) {
+      return;
+    }
+
+    void checkSponsoredClaimSupport(walletAddress as `0x${string}`);
+  }, [checkSponsoredClaimSupport, walletAddress]);
 
   async function prepareWorldVerification() {
     try {
@@ -287,7 +359,6 @@ export default function EventClient({ eventId }: { eventId: string }) {
       if (!event) throw new Error("Event data not loaded.");
       if (!walletAddress) throw new Error("Wallet not connected.");
       if (!worldToken) throw new Error("World verification is required before claiming.");
-      if (!getInjectedEthereum()) throw new Error("Wallet connection lost.");
 
       setStatusMsg("Verifying venue subnet...");
       const deadline = Math.floor(Date.now() / 1000) + 90;
@@ -334,8 +405,12 @@ export default function EventClient({ eventId }: { eventId: string }) {
         eventId
       );
 
+      const proofStartedAt = performance.now();
       const { proof, publicInputs } = await prover.generateProof(inputs);
+      const proofFinishedAt = performance.now();
       await prover.destroy();
+      setProofDurationMs(proofFinishedAt - proofStartedAt);
+      setProofBytes(proof.byteLength);
 
       const proofHex = uint8ArrayToHex(proof);
       const publicInputsBytes32 = publicInputs.map(toBytes32Hex);
@@ -344,30 +419,87 @@ export default function EventClient({ eventId }: { eventId: string }) {
         encodeAbiParameters([{ type: "bytes32[]" }], [publicInputsBytes32])
       );
 
-      setStatusMsg("Preparing mint transaction...");
-      const ethereum = getInjectedEthereum() as EIP1193Provider | undefined;
-      if (!ethereum) throw new Error("Wallet connection lost.");
-      const walletClient = createWalletClient({
-        chain: baseSepolia,
-        transport: custom(ethereum),
-      });
+      let receipt;
+      const builderCodeDataSuffix = getBuilderCodeDataSuffix();
+      const paymasterSupported =
+        isSponsoredClaimAvailable ??
+        (await checkSponsoredClaimSupport(walletAddress as `0x${string}`));
 
-      const txHash = await walletClient.writeContract({
-        address: wifiproofAddress as `0x${string}`,
-        abi: WIFI_PROOF_ABI,
-        functionName: "claimAttendance",
-        account: walletAddress as `0x${string}`,
-        args: [
-          proofHex,
-          publicInputsBytes32,
-          ipSignature,
-          BigInt(deadline),
-          eventId as `0x${string}`,
-        ],
-      });
+      if (paymasterSupported) {
+        try {
+          setStatusMsg("Requesting sponsored claim...");
+          const sponsoredCall = await sendCalls(wagmiConfig, {
+            account: walletAddress as `0x${string}`,
+            chainId: baseSepolia.id,
+            calls: [
+              {
+                to: wifiproofAddress as `0x${string}`,
+                abi: WIFI_PROOF_ABI,
+                functionName: "claimAttendance",
+                args: [
+                  proofHex,
+                  publicInputsBytes32,
+                  ipSignature,
+                  BigInt(deadline),
+                  eventId as `0x${string}`,
+                ],
+                ...(builderCodeDataSuffix ? { dataSuffix: builderCodeDataSuffix } : {}),
+              },
+            ],
+            capabilities: {
+              paymasterService: {
+                url: getPaymasterProxyUrl(),
+              },
+            },
+          });
 
-      setStatusMsg("Waiting for confirmation...");
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+          setStatusMsg("Waiting for sponsored confirmation...");
+          const callsStatus = await waitForCallsStatus(wagmiConfig, {
+            id: sponsoredCall.id,
+          });
+          const firstReceipt = callsStatus.receipts?.[0];
+
+          if (!firstReceipt) {
+            throw new Error("Sponsored claim did not return a transaction receipt.");
+          }
+
+          receipt = firstReceipt;
+        } catch (error) {
+          console.warn("[claim] sponsored path failed, falling back to wallet tx", error);
+        }
+      }
+
+      if (!receipt) {
+        if (!walletClient) throw new Error("Wallet connection lost.");
+
+        setStatusMsg("Preparing mint transaction...");
+        const txHash = await walletClient.writeContract(withBuilderCode({
+          address: wifiproofAddress as `0x${string}`,
+          abi: WIFI_PROOF_ABI,
+          functionName: "claimAttendance",
+          account: walletAddress as `0x${string}`,
+          args: [
+            proofHex,
+            publicInputsBytes32,
+            ipSignature,
+            BigInt(deadline),
+            eventId as `0x${string}`,
+          ],
+        }));
+        setClaimTxHash(txHash);
+
+        setStatusMsg("Waiting for confirmation...");
+        receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+      }
+
+      const txHash = receipt.transactionHash;
+      setClaimTxHash(txHash);
+
+      if (receipt.status === "reverted") {
+        throw new Error("AlreadyClaimed");
+      }
+
+      setClaimedAt(new Date().toISOString());
 
       let foundUid = "";
       for (const log of receipt.logs) {
@@ -375,7 +507,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
           const decoded = decodeEventLog({
             abi: WIFI_PROOF_ABI,
             data: log.data,
-            topics: log.topics,
+            topics: log.topics as [signature: `0x${string}`, ...args: `0x${string}`[]],
           });
           if (decoded.eventName === "AttendanceClaimed") {
             foundUid = decoded.args.attestationUid as string;
@@ -433,8 +565,59 @@ export default function EventClient({ eventId }: { eventId: string }) {
       setStatusMsg("");
       setStep(3);
     } catch (error) {
-      setErrorMsg((error as Error).message);
+      const msg = (error as Error).message ?? "";
+      if (msg.includes("AlreadyClaimed") || msg.includes("already claimed")) {
+        setErrorMsg("You have already claimed this event with this wallet.");
+      } else {
+        setErrorMsg(msg);
+      }
       setStep(1);
+    }
+  }
+
+  async function handleShareAttestation() {
+    if (!easScanUrl) return;
+
+    const shareText = event
+      ? `I just minted my WiFiProof attendance attestation for ${event.venue_name}.`
+      : "I just minted my WiFiProof attendance attestation.";
+
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({
+          title: event?.venue_name ?? "WiFiProof attestation",
+          text: shareText,
+          url: easScanUrl,
+        });
+        return;
+      }
+
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(easScanUrl);
+      }
+    } catch (error) {
+      console.error("[claim] share failed", error);
+    }
+  }
+
+  async function handleCopyUid() {
+    if (!attestationUid) return;
+
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(attestationUid);
+      } else {
+        const el = document.createElement("textarea");
+        el.value = attestationUid;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+      }
+      setCopiedUid(true);
+      setTimeout(() => setCopiedUid(false), 1500);
+    } catch (error) {
+      console.error("[claim] copy uid failed", error);
     }
   }
 
@@ -459,7 +642,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
             <p className="max-w-2xl text-base leading-8 text-[#52637e] md:text-lg">
               {event?.event_description?.trim()
                 ? event.event_description
-                : "Verify humanity, prove on-site presence, and mint your attendance attestation without exposing your exact coordinates."}
+                : "Check in privately and mint your attendance attestation."}
             </p>
 
             <div className="flex flex-wrap items-center gap-3 text-sm text-[#486284]">
@@ -569,17 +752,33 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 Step 1
               </p>
               <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#10233f] md:text-4xl">
-                Connect the wallet you want the attendance attestation tied to.
+                Connect the wallet for this attestation.
               </h2>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-[#52637e] md:text-base">
-                This wallet becomes the attestation recipient on Base Sepolia.
-                After connecting, you will verify humanity and then generate the
-                proof locally on your device.
+                This wallet will receive the attestation on Base Sepolia.
               </p>
+              <div className="mt-4 rounded-[1.25rem] border border-[#d7e4f6] bg-[#f8fbff] px-4 py-3 text-sm text-[#52637e]">
+                {isCheckingSponsorship ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-[#2563eb]" />
+                    Checking if this wallet can use sponsored claims...
+                  </span>
+                ) : isSponsoredClaimAvailable ? (
+                  <span className="inline-flex items-center gap-2 text-[#155734]">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Smart-wallet sponsorship is available for this wallet.
+                  </span>
+                ) : walletAddress ? (
+                  <span>
+                    This wallet will use a normal transaction and pay gas if you continue.
+                  </span>
+                ) : (
+                  <span>Connect a wallet to see whether gasless claims are supported.</span>
+                )}
+              </div>
               <div className="mt-6">
                 <WalletCard
                   walletAddress={walletAddress}
-                  setWalletAddress={setWalletAddress}
                   onReady={handleWalletReady}
                 />
               </div>
@@ -587,22 +786,19 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
             <div className="ink-panel rounded-[2rem] p-6 md:p-8">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d6e7ff]">
-                What happens next
+                Flow
               </p>
-              <ul className="mt-6 space-y-4 text-sm leading-7 text-[#e8f1ff] md:text-base">
-                <li className="flex items-start gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#8fc0ff]" />
-                  <span>Verify you are a unique attendee before claiming.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#8fc0ff]" />
-                  <span>Generate the proximity proof in your browser.</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#8fc0ff]" />
-                  <span>Mint the attendance attestation on Base Sepolia.</span>
-                </li>
-              </ul>
+              <div className="mt-5 flex flex-wrap gap-3 text-sm text-[#e8f1ff]">
+                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
+                  Verify humanity
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
+                  Generate proof
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
+                  Mint attestation
+                </span>
+              </div>
             </div>
           </div>
         )}
@@ -616,7 +812,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                     Step 2
                   </p>
                   <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#10233f] md:text-4xl">
-                    Verify humanity, then mint your proof of presence.
+                    Verify and mint.
                   </h2>
                 </div>
                 <div className="rounded-full bg-[#e8f0ff] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#2563eb]">
@@ -641,6 +837,24 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 </div>
               </div>
 
+              <div className="mt-4 rounded-[1.4rem] border border-[#d7e4f6] bg-[#f8fbff] p-4">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
+                  Gasless claim
+                </span>
+                <p className="text-sm font-semibold text-[#10233f]">
+                  {isCheckingSponsorship
+                    ? "Checking wallet capabilities..."
+                    : isSponsoredClaimAvailable
+                      ? "Available for this wallet"
+                      : "Not available on this wallet"}
+                </p>
+                <p className="mt-1 text-xs leading-6 text-[#6a7891]">
+                  {isSponsoredClaimAvailable
+                    ? "WiFiProof will try a sponsored smart-wallet claim first."
+                    : "This wallet will use a standard onchain claim."}
+                </p>
+              </div>
+
               <div className="mt-6 rounded-[1.6rem] border border-[#d7e4f6] bg-[#f8fbff] p-5">
                 <button
                   onClick={prepareWorldVerification}
@@ -662,17 +876,30 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   )}
                 </button>
 
-                {worldStatus && (
+                {isHumanityVerified ? (
+                  <div className="mt-4 rounded-[1.2rem] border border-[#b9d8be] bg-[#edf7ef] px-4 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1d6f42] text-white">
+                        <CheckCircle2 className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[#155734]">Humanity verified</p>
+                        <p className="text-xs leading-6 text-[#35634a]">
+                          You can continue to claim.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : worldStatus ? (
                   <p className="mt-4 text-sm font-medium text-[#1d6f42]">{worldStatus}</p>
-                )}
+                ) : null}
                 {!isWorldConfigured && (
                   <p className="mt-4 text-sm font-medium text-[#9c6a0a]">
                     World ID is not configured in this environment.
                   </p>
                 )}
                 <p className="mt-3 text-xs leading-6 text-[#6a7891]">
-                  Desktop: scan the QR in World App. Mobile: World App opens
-                  directly.
+                  Desktop: scan in World App. Mobile: approve and return here.
                 </p>
               </div>
 
@@ -688,19 +915,19 @@ export default function EventClient({ eventId }: { eventId: string }) {
             <div className="space-y-4">
               <aside className="rounded-[1.75rem] border border-[#cfe1ff] bg-white/86 p-5 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
-                  What we verify before minting
+                  Checks
                 </p>
                 <ul className="mt-4 space-y-3 text-sm leading-7 text-[#52637e]">
-                  <li>World-based humanity check</li>
-                  <li>Venue network presence via signed IP check</li>
-                  <li>Local zero-knowledge proximity proof</li>
-                  <li>Event binding and on-chain contract verification</li>
+                  <li>Humanity</li>
+                  <li>Venue network</li>
+                  <li>Location proof</li>
+                  <li>On-chain verification</li>
                 </ul>
               </aside>
 
               <aside className="ink-panel rounded-[1.75rem] p-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#d6e7ff]">
-                  Event details
+                  Event
                 </p>
                 <div className="mt-4 space-y-4 text-sm leading-7 text-[#e8f1ff]">
                   <div>
@@ -752,9 +979,31 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 browser, generating the ZK proof locally, sending the wallet
                 transaction, and archiving the claim receipt.
               </p>
+              <div className="mt-8 rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
+                <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-[#c6d9f7]">
+                  <span>Progress</span>
+                  <span>{progressValue}%</span>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-[#8fc0ff] transition-all duration-500"
+                    style={{ width: `${progressValue}%` }}
+                  />
+                </div>
+              </div>
               <div className="mt-8 rounded-[1.5rem] border border-white/10 bg-white/5 p-4 font-mono text-sm text-[#f5f9ff]">
                 {statusMsg}
               </div>
+              {proofDurationMs !== null && proofBytes !== null && (
+                <div className="mt-4 rounded-[1.5rem] border border-[#8fc0ff]/20 bg-[#17365f] p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#9fc0ff]">
+                    Proof generated locally
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-white">
+                    {(proofBytes / 1024).toFixed(1)} KB in {(proofDurationMs / 1000).toFixed(2)}s
+                  </p>
+                </div>
+              )}
               <p className="mt-4 text-xs leading-6 text-[#c6d9f7]">
                 Your exact coordinates are not sent to the backend while this is happening.
               </p>
@@ -796,49 +1045,59 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   );
                 })}
               </div>
+              {proofDurationMs !== null && proofBytes !== null && (
+                <div className="mt-6 rounded-[1.5rem] border border-[#dbe8fb] bg-[#f8fbff] p-4 text-sm leading-7 text-[#52637e]">
+                  The zero-knowledge proof was generated in your browser, not on the server.
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {step === 3 && (
-          <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="ink-panel rounded-[2rem] p-8">
-              <CheckCircle2 className="h-16 w-16 text-[#a7d99a]" />
-              <p className="mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-[#d6e7ff]">
-                Step 4
-              </p>
-              <h2 className="display-type mt-3 text-4xl leading-tight tracking-[-0.03em] text-white md:text-5xl">
-                Presence verified.
-              </h2>
-              <p className="mt-4 text-sm leading-7 text-[#d6e7ff] md:text-base">
-                Your attendance attestation has been minted on Base Sepolia and
-                can now be referenced as proof that you were there.
-              </p>
+          <div className="space-y-6">
+            <div className="ink-panel rounded-[2.25rem] p-8 md:p-10">
+              <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
+                <div>
+                  <CheckCircle2 className="h-16 w-16 text-[#a7d99a]" />
+                  <p className="mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-[#d6e7ff]">
+                    Step 4
+                  </p>
+                  <h2 className="display-type mt-3 max-w-3xl text-4xl leading-[0.94] tracking-[-0.04em] text-white md:text-6xl">
+                    Presence verified.
+                  </h2>
+                  <p className="mt-4 max-w-2xl text-sm leading-7 text-[#d6e7ff] md:text-base">
+                    This is your permanent, on-chain record that you were at{" "}
+                    {event?.venue_name ?? "this event"}.
+                  </p>
+                </div>
 
-              <div className="mt-8 rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
-                <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-[#d6e7ff]">
-                  Attestation UID
-                </span>
-                <span className="block break-all font-mono text-sm text-[#f5f9ff]">
-                  {attestationUid}
-                </span>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-[1.6rem] border border-white/10 bg-white/5 p-4">
+                    <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-[#d6e7ff]">
+                      Event
+                    </span>
+                    <span className="block text-lg font-semibold text-white">
+                      {event?.venue_name ?? "-"}
+                    </span>
+                  </div>
+                  <div className="rounded-[1.6rem] border border-white/10 bg-white/5 p-4">
+                    <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-[#d6e7ff]">
+                      Minted
+                    </span>
+                    <span className="block text-sm leading-7 text-[#f5f9ff]">
+                      {claimedAt
+                        ? new Date(claimedAt).toLocaleString()
+                        : new Date().toLocaleString()}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {artifactCid && (
-                <div className="mt-4 rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
-                  <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-[#d6e7ff]">
-                    Archive CID
-                  </span>
-                  <span className="block break-all font-mono text-sm text-[#f5f9ff]">
-                    {artifactCid}
-                  </span>
-                </div>
-              )}
-
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                {attestationUid && attestationUid.startsWith("0x") && (
+                {easScanUrl && (
                   <a
-                    href={`https://base-sepolia.easscan.org/attestation/view/${attestationUid}`}
+                    href={easScanUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f5f9ff] px-5 py-3 text-sm font-semibold text-[#10233f] transition hover:bg-white"
@@ -847,70 +1106,155 @@ export default function EventClient({ eventId }: { eventId: string }) {
                     <ArrowUpRight className="h-4 w-4" />
                   </a>
                 )}
-                {artifactCid && (
+                {txExplorerUrl && (
                   <a
-                    href={`https://ipfs.io/ipfs/${artifactCid}`}
+                    href={txExplorerUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center gap-2 rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-[#f5f9ff] transition hover:bg-white/6"
                   >
-                    View archived payload
+                    View transaction
                     <ArrowUpRight className="h-4 w-4" />
                   </a>
+                )}
+                {easScanUrl && (
+                  <button
+                    type="button"
+                    onClick={handleShareAttestation}
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-[#f5f9ff] transition hover:bg-white/6"
+                  >
+                    Share
+                    <Share2 className="h-4 w-4" />
+                  </button>
+                )}
+                {attestationUid && (
+                  <button
+                    type="button"
+                    onClick={handleCopyUid}
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-[#f5f9ff] transition hover:bg-white/6"
+                  >
+                    {copiedUid ? "Copied!" : "Copy UID"}
+                    <Copy className="h-4 w-4" />
+                  </button>
                 )}
               </div>
             </div>
 
-            <div className="space-y-4">
-              {event?.poster_image_url && (
-                <div className="overflow-hidden rounded-[1.75rem] border border-[#cfe1ff] bg-white/86 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
-                  <div className="relative aspect-[16/10] bg-[#dcecff]">
-                    <Image
-                      src={event.poster_image_url}
-                      alt={`${event.venue_name} poster`}
-                      fill
-                      unoptimized
-                      className="object-cover"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="rounded-[1.75rem] border border-[#cfe1ff] bg-white/86 p-5 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
+            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="rounded-[2rem] border border-[#cfe1ff] bg-white/88 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.08)] md:p-8">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
-                  Receipt summary
+                  Attestation card
                 </p>
-                <div className="mt-4 space-y-4 text-sm leading-7 text-[#52637e]">
-                  <div>
-                    <span className="block text-xs uppercase tracking-[0.14em] text-[#6a89b6]">
-                      Event
-                    </span>
-                    <span>{event?.venue_name ?? "-"}</span>
-                  </div>
-                  <div>
-                    <span className="block text-xs uppercase tracking-[0.14em] text-[#6a89b6]">
-                      Event window
-                    </span>
-                    <span>
-                      {event ? formatEventWindow(event.start_time, event.end_time) : "-"}
-                    </span>
-                  </div>
-                  {event?.event_description?.trim() && (
+                <div className="mt-6 rounded-[1.8rem] border border-[#dbe8fb] bg-[#f8fbff] p-5 md:p-6">
+                  <div className="grid gap-5 md:grid-cols-2">
                     <div>
-                      <span className="block text-xs uppercase tracking-[0.14em] text-[#6a89b6]">
-                        Description
+                      <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-[#6a89b6]">
+                        Event
                       </span>
-                      <span>{event.event_description}</span>
+                      <span className="mt-2 block text-2xl font-semibold text-[#10233f]">
+                        {event?.venue_name ?? "-"}
+                      </span>
                     </div>
-                  )}
+                    <div>
+                      <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-[#6a89b6]">
+                        Wallet
+                      </span>
+                      <span className="mt-2 block break-all font-mono text-sm leading-7 text-[#10233f]">
+                        {walletAddress}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-[#6a89b6]">
+                        Minted
+                      </span>
+                      <span className="mt-2 block text-sm leading-7 text-[#52637e]">
+                        {claimedAt
+                          ? new Date(claimedAt).toLocaleString()
+                          : new Date().toLocaleString()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-[#6a89b6]">
+                        Attestation UID
+                      </span>
+                      <span className="mt-2 block break-all font-mono text-sm leading-7 text-[#10233f]">
+                        {attestationUid}
+                      </span>
+                    </div>
+                  </div>
                 </div>
+
+                {artifactCid && (
+                  <div className="mt-5 rounded-[1.5rem] border border-[#dbe8fb] bg-[#f8fbff] p-4">
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-[#6a89b6]">
+                      Archive CID
+                    </span>
+                    <span className="block break-all font-mono text-sm leading-7 text-[#10233f]">
+                      {artifactCid}
+                    </span>
+                  </div>
+                )}
+
+                {artifactCid && (
+                  <div className="mt-5">
+                    <a
+                      href={`https://ipfs.io/ipfs/${artifactCid}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-[#cfe1ff] bg-white px-5 py-3 text-sm font-semibold text-[#10233f] transition hover:bg-[#f8fbff]"
+                    >
+                      View archived payload
+                      <ArrowUpRight className="h-4 w-4" />
+                    </a>
+                  </div>
+                )}
               </div>
 
-              {archiveWarning && (
-                <div className="rounded-[1.75rem] border border-[#edd9a3] bg-[#fff8e8] p-5 text-sm font-medium leading-7 text-[#8d6a00]">
-                  {archiveWarning}
+              <div className="space-y-6">
+                {event?.poster_image_url && (
+                  <div className="overflow-hidden rounded-[1.9rem] border border-[#cfe1ff] bg-white/88 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
+                    <div className="relative aspect-[16/10] bg-[#dcecff]">
+                      <Image
+                        src={event.poster_image_url}
+                        alt={`${event.venue_name} poster`}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-[1.75rem] border border-[#cfe1ff] bg-white/88 p-5 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
+                    Receipt summary
+                  </p>
+                  <div className="mt-4 space-y-4 text-sm leading-7 text-[#52637e]">
+                    <div>
+                      <span className="block text-xs uppercase tracking-[0.14em] text-[#6a89b6]">
+                        Event window
+                      </span>
+                      <span>
+                        {event ? formatEventWindow(event.start_time, event.end_time) : "-"}
+                      </span>
+                    </div>
+                    {event?.event_description?.trim() && (
+                      <div>
+                        <span className="block text-xs uppercase tracking-[0.14em] text-[#6a89b6]">
+                          Description
+                        </span>
+                        <span>{event.event_description}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
+
+                {archiveWarning && (
+                  <div className="rounded-[1.75rem] border border-[#edd9a3] bg-[#fff8e8] p-5 text-sm font-medium leading-7 text-[#8d6a00]">
+                    {archiveWarning}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

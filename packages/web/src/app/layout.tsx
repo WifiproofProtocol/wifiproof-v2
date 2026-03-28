@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Providers from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -49,6 +50,9 @@ export const metadata: Metadata = {
       "Privacy-preserving proof of attendance using ZK cryptography.",
     creator: "@WiFiProof",
   },
+  other: {
+    "base:app_id": "69c80097480a9d8cb993adec",
+  },
 };
 
 export default function RootLayout({
@@ -61,7 +65,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} antialiased`}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

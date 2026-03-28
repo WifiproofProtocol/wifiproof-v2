@@ -19,36 +19,22 @@ const CHIPOTLE_DEFAULT_BASE_URL = "https://api.dev.litprotocol.com/core/v1";
 // Lit Action: uses Lit.Actions.getPrivateKey({ pkpId }) to get the PKP private key,
 // then signs the pre-hashed EIP-712 digest using ethers.Wallet.
 // pkpId = wallet address (from js_params), digestHex = 32-byte hex EIP-712 hash.
-const CHIPOTLE_ACTION_CODE = String.raw`
-(async () => {
-  const payload = typeof jsParams !== "undefined" ? jsParams : {};
-  const pkpId =
-    (typeof pkpAddress !== "undefined" ? pkpAddress : undefined) ||
-    payload.pkpAddress;
-  const digestHexStr =
-    (typeof digestHex !== "undefined" ? digestHex : undefined) ||
-    payload.digestHex;
-
-  if (!pkpId || typeof pkpId !== "string") {
-    Lit.Actions.setResponse({ response: JSON.stringify({ error: "Missing pkpAddress" }) });
-    return;
-  }
-  if (!digestHexStr || typeof digestHexStr !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(digestHexStr)) {
-    Lit.Actions.setResponse({ response: JSON.stringify({ error: "Invalid digestHex: " + String(digestHexStr) }) });
-    return;
-  }
+function buildChipotleActionCode(pkpAddress: string, digestHex: string): string {
+  return `
+async function main() {
+  const pkpId = ${JSON.stringify(pkpAddress)};
+  const digestHexStr = ${JSON.stringify(digestHex)};
 
   const privateKey = await Lit.Actions.getPrivateKey({ pkpId });
-  const wallet = new ethers.Wallet(privateKey);
 
-  // Sign the raw digest directly (no additional hashing — digest is already EIP-712 hash)
   const signingKey = new ethers.utils.SigningKey(privateKey);
   const sig = signingKey.signDigest(digestHexStr);
   const signature = ethers.utils.joinSignature(sig);
 
   Lit.Actions.setResponse({ response: signature });
-})();
+}
 `;
+}
 
 type ChipotleActionResponse = {
   has_error?: boolean;
@@ -95,8 +81,7 @@ async function signTypedDataWithChipotle(params: {
       "x-api-key": apiKey,
     },
     body: JSON.stringify({
-      code: CHIPOTLE_ACTION_CODE,
-      js_params: { pkpAddress, digestHex: digest },
+      code: buildChipotleActionCode(pkpAddress, digest),
     }),
   });
 

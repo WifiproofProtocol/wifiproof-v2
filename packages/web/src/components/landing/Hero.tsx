@@ -1,9 +1,14 @@
 "use client";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, MapPin, ShieldCheck, Wifi } from "lucide-react";
+import { ArrowRight, ExternalLink, MapPin, ShieldCheck, Wifi } from "lucide-react";
 
 export default function Hero() {
+  const contractAddress = process.env.NEXT_PUBLIC_WIFIPROOF_ADDRESS?.trim();
+  const contractHref = contractAddress
+    ? `https://sepolia.basescan.org/address/${contractAddress}`
+    : null;
+
   return (
     <section className="relative overflow-hidden bg-[#f4f8ff] px-6 pb-24 pt-32 text-[#10233f]">
       <div
@@ -23,25 +28,20 @@ export default function Hero() {
           transition={{ duration: 0.7 }}
           className="max-w-2xl"
         >
-          <h1 className="display-type mt-4 text-5xl leading-[0.95] tracking-[-0.04em] text-[#10233f] md:text-7xl">
-            The first thing people ask for at an event is the Wi-Fi password.
+          <p className="section-kicker">Protocol for private attendance</p>
+          <h1 className="display-type mt-4 text-6xl leading-[0.9] tracking-[-0.05em] text-[#10233f] md:text-7xl">
+            The first proof you were actually there.
           </h1>
           <p className="mt-6 text-lg leading-8 text-[#52637e] md:text-xl">
-            WiFiProof turns that moment into proof of presence. Connect at the
-            venue, prove proximity with ZK geolocation, and check in without
-            giving away anything extra.
+            Venue Wi-Fi, local ZK location proof, and on-chain attestations for
+            events that want a stronger check-in without turning guests into a data form.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3 text-sm font-medium text-[#1f3f78]">
-            <span className="rounded-full border border-[#93b7e8]/35 bg-white/82 px-4 py-2">
-              Venue Wi-Fi
-            </span>
-            <span className="rounded-full border border-[#93b7e8]/35 bg-white/82 px-4 py-2">
-              ZK geolocation
-            </span>
-            <span className="rounded-full border border-[#93b7e8]/35 bg-white/82 px-4 py-2">
-              Prove one thing only
-            </span>
+            <span className="rounded-full border border-[#93b7e8]/35 bg-white/82 px-4 py-2">Built on Base</span>
+            <span className="rounded-full border border-[#93b7e8]/35 bg-white/82 px-4 py-2">EAS attestation</span>
+            <span className="rounded-full border border-[#93b7e8]/35 bg-white/82 px-4 py-2">World ID</span>
+            <span className="rounded-full border border-[#93b7e8]/35 bg-white/82 px-4 py-2">Noir proving</span>
           </div>
 
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
@@ -59,9 +59,20 @@ export default function Hero() {
             </Link>
           </div>
 
-          <p className="mt-4 text-sm text-[#61728d]">
-            Venue Wi-Fi + zero-knowledge geolocation + attendance proof.
-          </p>
+          <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-[#61728d]">
+            <span>Venue Wi-Fi + ZK geolocation + EAS.</span>
+            {contractHref && (
+              <a
+                href={contractHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-medium text-[#2563eb] transition hover:text-[#1d4ed8]"
+              >
+                View contract
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            )}
+          </div>
         </motion.div>
 
         <motion.div
@@ -71,34 +82,26 @@ export default function Hero() {
           className="relative lg:pl-10"
         >
           <div className="ink-panel rounded-[2rem] p-8">
-            <p className="section-kicker !text-[#cfe1ff]">In one glance</p>
+            <p className="section-kicker !text-[#cfe1ff]">Why this is stronger</p>
             <h2 className="display-type mt-3 text-3xl leading-tight text-white md:text-4xl">
-              Problem. Solution. Result.
+              Real venue signal. Real attestation.
             </h2>
 
             <div className="mt-8 space-y-4">
               <div className="rounded-2xl border border-white/10 bg-white/8 p-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#9fc0ff]">
-                  Problem
+                  Claim
                 </p>
                 <p className="mt-3 text-base leading-7 text-[#e3edff]">
-                  We give away too much personal data just to prove one thing — that we showed up.
+                  Show up on-site, prove it locally, mint a permanent attendance record.
                 </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/8 p-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#9fc0ff]">
-                  Solution
+                  On-chain result
                 </p>
                 <p className="mt-3 text-base leading-7 text-[#e3edff]">
-                  Use venue Wi-Fi and ZK geolocation proofs to verify presence without oversharing.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/8 p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#9fc0ff]">
-                  Result
-                </p>
-                <p className="mt-3 text-base leading-7 text-[#e3edff]">
-                  Organizers get a stronger attendance signal. Guests get an on-chain attestation — not an NFT, a cryptographic record that they were there — and nothing more leaves their device.
+                  EAS stores the attestation. The guest keeps the proof of presence.
                 </p>
               </div>
             </div>
