@@ -24,6 +24,7 @@ import {
 
 import WalletCard from "@/components/wallet/WalletCard";
 import DateTimePicker from "@/components/DateTimePicker";
+import { withBuilderCode } from "@/lib/builder-codes";
 import { preparePosterImage } from "@/lib/poster-image";
 
 const WIFI_PROOF_ABI = [
@@ -425,7 +426,7 @@ export default function OrganizerClient() {
       }
 
       setStatusMsg("Confirm transaction in your wallet...");
-      const txHash = await walletClient.writeContract({
+      const txHash = await walletClient.writeContract(withBuilderCode({
         address: wifiproofAddress as `0x${string}`,
         abi: WIFI_PROOF_ABI,
         functionName: "createEventWithSig",
@@ -440,7 +441,7 @@ export default function OrganizerClient() {
           BigInt(deadline),
           signature,
         ],
-      });
+      }));
 
       setStatusMsg("Waiting for Base Sepolia confirmation...");
       const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
