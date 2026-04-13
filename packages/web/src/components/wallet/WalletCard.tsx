@@ -216,7 +216,7 @@ export default function WalletCard({
           <h3 className="text-lg font-semibold">Connect wallet</h3>
         </div>
         <p className="text-sm leading-7 text-[#5f564d]">
-          Choose a wallet to continue.
+          Choose a wallet to continue. Base Smart Wallet is recommended for the best sponsored-claim experience.
         </p>
         <button
           type="button"

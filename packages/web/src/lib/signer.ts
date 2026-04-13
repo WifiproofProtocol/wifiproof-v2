@@ -31,6 +31,10 @@ function getSignerMode(): SignerMode {
   return process.env.SIGNER_MODE?.trim().toLowerCase() === "lit" ? "lit" : "key";
 }
 
+function shouldFallbackToKey() {
+  return process.env.SIGNER_FALLBACK_TO_KEY?.trim().toLowerCase() !== "false";
+}
+
 function loadPrivateKey(envNames: string[]): `0x${string}` {
   for (const envName of envNames) {
     const value = process.env[envName]?.trim().toLowerCase();
@@ -60,10 +64,18 @@ async function signTypedData(params: {
   keyEnvNames: string[];
 }): Promise<Hex> {
   if (getSignerMode() === "lit") {
-    return signTypedDataWithLit({
-      typedData: params.typedData,
-      chainId: params.chainId,
-    });
+    try {
+      return await signTypedDataWithLit({
+        typedData: params.typedData,
+        chainId: params.chainId,
+      });
+    } catch (error) {
+      if (!shouldFallbackToKey()) {
+        throw error;
+      }
+
+      console.warn("[signer] Lit signing failed, falling back to local key", error);
+    }
   }
 
   return signTypedDataWithKey({

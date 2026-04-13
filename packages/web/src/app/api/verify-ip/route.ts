@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { verifyHumanityToken } from "@/lib/humanity";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { signIPVerification } from "@/lib/signer";
 import { getTrustedClientIp } from "@/lib/trusted-ip";
-import { verifyWorldToken } from "@/lib/world";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,31 +14,31 @@ type VerifyIpRequest = {
   eventId: `0x${string}`;
   venueHash: `0x${string}`;
   deadline: number;
-  worldToken: string;
+  humanityToken: string;
 };
 
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as VerifyIpRequest;
-    const { wallet, eventId, venueHash, deadline, worldToken } = body;
+    const { wallet, eventId, venueHash, deadline, humanityToken } = body;
 
-    if (!wallet || !eventId || !venueHash || !deadline || !worldToken) {
+    if (!wallet || !eventId || !venueHash || !deadline || !humanityToken) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    const worldClaims = verifyWorldToken(worldToken);
-    if (!worldClaims) {
-      return NextResponse.json({ error: "World verification required" }, { status: 403 });
+    const humanityClaims = verifyHumanityToken(humanityToken);
+    if (!humanityClaims) {
+      return NextResponse.json({ error: "Humanity verification required" }, { status: 403 });
     }
 
     const normalizedWallet = wallet.toLowerCase();
     const normalizedEventId = eventId.toLowerCase();
     if (
-      worldClaims.wallet !== normalizedWallet ||
-      worldClaims.eventId !== normalizedEventId
+      humanityClaims.wallet !== normalizedWallet ||
+      humanityClaims.eventId !== normalizedEventId
     ) {
       return NextResponse.json(
-        { error: "World verification does not match wallet or event" },
+        { error: "Humanity verification does not match wallet or event" },
         { status: 403 }
       );
     }

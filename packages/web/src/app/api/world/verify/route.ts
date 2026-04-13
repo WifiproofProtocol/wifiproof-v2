@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { hashSignal } from "@worldcoin/idkit/hashing";
 
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { issueHumanityToken } from "@/lib/humanity";
 import {
-  issueWorldToken,
   verifyWorldResultOnServer,
   type WorldIDKitResult,
 } from "@/lib/world";
@@ -95,17 +95,20 @@ export async function POST(request: Request) {
       }
     }
 
-    const tokenTtlSeconds = Number(process.env.WORLD_TOKEN_TTL_SECONDS ?? 900);
-    const { token, claims } = issueWorldToken({
+    const tokenTtlSeconds = Number(
+      process.env.HUMANITY_TOKEN_TTL_SECONDS ?? process.env.WORLD_TOKEN_TTL_SECONDS ?? 900
+    );
+    const { token, claims } = issueHumanityToken({
       wallet,
       eventId,
-      nullifierHash: verification.nullifierHash,
+      provider: "world",
       ttlSeconds: tokenTtlSeconds,
     });
 
     return NextResponse.json({
       ok: true,
       token,
+      provider: "world",
       expiresAt: claims.exp,
     });
   } catch (error) {

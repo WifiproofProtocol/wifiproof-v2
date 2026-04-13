@@ -75,9 +75,10 @@ type EventRecord = {
   poster_image_url: string | null;
 };
 
-type WorldVerifyResponse = {
+type HumanityVerifyResponse = {
   ok: boolean;
   token: string;
+  provider: "world" | "coinbase";
   expiresAt: number;
 };
 
@@ -136,10 +137,13 @@ export default function EventClient({ eventId }: { eventId: string }) {
   const [statusMsg, setStatusMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [attestationUid, setAttestationUid] = useState("");
-  const [worldToken, setWorldToken] = useState("");
+  const [humanityToken, setHumanityToken] = useState("");
+  const [humanityMethod, setHumanityMethod] = useState<"world" | "coinbase" | null>(null);
   const [worldStatus, setWorldStatus] = useState("");
   const [isPreparingWorld, setIsPreparingWorld] = useState(false);
   const [isVerifyingWorld, setIsVerifyingWorld] = useState(false);
+  const [coinbaseStatus, setCoinbaseStatus] = useState("");
+  const [isVerifyingCoinbase, setIsVerifyingCoinbase] = useState(false);
   const [isWorldModalOpen, setIsWorldModalOpen] = useState(false);
   const [rpContext, setRpContext] = useState<RpContext | null>(null);
   const [artifactCid, setArtifactCid] = useState("");
@@ -169,7 +173,13 @@ export default function EventClient({ eventId }: { eventId: string }) {
   );
 
   const handleWalletReady = useCallback(() => setStep(1), []);
-  const isHumanityVerified = Boolean(worldToken);
+  const isHumanityVerified = Boolean(humanityToken);
+  const humanityMethodLabel =
+    humanityMethod === "coinbase"
+      ? "Coinbase Verified"
+      : humanityMethod === "world"
+        ? "World ID"
+        : null;
   const stageLabels = [
     "Connect wallet",
     "Verify attendee",
@@ -224,8 +234,10 @@ export default function EventClient({ eventId }: { eventId: string }) {
   }, [step, walletAddress]);
 
   useEffect(() => {
-    setWorldToken("");
+    setHumanityToken("");
+    setHumanityMethod(null);
     setWorldStatus("");
+    setCoinbaseStatus("");
     setRpContext(null);
     setIsWorldModalOpen(false);
     setArtifactCid("");
@@ -318,6 +330,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
     try {
       setErrorMsg("");
       setIsVerifyingWorld(true);
+      setCoinbaseStatus("");
       setWorldStatus("Confirming World proof...");
 
       const response = await fetch("/api/world/verify", {
@@ -334,19 +347,71 @@ export default function EventClient({ eventId }: { eventId: string }) {
         throw new Error(`World verification failed: ${await response.text()}`);
       }
 
-      const result = (await response.json()) as WorldVerifyResponse;
+      const result = (await response.json()) as HumanityVerifyResponse;
       if (!result.ok || !result.token) {
         throw new Error("World verification response missing token.");
       }
 
-      setWorldToken(result.token);
-      setWorldStatus("Humanity verified.");
+      setHumanityToken(result.token);
+      setHumanityMethod("world");
+      setWorldStatus("Verified with World ID.");
     } catch (error) {
-      setWorldToken("");
+      if (humanityMethod === "world") {
+        setHumanityToken("");
+        setHumanityMethod(null);
+      }
       setWorldStatus("");
       setErrorMsg((error as Error).message);
     } finally {
       setIsVerifyingWorld(false);
+    }
+  }
+
+  async function handleCoinbaseVerification() {
+    try {
+      setErrorMsg("");
+      setWorldStatus("");
+
+      if (!walletAddress) {
+        throw new Error("Connect wallet before checking Coinbase verification.");
+      }
+
+      setIsVerifyingCoinbase(true);
+      setCoinbaseStatus("Checking Coinbase verification on Base...");
+
+      const response = await fetch("/api/humanity/coinbase", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          wallet: walletAddress,
+          eventId,
+        }),
+      });
+
+      const result = (await response.json().catch(() => ({}))) as Partial<
+        HumanityVerifyResponse & { error: string }
+      >;
+
+      if (!response.ok) {
+        throw new Error(result.error || "Coinbase verification failed.");
+      }
+
+      if (!result.ok || !result.token) {
+        throw new Error("Coinbase verification response missing token.");
+      }
+
+      setHumanityToken(result.token);
+      setHumanityMethod("coinbase");
+      setCoinbaseStatus("Verified with Coinbase.");
+    } catch (error) {
+      if (humanityMethod === "coinbase") {
+        setHumanityToken("");
+        setHumanityMethod(null);
+      }
+      setCoinbaseStatus("");
+      setErrorMsg((error as Error).message);
+    } finally {
+      setIsVerifyingCoinbase(false);
     }
   }
 
@@ -358,7 +423,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
       if (!event) throw new Error("Event data not loaded.");
       if (!walletAddress) throw new Error("Wallet not connected.");
-      if (!worldToken) throw new Error("World verification is required before claiming.");
+      if (!humanityToken) throw new Error("Humanity verification is required before claiming.");
 
       setStatusMsg("Verifying venue subnet...");
       const deadline = Math.floor(Date.now() / 1000) + 90;
@@ -375,7 +440,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
           eventId,
           venueHash: event.venue_hash,
           deadline,
-          worldToken,
+          humanityToken,
         }),
       });
 
@@ -850,31 +915,55 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 </p>
                 <p className="mt-1 text-xs leading-6 text-[#6a7891]">
                   {isSponsoredClaimAvailable
-                    ? "WiFiProof will try a sponsored smart-wallet claim first."
+                    ? "WiFiProof will try a sponsored smart-wallet claim first. Base Smart Wallet works best here."
                     : "This wallet will use a standard onchain claim."}
                 </p>
               </div>
 
               <div className="mt-6 rounded-[1.6rem] border border-[#d7e4f6] bg-[#f8fbff] p-5">
-                <button
-                  onClick={prepareWorldVerification}
-                  disabled={!isWorldConfigured || isPreparingWorld || isVerifyingWorld}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#2563eb] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:bg-[#9db8e4]"
-                >
-                  {isPreparingWorld ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Preparing World verification...
-                    </>
-                  ) : isVerifyingWorld ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Confirming World proof...
-                    </>
-                  ) : (
-                    "Verify with World ID"
-                  )}
-                </button>
+                <span className="block text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
+                  Humanity check
+                </span>
+                <p className="mt-2 text-sm leading-7 text-[#52637e]">
+                  Use either World ID or an existing Coinbase Verified attestation on Base.
+                </p>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <button
+                    onClick={prepareWorldVerification}
+                    disabled={!isWorldConfigured || isPreparingWorld || isVerifyingWorld}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#2563eb] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:bg-[#9db8e4]"
+                  >
+                    {isPreparingWorld ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Preparing...
+                      </>
+                    ) : isVerifyingWorld ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Confirming...
+                      </>
+                    ) : (
+                      "Verify with World ID"
+                    )}
+                  </button>
+
+                  <button
+                    onClick={handleCoinbaseVerification}
+                    disabled={isVerifyingCoinbase}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#c9daf5] bg-white px-5 py-3 text-sm font-semibold text-[#10233f] transition hover:bg-[#eef4ff] disabled:cursor-not-allowed disabled:border-[#d7e4f6] disabled:bg-[#f5f8fc] disabled:text-[#8da2c1]"
+                  >
+                    {isVerifyingCoinbase ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Checking...
+                      </>
+                    ) : (
+                      "Use Coinbase Verified"
+                    )}
+                  </button>
+                </div>
 
                 {isHumanityVerified ? (
                   <div className="mt-4 rounded-[1.2rem] border border-[#b9d8be] bg-[#edf7ef] px-4 py-4">
@@ -885,30 +974,35 @@ export default function EventClient({ eventId }: { eventId: string }) {
                       <div>
                         <p className="text-sm font-semibold text-[#155734]">Humanity verified</p>
                         <p className="text-xs leading-6 text-[#35634a]">
-                          You can continue to claim.
+                          Verified with {humanityMethodLabel}. You can continue to claim.
                         </p>
                       </div>
                     </div>
                   </div>
                 ) : worldStatus ? (
                   <p className="mt-4 text-sm font-medium text-[#1d6f42]">{worldStatus}</p>
+                ) : coinbaseStatus ? (
+                  <p className="mt-4 text-sm font-medium text-[#1d6f42]">{coinbaseStatus}</p>
                 ) : null}
                 {!isWorldConfigured && (
                   <p className="mt-4 text-sm font-medium text-[#9c6a0a]">
-                    World ID is not configured in this environment.
+                    World ID is not configured in this environment, but Coinbase verification is still available.
                   </p>
                 )}
                 <p className="mt-3 text-xs leading-6 text-[#6a7891]">
                   Desktop: scan in World App. Mobile: approve and return here.
                 </p>
+                <p className="mt-2 text-xs leading-6 text-[#6a7891]">
+                  Coinbase path: connect the wallet that already holds your Coinbase/Base verification.
+                </p>
               </div>
 
               <button
                 onClick={handleClaim}
-                disabled={!worldToken}
+                disabled={!humanityToken}
                 className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#10233f] px-5 py-4 text-sm font-semibold text-white transition hover:bg-[#17345e] disabled:cursor-not-allowed disabled:bg-[#96abc8]"
               >
-                {worldToken ? "Prove presence and mint" : "Verify with World first"}
+                {humanityToken ? "Prove presence and mint" : "Complete humanity check first"}
               </button>
             </div>
 
@@ -918,7 +1012,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   Checks
                 </p>
                 <ul className="mt-4 space-y-3 text-sm leading-7 text-[#52637e]">
-                  <li>Humanity</li>
+                  <li>Humanity via World ID or Coinbase</li>
                   <li>Venue network</li>
                   <li>Location proof</li>
                   <li>On-chain verification</li>
@@ -1273,6 +1367,10 @@ export default function EventClient({ eventId }: { eventId: string }) {
           onError={(errorCode) => {
             setErrorMsg(`World verification error: ${errorCode}`);
             setWorldStatus("");
+            if (humanityMethod === "world") {
+              setHumanityToken("");
+              setHumanityMethod(null);
+            }
           }}
         />
       )}

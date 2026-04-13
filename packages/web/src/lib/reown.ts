@@ -32,7 +32,7 @@ export const appKitConfig = {
   defaultNetwork: baseSepolia,
   projectId: reownProjectId,
   allowUnsupportedChain: true,
-  coinbasePreference: "all" as const,
+  coinbasePreference: "smartWalletOnly" as const,
   features: {
     analytics: true,
   },
