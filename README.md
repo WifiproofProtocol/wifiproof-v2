@@ -8,7 +8,7 @@
 
 ---
 
-When people arrive at a hackathon, conference, or venue, one of the first things they ask is:
+When people arrive at a classroom, hackathon, conference, or venue, one of the first things they ask is:
 
 **What is the Wi-Fi password?**
 
@@ -18,17 +18,17 @@ If someone is connecting to the venue Wi-Fi, standing inside the event radius, a
 
 WiFiProof is a privacy-by-design proof-of-attendance protocol. It lets someone prove they were physically present at an event without exposing unnecessary personal data.
 
-## PL Genesis Submission Summary
+## Platform Overview
 
-WiFiProof is a privacy-preserving proof-of-attendance protocol for real-world events. It started from a simple observation: when people arrive at a hackathon, conference, or venue, one of the first things they ask is, “What’s the Wi-Fi password?” That moment is already a strong local signal of physical presence. WiFiProof builds on that idea and turns it into a stronger attendance flow that does not rely on screenshots, forwarded links, spreadsheets, or transferable NFTs.
+WiFiProof is a privacy-preserving proof-of-attendance protocol for real-world events. It started from a simple observation: when people arrive somewhere real, one of the first things they ask is, “What’s the Wi-Fi password?” That moment is already a strong local signal of physical presence. WiFiProof builds on that idea and turns it into a stronger attendance flow that does not rely on screenshots, forwarded links, spreadsheets, or transferable NFTs.
 
 The core problem WiFiProof addresses is that most attendance systems are both weak and invasive. They are often easy to fake, and they frequently collect names, emails, phone numbers, or other personal details that are not actually necessary just to prove one simple fact: that someone was there. WiFiProof takes a narrower, privacy-by-design approach. It focuses on proving presence and leaves everything else out of the claim unless it is absolutely needed.
 
-In the current build, organizers create an event by setting venue coordinates, a radius, an event window, and a venue Wi-Fi subnet. Attendees then connect a wallet, verify humanity with World ID, pass a venue network check, generate a local zero-knowledge proximity proof in the browser, and claim an onchain attendance attestation on Base Sepolia. The attendance record is issued as an EAS attestation rather than a transferable NFT, making it a better fit for verifiable presence.
+In the current build, organizers create an event by setting venue coordinates, a radius, an event window, and a venue Wi-Fi subnet. Attendees then connect a wallet, verify humanity with either World ID or a Coinbase Verified wallet path, pass a venue network check, generate a local zero-knowledge proximity proof in the browser, and claim an onchain attendance attestation on Base Sepolia. The attendance record is issued as an EAS attestation rather than a transferable NFT, making it a better fit for verifiable presence.
 
-WiFiProof meaningfully integrates multiple sponsor technologies. Lit Protocol is used for programmable signing and authorization, so the system can issue required EIP-712 signatures through Lit Chipotle PKP infrastructure instead of depending on a plain server key. Storacha is used to archive claim artifacts and metadata in durable, content-addressed storage for auditability and retrieval. The project also uses World ID for proof of personhood, Noir and Barretenberg for private proximity proofs, Base as the settlement layer, and Supabase for event metadata and indexing.
+WiFiProof uses Lit Protocol for programmable signing and authorization, so the system can issue required EIP-712 signatures through Lit Chipotle PKP infrastructure instead of depending only on a plain server key. The project also uses World ID and Coinbase Verified for humanity checks, Noir and Barretenberg for private proximity proofs, Base as the settlement layer, and Supabase for event metadata and indexing. Optional archival can still happen after claim settlement, but it is not part of the core verification story.
 
-This submission targets the **Existing Code** track. The hackathon work focused on deepening sponsor integrations, improving wallet UX, tightening the verification pipeline, adding Base ecosystem features like Builder Codes and a smart-wallet sponsorship path, and turning the prototype into a more credible end-to-end protocol demo for real event attendance.
+WiFiProof is best understood as a platform. The same verification foundation can power Web3-native event flows, institution-led attendance systems, and custom presence-verification products where the blockchain layer may be explicit or mostly invisible to the end user.
 
 ## What WiFiProof does
 
@@ -62,27 +62,27 @@ WiFiProof is designed to be stronger on all three:
 Today, WiFiProof uses these layers:
 
 1. **World ID**
-   - used as the current proof-of-personhood gate in the hackathon build
+   - available as a proof-of-personhood gate
    - helps prevent the same human from claiming multiple times with different wallets
 
-2. **Venue network check**
+2. **Coinbase Verified**
+   - supported as an onchain humanity path for verified Base wallets
+   - fits Base-native demo flows and smart-wallet onboarding
+
+3. **Venue network check**
    - the backend verifies that the request is coming from the expected venue network range
 
-3. **ZK proximity proof**
+4. **ZK proximity proof**
    - the browser generates a zero-knowledge proof that the attendee is within the allowed event radius
    - exact coordinates never leave the device
 
-4. **Lit Protocol signer**
+5. **Lit Protocol signer**
    - server authorizations are signed through Lit Chipotle PKP infrastructure
-   - the app uses Lit for EIP-712 authorization signatures instead of relying only on a raw server key
+   - the app uses Lit for EIP-712 authorization signatures and can fall back to a plain server key if Lit is unavailable
 
-5. **EAS attestation**
+6. **EAS attestation**
    - successful claims mint an Ethereum Attestation Service record on Base Sepolia
    - the output is an attestation, not a transferable NFT
-
-6. **Storacha archival**
-   - claim artifacts are archived to Storacha and indexed in Supabase
-   - this gives a durable content link for the claim payload and receipt metadata
 
 ## Why attestations instead of NFTs
 
@@ -104,7 +104,7 @@ An EAS attestation is much closer to that model than a speculative token.
 
 WiFiProof helps organizers run stronger attendance flows for hackathons, demos, meetups, and conferences.
 
-### Anti-fraud classroom attendance
+### Universities, classrooms, and training programs
 
 WiFiProof can also be used in lecture halls or classrooms where the problem is not just recording attendance, but making it harder to fake.
 
@@ -116,7 +116,11 @@ A lecturer could configure:
 
 Then students would need to satisfy both the physical and contextual checks instead of just sharing a link remotely.
 
-This classroom mode is part of the roadmap and will later use institutional identity instead of only web3-native identity flows.
+Institutional deployments are designed to use existing identity systems where possible, so WiFiProof focuses on presence verification instead of replacing school identity.
+
+### Custom verification products
+
+WiFiProof can also be offered as infrastructure for teams that want privacy-preserving presence verification inside their own product, with onchain or offchain record outputs depending on the use case.
 
 ## What is in this repo
 
@@ -146,16 +150,16 @@ The repo is organized into four packages:
   - attendance attestations
 
 - **World ID**
-  - current proof-of-personhood gate
+  - proof-of-personhood option
+
+- **Coinbase Verified**
+  - Base-native humanity option
 
 - **Lit Protocol (Chipotle)**
   - programmable signer infrastructure
 
-- **Storacha**
-  - decentralized claim artifact archival
-
 - **Supabase**
-  - event metadata, world verifications, archived artifact index
+  - event metadata and verification records
 
 ## What is live today
 
@@ -163,41 +167,12 @@ The current build supports:
 
 - organizer event creation
 - attendee claim flow
-- World-based humanity checks
+- World ID and Coinbase-based humanity checks
 - Lit-signed event and IP authorization
 - EAS attendance attestations
-- Storacha archival
+- Lit-to-key signer fallback for operational resilience
 - Reown wallet connection
 - live protocol stats on the landing page
-
-## Hackathon Changelog (Existing Code Track)
-
-The following upgrades were added or significantly expanded during the PL Genesis build window:
-
-- **World ID humanity verification**
-  - added a proof-of-personhood gate for one-person-one-claim attendance flows
-  - added backend verification, token issuance, and nullifier enforcement per event
-
-- **Lit Protocol signing via Chipotle**
-  - replaced plain server-side signing assumptions with Lit-backed programmable signing
-  - added Lit-based event/IP authorization flow for claim and organizer operations
-
-- **Storacha archival**
-  - added decentralized archival of claim artifacts and metadata after successful claims
-  - added retrieval and indexing support for archived attendance records
-
-- **Improved attendee and organizer UX**
-  - redesigned success states for event creation and attendance claims
-  - improved mobile wallet connection flow and wallet switching behavior
-  - strengthened the landing page with live stats, latest attestation display, and FAQ content
-
-- **Base ecosystem upgrades**
-  - added ERC-8021 Builder Codes attribution for organizer and attendee transactions
-  - added a guarded smart-wallet sponsorship path with a server-side CDP paymaster proxy
-
-- **Architecture and roadmap documentation**
-  - added deeper protocol documentation, implementation specs, and submission-ready project context
-  - documented the contract v2 path for relayed claims, future organizer fees, and classroom mode
 
 ## What is next
 
@@ -216,8 +191,8 @@ The next implementation phase is:
 3. **organizer dashboard**
    - per-event attendance stats and operator tools
 
-4. **classroom mode**
-   - institutional identity and anti-fraud lecture attendance
+4. **institution mode**
+   - institutional identity, passkey-friendly access modes, and anti-fraud attendance
 
 ## The proof system
 
@@ -259,15 +234,14 @@ LIT_API_URL=https://api.dev.litprotocol.com
 NEXT_PUBLIC_WORLD_APP_ID=<your world app id>
 NEXT_PUBLIC_WORLD_ACTION_ID=<your world action id>
 
+# Humanity tokens
+WORLD_TOKEN_SECRET=<shared secret for World/Coinbase humanity tokens>
+
 # Supabase
 SUPABASE_URL=<your supabase url>
 SUPABASE_SERVICE_ROLE_KEY=<your service role key>
 NEXT_PUBLIC_SUPABASE_URL=<your supabase url>
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<your anon key>
-
-# Storacha
-STORACHA_PROOF=<your storacha proof>
-STORACHA_SPACE_DID=<your space did>
 
 # Reown (WalletConnect)
 NEXT_PUBLIC_REOWN_PROJECT_ID=<your project id>
@@ -294,8 +268,8 @@ A few things worth knowing when reviewing the code:
 
 - The ZK circuit is in `packages/proof-app/circuit` — it is a Noir circuit that proves the attendee is within the event radius using Euclidean distance without revealing exact coordinates
 - The on-chain verifier is generated from the circuit using UltraHonk and deployed alongside the main contract in `packages/contracts`
-- Lit Protocol signing is in `packages/web/src/lib/lit-signer.ts` — the app uses a Chipotle PKP to issue EIP-712 authorization signatures so no raw server key is involved
-- Storacha archival happens after a successful claim in `packages/web/src/app/api/claims/archive`
+- Lit Protocol signing is in `packages/web/src/lib/lit-signer.ts` — the app uses a Chipotle PKP to issue EIP-712 authorization signatures and can fall back to a local signer key when needed
+- The attendee flow now supports both World ID and Coinbase Verified humanity checks
 - The paymaster proxy is at `packages/web/src/app/api/paymaster` — it validates and forwards to the CDP paymaster URL so the key is never exposed client-side
 
 The next contract version will add relayed claims for EOAs and smart wallets, organizer fee support, and a proxy-based upgrade path.

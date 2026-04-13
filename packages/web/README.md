@@ -5,9 +5,9 @@ Next.js frontend + API routes for WiFiProof V2.
 ## Core Flows
 
 1. Organizer creates an event and stores metadata in Supabase.
-2. Attendee verifies humanity (World), subnet presence, and ZK location proof.
+2. Attendee verifies humanity with World ID or Coinbase Verified, then proves subnet presence and ZK location.
 3. Attendee claims attendance on `WiFiProof` contract.
-4. Claim metadata is archived to decentralized storage (Storacha) and indexed in Supabase.
+4. Optional claim archival can happen after settlement, while the core flow stays focused on the onchain attestation.
 
 ## Required Environment Variables
 
@@ -41,16 +41,18 @@ Next.js frontend + API routes for WiFiProof V2.
 - `LIT_APP_NAME` (optional, default `wifiproof`)
 - `LIT_AUTH_DOMAIN` (optional, default `wifiproof.xyz`)
 - `LIT_AUTH_STATEMENT` (optional SIWE statement)
+- `SIGNER_FALLBACK_TO_KEY` (optional; default `true`, fallback to local key if Lit signing fails)
 - `WORLD_CLIENT_SECRET` (optional, depending on World verify configuration)
+- `HUMANITY_TOKEN_SECRET` (optional alias for `WORLD_TOKEN_SECRET`)
 - `WORLD_TOKEN_SECRET`
 - `WORLD_TOKEN_TTL_SECONDS` (optional, default `900`)
 - `WORLD_APP_ID` (optional server override)
 - `WORLD_ACTION_ID` (optional server override)
 - `RP_ID` (recommended; from World developer console)
 - `RP_SIGNING_KEY` (recommended; signer key downloaded from World)
-- `STORACHA_KEY` (agent private key, starts with `Mg...`)
-- `STORACHA_PROOF` (base64 delegation proof from CLI)
-- `STORACHA_SPACE_DID` (optional safety check)
+- `STORACHA_KEY` (optional archival only; agent private key, starts with `Mg...`)
+- `STORACHA_PROOF` (optional archival only; base64 delegation proof from CLI)
+- `STORACHA_SPACE_DID` (optional archival safety check)
 
 If you enable smart-wallet gas sponsorship, set the paymaster endpoint in your local server env only:
 
@@ -60,24 +62,28 @@ CDP_PAYMASTER_URL=https://api.developer.coinbase.com/rpc/v1/base-sepolia/<your-c
 
 Do not expose this as `NEXT_PUBLIC_*` or commit the live value to the repo.
 
-## API Routes Added for PL_Genesis
+## API Routes
 
 - `POST /api/world/verify`
   - Verifies World proof server-side
   - Enforces one nullifier per event
-  - Issues short-lived `worldToken`
+  - Issues a short-lived humanity token
 
 - `POST /api/world/rp-context`
   - Generates signed RP context (`nonce`, `created_at`, `expires_at`, `signature`)
   - Used by IDKit v4 request flow
 
+- `POST /api/humanity/coinbase`
+  - Checks whether the connected wallet has a valid Coinbase Verified attestation on Base
+  - Issues a short-lived humanity token
+
 - `POST /api/verify-ip`
-  - Requires valid `worldToken`
+  - Requires a valid humanity token
   - Checks subnet and event time window
   - Returns EIP-712 IP signature
 
 - `POST /api/claims/archive`
-  - Uploads claim artifact to Storacha
+  - Uploads claim artifact to optional archival storage
   - Persists CID + metadata in `attendance_artifacts`
 
 - `GET /api/claims/[eventId]/[wallet]`
@@ -90,6 +96,7 @@ Do not expose this as `NEXT_PUBLIC_*` or commit the live value to the repo.
 - `SIGNER_MODE=lit`:
   - `LIT_NETWORK=chipotle`: signs through Lit Core V1 / Chipotle with a PKP-backed Lit Action.
   - `LIT_NETWORK=naga-*`: uses the legacy Naga PKP signer flow in `src/lib/lit-signer.ts`.
+  - If `SIGNER_FALLBACK_TO_KEY` is not set to `false`, the app falls back to the local key path when Lit is unavailable.
   - The returned signature is verified server-side before use.
 
 ## Local Development
