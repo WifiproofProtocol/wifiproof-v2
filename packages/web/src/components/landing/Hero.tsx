@@ -30,18 +30,19 @@ export default function Hero() {
         >
           <p className="section-kicker">Protocol for private attendance</p>
           <h1 className="display-type mt-4 text-6xl leading-[0.9] tracking-[-0.05em] text-[#10233f] md:text-7xl">
-            The first proof you were actually there.
+            Verify real-world presence without exposing personal data.
           </h1>
           <p className="mt-6 text-lg leading-8 text-[#52637e] md:text-xl">
-            Venue Wi-Fi, local ZK location proof, and on-chain attestations for
-            events that want a stronger check-in without turning guests into a data form.
+            WiFiProof is a privacy-preserving proof-of-attendance platform that uses venue WiFi,
+            local proof generation, and optional onchain attestations to confirm presence across
+            Web3 events, universities, and live programs.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3 text-sm font-medium text-[#1f3f78]">
+            <span className="rounded-full border border-[#93b7e8]/35 bg-white/82 px-4 py-2">WiFi verification</span>
+            <span className="rounded-full border border-[#93b7e8]/35 bg-white/82 px-4 py-2">Local ZK proofs</span>
+            <span className="rounded-full border border-[#93b7e8]/35 bg-white/82 px-4 py-2">Web3 + institutions</span>
             <span className="rounded-full border border-[#93b7e8]/35 bg-white/82 px-4 py-2">Built on Base</span>
-            <span className="rounded-full border border-[#93b7e8]/35 bg-white/82 px-4 py-2">EAS attestation</span>
-            <span className="rounded-full border border-[#93b7e8]/35 bg-white/82 px-4 py-2">World ID</span>
-            <span className="rounded-full border border-[#93b7e8]/35 bg-white/82 px-4 py-2">Noir proving</span>
           </div>
 
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
@@ -49,18 +50,18 @@ export default function Hero() {
               href="/organizer"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-[#2563eb] px-6 py-3.5 text-sm font-medium text-white transition hover:bg-[#1d4ed8]"
             >
-              Explore organizer flow <ArrowRight className="h-4 w-4" />
+              Start as organizer <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="/events"
               className="inline-flex items-center justify-center rounded-full border border-[#93b7e8]/30 bg-white/82 px-6 py-3.5 text-sm font-medium text-[#10233f] transition hover:bg-white"
             >
-              Browse live events
+              Open check-in flow
             </Link>
           </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-[#61728d]">
-            <span>Venue Wi-Fi + ZK geolocation + EAS.</span>
+            <span>For conferences, classrooms, communities, and live programs.</span>
             {contractHref && (
               <a
                 href={contractHref}
@@ -82,26 +83,22 @@ export default function Hero() {
           className="relative lg:pl-10"
         >
           <div className="ink-panel rounded-[2rem] p-8">
-            <p className="section-kicker !text-[#cfe1ff]">Why this is stronger</p>
+            <p className="section-kicker !text-[#cfe1ff]">One platform</p>
             <h2 className="display-type mt-3 text-3xl leading-tight text-white md:text-4xl">
-              Real venue signal. Real attestation.
+              Multiple deployment modes.
             </h2>
 
             <div className="mt-8 space-y-4">
               <div className="rounded-2xl border border-white/10 bg-white/8 p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#9fc0ff]">
-                  Claim
-                </p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#9fc0ff]">Step 1</p>
                 <p className="mt-3 text-base leading-7 text-[#e3edff]">
-                  Show up on-site, prove it locally, mint a permanent attendance record.
+                  Web3-native organizers can lean into wallets, attestations, and onchain rewards.
                 </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/8 p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#9fc0ff]">
-                  On-chain result
-                </p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#9fc0ff]">Step 2</p>
                 <p className="mt-3 text-base leading-7 text-[#e3edff]">
-                  EAS stores the attestation. The guest keeps the proof of presence.
+                  Institutions can keep blockchain mostly invisible and use WiFiProof as the verification layer underneath.
                 </p>
               </div>
             </div>
@@ -119,7 +116,7 @@ export default function Hero() {
               </div>
               <div className="flex items-center gap-3">
                 <ShieldCheck className="h-4 w-4 text-[#2563eb]" />
-                <span>On-chain attestation, not a data form</span>
+                <span>Onchain or institution-facing record outputs</span>
               </div>
             </div>
           </div>

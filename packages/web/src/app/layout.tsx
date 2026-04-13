@@ -19,9 +19,9 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "WiFiProof | Zero-Knowledge Proof of Presence",
+  title: "WiFiProof | Privacy-Preserving Proof of Attendance",
   description:
-    "Privacy-preserving proof of attendance using ZK cryptography. Prove you were there without revealing where.",
+    "A privacy-preserving proof-of-attendance platform using WiFi signals, local proofs, and optional onchain records to verify real-world presence.",
   keywords: [
     "Zero Knowledge",
     "ZK Proofs",
@@ -36,22 +36,24 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "WiFiProof Protocol" }],
   openGraph: {
-    title: "WiFiProof | Zero-Knowledge Proof of Presence",
+    title: "WiFiProof | Privacy-Preserving Proof of Attendance",
     description:
-      "Privacy-preserving proof of attendance using ZK cryptography. Prove you were there without revealing where.",
+      "A privacy-preserving proof-of-attendance platform using WiFi signals, local proofs, and optional onchain records to verify real-world presence.",
     url: "https://wifiproof.xyz",
     siteName: "WiFiProof",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "WiFiProof | Zero-Knowledge Proof of Presence",
+    title: "WiFiProof | Privacy-Preserving Proof of Attendance",
     description:
-      "Privacy-preserving proof of attendance using ZK cryptography.",
+      "Privacy-preserving proof of attendance for events, institutions, and live programs.",
     creator: "@WiFiProof",
   },
   other: {
     "base:app_id": "69c80097480a9d8cb993adec",
+    "talentapp:project_verification":
+      "a3c5c8e579cebcb79d89051123545b1bcca26e8bb987cf59faea0efb45f0b51807a1ea74a92ed4634c5df2fc06425ae1e4516c07f57d9001c664a0834f621c0b",
   },
 };
 

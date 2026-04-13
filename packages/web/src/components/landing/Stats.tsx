@@ -95,7 +95,7 @@ export default function Stats() {
         <div className="grid gap-4 lg:grid-cols-[0.82fr_1.18fr]">
           <div className="rounded-[2rem] border border-[#cfe1ff] bg-[#0f2747] p-6 text-white shadow-[0_24px_70px_rgba(15,39,71,0.18)] md:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#cfe1ff]">
-              Live now
+              Live protocol stats
             </p>
             <div className="mt-6 grid gap-px overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/10 sm:grid-cols-3">
               {stats.map((stat) => (
@@ -118,7 +118,7 @@ export default function Stats() {
                   Latest attestation
                 </p>
                 <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#10233f] md:text-4xl">
-                  A real check-in, not a mockup.
+                  A real attendance record, already live.
                 </h2>
               </div>
               {data?.latestAttestation && (

@@ -243,12 +243,12 @@ export default function EventsClient() {
         <div className="space-y-4">
           <p className="section-kicker">Events</p>
           <h1 className="display-type text-5xl leading-[0.98] tracking-[-0.04em] text-[#10233f] md:text-7xl">
-            Find the event, open the check-in page, and prove you were there.
+            Find the event or attendance flow and prove you were there.
           </h1>
           <p className="max-w-2xl text-base leading-8 text-[#52637e] md:text-lg">
-            Live events update automatically. Open the event you are attending
-            to verify humanity, generate the proof locally, and mint your
-            attendance attestation.
+            Live events update automatically. Open the event you are attending to complete
+            the current wallet-based check-in flow, generate the proof locally, and mint your
+            attendance record.
           </p>
 
           <div className="flex flex-wrap items-center gap-3 text-sm text-[#486284]">

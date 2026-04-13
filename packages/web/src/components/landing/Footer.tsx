@@ -28,17 +28,20 @@ export default function Footer() {
               <span className="text-xl font-semibold text-[#10233f]">WiFiProof</span>
             </Link>
             <p className="max-w-sm text-sm leading-7 text-[#52637e]">
-              Proof of presence for venues that want real attendance without
-              turning guests into a data funnel.
+              Privacy-preserving proof of attendance for live events, institutions,
+              and teams building presence verification into their own products.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-[#52637e] md:justify-end">
             <Link href="/organizer" className="transition hover:text-[#2563eb]">
-              Organizer guide
+              Organizer access
+            </Link>
+            <Link href="/education" className="transition hover:text-[#2563eb]">
+              Education
             </Link>
             <Link href="/events" className="transition hover:text-[#2563eb]">
-              Live events
+              Check-in flow
             </Link>
             <a
               href="https://x.com/WiFiProof"

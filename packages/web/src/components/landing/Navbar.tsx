@@ -6,9 +6,9 @@ import { Menu, X } from "lucide-react";
 import Image from "next/image";
 
 const navLinks = [
-  { href: "#story", label: "Story" },
-  { href: "#how", label: "How it works" },
-  { href: "#organizers", label: "For organizers" },
+  { href: "#who", label: "Who It's For" },
+  { href: "#how", label: "How It Works" },
+  { href: "#products", label: "Products" },
 ];
 
 export default function Navbar() {
@@ -45,13 +45,13 @@ export default function Navbar() {
                 href="/events"
                 className="rounded-full border border-[#93b7e8]/30 bg-white/82 px-4 py-2 text-sm font-medium text-[#10233f] transition hover:border-[#5b96ea]/45 hover:bg-white"
               >
-                Live events
+                Check-in flow
               </Link>
               <Link
                 href="/organizer"
                 className="rounded-full bg-[#2563eb] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#1d4ed8]"
               >
-                Organizer guide
+                Request access
               </Link>
             </div>
           </div>
@@ -90,14 +90,14 @@ export default function Navbar() {
                 className="rounded-2xl border border-[#93b7e8]/30 bg-white/82 px-4 py-3 text-center text-sm font-medium text-[#10233f] transition hover:bg-white"
                 onClick={() => setIsOpen(false)}
               >
-                Live events
+                Check-in flow
               </Link>
               <Link
                 href="/organizer"
                 className="rounded-2xl bg-[#2563eb] px-4 py-3 text-center text-sm font-medium text-white transition hover:bg-[#1d4ed8]"
                 onClick={() => setIsOpen(false)}
               >
-                Organizer guide
+                Request access
               </Link>
             </div>
           </div>

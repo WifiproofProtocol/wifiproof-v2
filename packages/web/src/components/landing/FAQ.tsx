@@ -6,9 +6,14 @@ import { motion } from "framer-motion";
 
 const faqs = [
   {
-    question: "Why not just use a QR code?",
+    question: "Why not just use a QR code or a class link?",
     answer:
       "A QR code alone can be screenshotted, forwarded, or claimed remotely. WiFiProof adds venue network checks, local ZK proximity proofs, and on-chain attestations so the attendance signal is harder to fake.",
+  },
+  {
+    question: "Which humanity checks do you support?",
+    answer:
+      "The current wallet-based app supports World ID and a Coinbase Verified wallet path. That is one deployment mode, not the whole platform. Institutional deployments can rely on existing school or program identity instead of proof-of-humanity.",
   },
   {
     question: "Why use attestations instead of NFTs?",
@@ -21,14 +26,19 @@ const faqs = [
       "The attendee's exact coordinates stay on the device. The browser generates the proof locally, and the system verifies the result instead of storing raw location data.",
   },
   {
-    question: "Why is World ID in the current flow?",
-    answer:
-      "World is the current proof-of-personhood layer in the hackathon build. It helps stop one person from claiming multiple times with different wallets for the same event.",
-  },
-  {
     question: "Could this work for classrooms or lecture halls?",
     answer:
-      "Yes. The same venue-network and proximity model can be used for anti-fraud attendance in classrooms. The longer-term plan is to support school-issued identity or SSO for institutional mode.",
+      "Yes. Education is one strong use case, but not the only one. A lecturer or school can use WiFiProof to verify presence while keeping student identity in the institution's own systems.",
+  },
+  {
+    question: "Is this only for Web3 users?",
+    answer:
+      "No. WiFiProof can expose the blockchain layer clearly for Web3-native organizers, or keep it mostly invisible for institutions and other users who only care about the attendance result.",
+  },
+  {
+    question: "Is WiFiProof open to everyone right now?",
+    answer:
+      "Not yet. The current rollout is a mix of private beta, paid pilots, and guided deployments, while the public demo flow stays available for judges and testers.",
   },
 ];
 
@@ -46,10 +56,10 @@ export default function FAQ() {
         >
           <p className="section-kicker">FAQ</p>
           <h2 className="display-type mt-4 text-4xl leading-tight tracking-[-0.03em] md:text-6xl">
-            A few things people ask right away.
+            Frequently asked questions.
           </h2>
           <p className="mt-5 text-lg leading-8 text-[#52637e]">
-            The product is simple on purpose, but the model behind it is different from a normal check-in tool.
+            The surface can stay simple, but the platform underneath it is designed to support different kinds of users and deployments.
           </p>
         </motion.div>
 

@@ -1,13 +1,13 @@
-const organizerNotes = [
-  "Approved wallet required",
-  "Venue Wi-Fi + location check",
-  "Poster, details, QR, and onchain flow",
+const educationNotes = [
+  "Presence verification, not identity replacement",
+  "Works with existing school identity systems",
+  "Private beta and pilot deployments",
 ];
 
-export default function OrganizerPage() {
+export default function EducationPage() {
   const organizerContactEmail = process.env.NEXT_PUBLIC_ORGANIZER_CONTACT_EMAIL?.trim();
   const contactHref = organizerContactEmail
-    ? `mailto:${organizerContactEmail}?subject=WiFiProof organizer access`
+    ? `mailto:${organizerContactEmail}?subject=WiFiProof education pilot`
     : "https://x.com/WiFiProof";
   const contactLabel = organizerContactEmail ?? "@WiFiProof on X";
   const contactProps = organizerContactEmail
@@ -26,20 +26,20 @@ export default function OrganizerPage() {
           }}
         />
 
-        <div className="relative mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+        <div className="relative mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
           <div className="max-w-3xl">
-            <p className="section-kicker">For Web3-native organizers</p>
+            <p className="section-kicker">For education and institutions</p>
             <h1 className="display-type mt-4 text-5xl leading-[0.96] tracking-[-0.04em] text-[#10233f] md:text-7xl">
-              Create the event. Share the check-in.
+              Verify presence without rebuilding identity.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-[#52637e] md:text-xl">
-              WiFiProof keeps event setup tight for conferences, hackathons, and communities:
-              approved wallet, venue boundary, network check, shareable attendee page, and
-              an attendance record that can plug into onchain reputation or rewards.
+              WiFiProof can support classroom attendance, training programs, and campus events
+              by focusing on one job: confirming physical presence while your institution keeps
+              identity under its own control.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              {organizerNotes.map((note) => (
+              {educationNotes.map((note) => (
                 <span
                   key={note}
                   className="rounded-full border border-[#cfe1ff] bg-white/86 px-4 py-2 text-sm font-medium text-[#31517f]"
@@ -51,35 +51,35 @@ export default function OrganizerPage() {
 
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <a
-                href="/organizer/setup"
-                className="inline-flex items-center justify-center rounded-full bg-[#2563eb] px-6 py-3.5 text-sm font-medium text-white transition hover:bg-[#1d4ed8]"
-              >
-                Open organizer setup
-              </a>
-              <a
                 href={contactHref}
                 {...contactProps}
+                className="inline-flex items-center justify-center rounded-full bg-[#2563eb] px-6 py-3.5 text-sm font-medium text-white transition hover:bg-[#1d4ed8]"
+              >
+                Request education pilot
+              </a>
+              <a
+                href="/events"
                 className="inline-flex items-center justify-center rounded-full border border-[#93b7e8]/30 bg-white/82 px-6 py-3.5 text-sm font-medium text-[#10233f] transition hover:bg-white"
               >
-                Request access
+                View live demo
               </a>
             </div>
 
             <p className="mt-4 text-sm leading-7 text-[#61728d]">
-              Demo event creation is allowlisted. If your wallet is not approved yet,
-              contact {contactLabel}.
+              Institutional deployments are currently handled as guided pilots. Contact {contactLabel}
+              {' '}to discuss your setup.
             </p>
           </div>
 
           <div className="paper-panel rounded-[2rem] p-7 md:p-8">
-            <p className="section-kicker">Flow</p>
+            <p className="section-kicker">How it fits</p>
             <div className="mt-5 space-y-4">
               <div className="rounded-[1.5rem] border border-[#d6e5fb] bg-[#f8fbff] px-4 py-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
                   01
                 </p>
                 <p className="mt-2 text-sm leading-7 text-[#425779] md:text-base">
-                  Connect the organizer wallet and confirm it is approved.
+                  Your institution keeps student identity and enrollment as the source of truth.
                 </p>
               </div>
               <div className="rounded-[1.5rem] border border-[#d6e5fb] bg-[#f8fbff] px-4 py-4">
@@ -87,7 +87,7 @@ export default function OrganizerPage() {
                   02
                 </p>
                 <p className="mt-2 text-sm leading-7 text-[#425779] md:text-base">
-                  Add the event details, poster, location, and network prefix.
+                  WiFiProof verifies that someone was physically present in the room during the right window.
                 </p>
               </div>
               <div className="rounded-[1.5rem] border border-[#d6e5fb] bg-[#f8fbff] px-4 py-4">
@@ -95,7 +95,7 @@ export default function OrganizerPage() {
                   03
                 </p>
                 <p className="mt-2 text-sm leading-7 text-[#425779] md:text-base">
-                  Publish the attendee page and display the generated QR on-site.
+                  Records can stay institution-facing, while the blockchain layer stays optional and mostly invisible to end users.
                 </p>
               </div>
             </div>
