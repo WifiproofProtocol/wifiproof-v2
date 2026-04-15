@@ -7,41 +7,41 @@ import { ArrowRight, Building2, GraduationCap, Layers3 } from "lucide-react";
 const offerings = [
   {
     name: "Event Check-In",
-    stage: "Private beta",
+    stage: "Events",
     description:
-      "For Web3-native organizers who want verifiable attendance, onchain reputation, and stronger reward gating for live events.",
+      "For conferences, hackathons, and live programs.",
     details: [
-      "Organizer setup and attendee pages",
-      "World ID and Coinbase verification options",
-      "Base smart wallet-friendly claim flow",
+      "Real attendance verification",
+      "Wallet-based check-ins",
+      "Onchain rewards and gating",
     ],
     href: "/organizer",
-    cta: "Request event access",
+    cta: "Open event setup",
     icon: Layers3,
   },
   {
     name: "Education Attendance",
-    stage: "Pilot deployments",
+    stage: "Education",
     description:
-      "For universities, lecturers, and training programs that want anti-fraud attendance while keeping student identity under institution control.",
+      "For universities and training programs.",
     details: [
-      "Existing student identity can stay the source of truth",
-      "WiFiProof focuses on presence, not replacing school identity",
-      "Built for classrooms, labs, and campus programs",
+      "Uses existing student records",
+      "Prevents proxy attendance",
+      "Attendance stays within institutional systems",
     ],
     href: "/education",
     cta: "Explore education mode",
     icon: GraduationCap,
   },
   {
-    name: "Verification Layer",
+    name: "Verification API",
     stage: "Custom",
     description:
-      "For teams that want WiFiProof as infrastructure: venue checks, local proof generation, and privacy-preserving presence verification inside their own product.",
+      "For teams building their own products.",
     details: [
-      "Custom deployments and integration support",
-      "Onchain or offchain record outputs",
-      "Paid pilots for teams that need tailored workflows",
+      "Embed WiFi-based presence checks",
+      "Generate verifiable proofs",
+      "Use onchain or offchain outputs",
     ],
     href: "/organizer",
     cta: "Talk to us",
@@ -61,12 +61,8 @@ export default function Offerings() {
         >
           <p className="section-kicker">Products</p>
           <h2 className="display-type mt-4 text-4xl leading-tight tracking-[-0.03em] md:text-6xl">
-            Multiple ways to use WiFiProof.
+            WiFiProof adapts to how you run attendance.
           </h2>
-          <p className="mt-5 text-lg leading-8 text-[#52637e]">
-            The platform can be offered as a product, a pilot deployment, or a custom
-            verification layer depending on the user and the level of support needed.
-          </p>
         </motion.div>
 
         <div className="mt-10 grid gap-5 lg:grid-cols-3">

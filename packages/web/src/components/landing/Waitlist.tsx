@@ -14,15 +14,14 @@ export default function FinalCTA() {
             viewport={{ once: true }}
           >
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#cfe1ff]">
-              Work with WiFiProof
+              Get access
             </p>
             <h2 className="display-type mt-4 text-4xl leading-tight tracking-[-0.04em] text-white md:text-6xl">
-              Private beta, paid pilots, and custom deployments.
+              Use WiFiProof for events, schools, or pilots.
             </h2>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-[#d7e6ff]">
-              WiFiProof can be adopted in different ways depending on the team. Some users need
-              a Web3-native event flow, others need an institutional deployment, and some want
-              WiFiProof as infrastructure inside their own product.
+              Request access for your event, classroom, or product team. The current demo flow
+              stays open for testers while we onboard new partners.
             </p>
           </motion.div>
 
@@ -35,10 +34,10 @@ export default function FinalCTA() {
           >
             <div className="rounded-[2rem] border border-white/10 bg-white/8 p-6">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#cfe1ff]">
-                For product teams
+                For organizers
               </p>
               <p className="mt-4 text-base leading-7 text-[#e7f0ff]">
-                Request access for your conference, community, school, or pilot deployment and we will route you to the right setup.
+                Start with event setup or request a pilot for your school or institution.
               </p>
               <Link
                 href="/organizer"
@@ -53,13 +52,13 @@ export default function FinalCTA() {
                 For attendees and testers
               </p>
               <p className="mt-4 text-base leading-7 text-[#d7e6ff]">
-                Open the current demo flow, connect a wallet, and see how the verification stack works end to end.
+                Open the current demo flow and complete a real check-in.
               </p>
               <Link
                 href="/events"
                 className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/10"
               >
-                Open demo flow <ArrowRight className="h-4 w-4" />
+                Open check-in <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </motion.div>

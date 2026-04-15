@@ -6,45 +6,45 @@ import { ArrowRight, GraduationCap, ShieldCheck, Ticket } from "lucide-react";
 
 const audienceCards = [
   {
-    title: "I run events",
-    subtitle: "Web3-native organizers",
+    title: "For Event Organizers",
+    subtitle: "Events",
     description:
-      "For conferences, hackathons, crypto communities, and live programs that want stronger attendance, reputation, and reward flows.",
+      "Run events with real attendance, not guesswork.",
     bullets: [
-      "Verify real attendance",
-      "Reduce fake check-ins",
-      "Keep the onchain layer visible where it matters",
+      "Verify actual presence",
+      "Prevent fake check-ins",
+      "Enable onchain rewards and reputation",
     ],
     href: "/organizer",
-    cta: "Open organizer flow",
+    cta: "Open event setup",
     icon: Ticket,
   },
   {
-    title: "I run a school or program",
-    subtitle: "Lecturers and institutions",
+    title: "For Schools and Lecturers",
+    subtitle: "Education",
     description:
-      "For classrooms, universities, bootcamps, and training programs that want private anti-fraud attendance without rebuilding identity from scratch.",
+      "Attendance that students cannot fake.",
     bullets: [
-      "Use existing student identity systems",
-      "Make proxy attendance harder",
-      "Keep blockchain optional in the user experience",
+      "Uses existing student identity systems",
+      "Confirms physical presence in class",
+      "No need for proof of humanity",
     ],
     href: "/education",
-    cta: "See education mode",
+    cta: "Explore education mode",
     icon: GraduationCap,
   },
   {
-    title: "I need to check in",
-    subtitle: "Attendees and students",
+    title: "For Attendees and Students",
+    subtitle: "Check-in",
     description:
-      "For people entering an event or attendance flow. Open the check-in page, follow the required verification steps, and complete your proof of presence.",
+      "Check in and prove you were there.",
     bullets: [
-      "Wallet-based demo flow live today",
-      "Desktop works best for proof generation",
-      "Different deployments can use different access methods",
+      "Current demo uses wallet-based check-in",
+      "Complete verification in seconds",
+      "Works best on desktop",
     ],
     href: "/events",
-    cta: "Open check-in flow",
+    cta: "Open check-in",
     icon: ShieldCheck,
   },
 ] as const;
@@ -61,12 +61,8 @@ export default function Audience() {
         >
           <p className="section-kicker">Who are you?</p>
           <h2 className="display-type mt-4 text-4xl leading-tight tracking-[-0.03em] md:text-6xl">
-            Start from the workflow that fits you.
+            Choose your flow.
           </h2>
-          <p className="mt-5 text-lg leading-8 text-[#52637e]">
-            WiFiProof is a platform, not a single attendance screen. The same verification
-            foundation can be tailored for Web3 events, institutions, and end users.
-          </p>
         </motion.div>
 
         <div className="mt-10 grid gap-5 lg:grid-cols-3">
