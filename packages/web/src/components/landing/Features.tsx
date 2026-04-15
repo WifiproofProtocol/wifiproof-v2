@@ -2,22 +2,21 @@
 import { motion } from "framer-motion";
 
 const oldWay = [
-  "Forwarded links, screenshots, or paper check-ins",
-  "Too much personal data collected for a simple presence check",
-  "One rigid flow for users with very different needs",
+  "QR code abuse",
+  "Proxy check-ins",
+  "Invasive tracking",
 ];
 
 const newWay = [
-  "Venue Wi-Fi as a real on-site signal",
-  "Local proof generation that keeps raw location private",
-  "Different deployment modes for Web3 events and institutions",
+  "WiFi-based verification",
+  "Local zero-knowledge proofs",
+  "Records that fit the use case",
 ];
 
 const proofSteps: [string, string][] = [
-  ["Choose access", "The live app is wallet-based today, while institutional deployments can be tailored around the user's existing access system."],
-  ["Verify context", "Venue Wi-Fi and network checks confirm the request is coming from the right environment."],
-  ["Generate proof", "Location proof generation happens locally so exact coordinates are not turned into a surveillance feed."],
-  ["Write the record", "Depending on the use case, the result can become an onchain attestation or another institution-facing attendance record."],
+  ["Sign in", "The current demo uses wallet-based access. Institutional flows can use existing identity systems."],
+  ["Verify presence", "Venue WiFi and local proof generation confirm that the check-in is happening on-site."],
+  ["Write the record", "Onchain records for events. Institutional records for schools."],
 ];
 
 export default function Features() {
@@ -31,14 +30,13 @@ export default function Features() {
             viewport={{ once: true }}
             className="max-w-2xl"
           >
-            <p className="section-kicker">The platform</p>
+            <p className="section-kicker">What it does</p>
             <h2 className="display-type mt-4 text-4xl leading-tight tracking-[-0.03em] text-[#10233f] md:text-6xl">
-              One verification foundation, many use cases.
+              Verify attendance without abuse or surveillance.
             </h2>
             <p className="mt-6 text-lg leading-8 text-[#52637e]">
-              The core job is simple: confirm that someone was physically there. WiFiProof
-              does that in a privacy-preserving way, then lets the product layer adapt to the
-              user, whether that is a Web3 event, a university, or another live program.
+              WiFiProof confirms that someone was physically present without collecting
+              unnecessary personal data.
             </p>
           </motion.div>
 
@@ -93,15 +91,12 @@ export default function Features() {
             <div className="max-w-2xl">
               <p className="section-kicker">How it works</p>
               <h3 className="display-type mt-3 text-4xl leading-tight tracking-[-0.03em] md:text-5xl">
-                Four steps, one stronger attendance signal.
+                How it works
               </h3>
             </div>
-            <p className="max-w-xl text-sm leading-7 text-[#52637e] md:text-base">
-              This is the core platform flow. The UI around it can vary by audience.
-            </p>
           </div>
 
-          <div className="mt-10 grid gap-4 lg:grid-cols-4">
+          <div className="mt-10 grid gap-4 lg:grid-cols-3">
             {proofSteps.map(([title, description], index) => (
               <div
                 key={title}
