@@ -30,9 +30,9 @@ function formatCount(value: number) {
 }
 
 function formatLatestTime(value: string | null) {
-  if (!value) return "Recently minted";
+  if (!value) return "Recently recorded";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Recently minted";
+  if (Number.isNaN(date.getTime())) return "Recently recorded";
   return `${date.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
@@ -79,11 +79,11 @@ export default function Stats() {
       },
       {
         value: formatCount(data?.stats.attestationsCount ?? 0),
-        label: "attestations minted",
+        label: "attendance records",
       },
       {
         value: formatCount(data?.stats.humanityChecksCount ?? 0),
-        label: "humanity checks",
+        label: "identity checks",
       },
     ],
     [data]
@@ -95,7 +95,7 @@ export default function Stats() {
         <div className="grid gap-4 lg:grid-cols-[0.82fr_1.18fr]">
           <div className="rounded-[2rem] border border-[#cfe1ff] bg-[#0f2747] p-6 text-white shadow-[0_24px_70px_rgba(15,39,71,0.18)] md:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#cfe1ff]">
-              Live protocol stats
+              Live event records
             </p>
             <div className="mt-6 grid gap-px overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/10 sm:grid-cols-3">
               {stats.map((stat) => (
@@ -115,7 +115,7 @@ export default function Stats() {
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2563eb]">
-                  Latest attestation
+                  Latest event record
                 </p>
                 <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#10233f] md:text-4xl">
                   A real attendance record, already live.
@@ -128,7 +128,7 @@ export default function Stats() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-full border border-[#cfe1ff] bg-[#f6faff] px-4 py-2 text-sm font-semibold text-[#10233f] transition hover:bg-white"
                 >
-                  View on EASScan
+                  View record
                   <ArrowUpRight className="h-4 w-4" />
                 </a>
               )}
@@ -158,7 +158,7 @@ export default function Stats() {
                   </div>
                   <div>
                     <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-[#6a89b6]">
-                      Attestation UID
+                      Record ID
                     </span>
                     <span className="font-mono text-[#10233f]">
                       {shortenHex(data.latestAttestation.attestationUid, 10, 8)}
@@ -168,7 +168,7 @@ export default function Stats() {
               </div>
             ) : (
               <div className="mt-6 rounded-[1.75rem] border border-[#dbe8fb] bg-[#f8fbff] p-5 text-sm leading-7 text-[#52637e]">
-                The first live attestation will appear here after the next successful check-in.
+                The next live event record will appear here after the next successful check-in.
               </div>
             )}
           </div>
