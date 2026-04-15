@@ -6,8 +6,8 @@ import { Menu, X } from "lucide-react";
 import Image from "next/image";
 
 const navLinks = [
-  { href: "#who", label: "Who It's For" },
-  { href: "#how", label: "How It Works" },
+  { href: "#problem", label: "What It Does" },
+  { href: "#who", label: "Choose Your Flow" },
   { href: "#products", label: "Products" },
 ];
 
@@ -51,7 +51,7 @@ export default function Navbar() {
                 href="/organizer"
                 className="rounded-full bg-[#2563eb] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#1d4ed8]"
               >
-                Request access
+                Open event setup
               </Link>
             </div>
           </div>
@@ -97,7 +97,7 @@ export default function Navbar() {
                 className="rounded-2xl bg-[#2563eb] px-4 py-3 text-center text-sm font-medium text-white transition hover:bg-[#1d4ed8]"
                 onClick={() => setIsOpen(false)}
               >
-                Request access
+                Open event setup
               </Link>
             </div>
           </div>

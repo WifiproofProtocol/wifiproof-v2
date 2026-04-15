@@ -13,10 +13,10 @@ export default function Home() {
     <main className="min-h-[100dvh] overflow-x-hidden bg-[#f4f8ff] text-[#10233f]">
       <Navbar />
       <Hero />
-      <Audience />
-      <Stats />
       <Features />
+      <Audience />
       <Offerings />
+      <Stats />
       <FAQ />
       <FinalCTA />
       <Footer />

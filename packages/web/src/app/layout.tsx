@@ -21,7 +21,7 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "WiFiProof | Privacy-Preserving Proof of Attendance",
   description:
-    "A privacy-preserving proof-of-attendance platform using WiFi signals, local proofs, and optional onchain records to verify real-world presence.",
+    "A privacy-preserving attendance system that verifies real-world presence using WiFi and zero-knowledge proofs.",
   keywords: [
     "Zero Knowledge",
     "ZK Proofs",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "WiFiProof | Privacy-Preserving Proof of Attendance",
     description:
-      "A privacy-preserving proof-of-attendance platform using WiFi signals, local proofs, and optional onchain records to verify real-world presence.",
+      "A privacy-preserving attendance system that verifies real-world presence using WiFi and zero-knowledge proofs.",
     url: "https://wifiproof.xyz",
     siteName: "WiFiProof",
     type: "website",
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "WiFiProof | Privacy-Preserving Proof of Attendance",
     description:
-      "Privacy-preserving proof of attendance for events, institutions, and live programs.",
+      "Privacy-preserving attendance for events, classrooms, and live programs.",
     creator: "@WiFiProof",
   },
   other: {
