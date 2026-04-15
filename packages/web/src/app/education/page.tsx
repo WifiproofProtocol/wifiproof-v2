@@ -95,7 +95,7 @@ export default function EducationPage() {
                   03
                 </p>
                 <p className="mt-2 text-sm leading-7 text-[#425779] md:text-base">
-                  Records can stay institution-facing, while the blockchain layer stays optional and mostly invisible to end users.
+                  Attendance records stay inside institutional systems.
                 </p>
               </div>
             </div>

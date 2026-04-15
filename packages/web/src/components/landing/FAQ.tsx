@@ -8,17 +8,17 @@ const faqs = [
   {
     question: "Why not just use a QR code or a class link?",
     answer:
-      "A QR code alone can be screenshotted, forwarded, or claimed remotely. WiFiProof adds venue network checks, local ZK proximity proofs, and on-chain attestations so the attendance signal is harder to fake.",
+      "A QR code alone can be screenshotted, forwarded, or claimed remotely. WiFiProof adds venue network checks, local ZK proximity proofs, and verifiable records so the attendance signal is harder to fake.",
   },
   {
-    question: "Which humanity checks do you support?",
+    question: "Which verification methods do you support?",
     answer:
-      "The current wallet-based app supports World ID and a Coinbase Verified wallet path. That is one deployment mode, not the whole platform. Institutional deployments can rely on existing school or program identity instead of proof-of-humanity.",
+      "Events can use World ID or Coinbase Verified today. Schools can rely on existing student identity systems instead of separate proof-of-humanity checks.",
   },
   {
-    question: "Why use attestations instead of NFTs?",
+    question: "What kind of record does WiFiProof produce?",
     answer:
-      "Attendance is a fact, not a collectible. An attestation is a better fit for proving that a wallet was present at a specific event and time.",
+      "Events can use onchain attestations. Schools can keep attendance inside institutional systems. Custom teams can use onchain or offchain outputs.",
   },
   {
     question: "What stays private?",
@@ -33,7 +33,7 @@ const faqs = [
   {
     question: "Is this only for Web3 users?",
     answer:
-      "No. WiFiProof can expose the blockchain layer clearly for Web3-native organizers, or keep it mostly invisible for institutions and other users who only care about the attendance result.",
+      "No. Web3 events can use onchain records and rewards. Schools and institutions can keep the attendance record inside their own systems.",
   },
   {
     question: "Is WiFiProof open to everyone right now?",
@@ -59,7 +59,7 @@ export default function FAQ() {
             Frequently asked questions.
           </h2>
           <p className="mt-5 text-lg leading-8 text-[#52637e]">
-            The surface can stay simple, but the platform underneath it is designed to support different kinds of users and deployments.
+            Everything people usually want to know right away.
           </p>
         </motion.div>
 
