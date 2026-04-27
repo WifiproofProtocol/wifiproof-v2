@@ -32,6 +32,12 @@ function normalize(value: string) {
   return value.trim().toLowerCase();
 }
 
+function isMissingSchemaField(detail: string | undefined, field: string) {
+  if (!detail) return false;
+  return detail.includes(`Could not find the '${field}' column`) ||
+    detail.includes(`Could not find the '${field}' relation`);
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as CreateEventBody;
@@ -139,6 +145,20 @@ export async function POST(request: Request) {
 
     const supabase = getSupabaseAdmin();
     const eventRow = {
+      organizer: normalizedOrganizer,
+      event_id: normalizedEventId,
+      venue_hash: normalizedVenueHash,
+      subnet_prefix: normalizedSubnetPrefix,
+      start_time: startTime,
+      end_time: endTime,
+      venue_name: normalizedVenueName,
+      event_description: normalizedEventDescription || null,
+      venue_lat: venueLat,
+      venue_lon: venueLon,
+      radius_meters: radiusMeters,
+      poster_image_url: normalizedPosterImageUrl || null,
+    };
+    const legacyEventRow = {
       event_id: normalizedEventId,
       venue_hash: normalizedVenueHash,
       subnet_prefix: normalizedSubnetPrefix,
@@ -169,6 +189,8 @@ export async function POST(request: Request) {
     }
 
     if (existing) {
+      const existingOrganizer =
+        typeof existing.organizer === "string" ? normalize(existing.organizer) : null;
       const matchesExisting =
         existing.event_id === eventRow.event_id &&
         existing.venue_hash === eventRow.venue_hash &&
@@ -182,6 +204,13 @@ export async function POST(request: Request) {
         Number(existing.radius_meters) === eventRow.radius_meters &&
         (existing.poster_image_url ?? null) === eventRow.poster_image_url;
 
+      if (existingOrganizer && existingOrganizer !== normalizedOrganizer) {
+        return NextResponse.json(
+          { error: "Event metadata already exists for a different organizer" },
+          { status: 409 }
+        );
+      }
+
       if (!matchesExisting) {
         return NextResponse.json(
           { error: "Event metadata already exists with different values" },
@@ -189,10 +218,45 @@ export async function POST(request: Request) {
         );
       }
 
+      if (!existingOrganizer) {
+        const { error: updateError } = await supabase
+          .from("events")
+          .update({ organizer: normalizedOrganizer })
+          .eq("event_id", normalizedEventId);
+
+        if (updateError) {
+          if (isMissingSchemaField(updateError.message, "organizer")) {
+            return NextResponse.json({
+              ok: true,
+              warning:
+                "Event saved without organizer ownership because the database migration has not been applied yet.",
+            });
+          }
+          console.error("[events/create] Failed to backfill organizer:", updateError);
+          return NextResponse.json(
+            { error: "Failed to update organizer", detail: updateError.message },
+            { status: 500 }
+          );
+        }
+      }
+
       return NextResponse.json({ ok: true });
     }
 
-    const { error } = await supabase.from("events").insert(eventRow);
+    let { error } = await supabase.from("events").insert(eventRow);
+
+    if (error && isMissingSchemaField(error.message, "organizer")) {
+      const fallbackResult = await supabase.from("events").insert(legacyEventRow);
+      error = fallbackResult.error ?? null;
+
+      if (!error) {
+        return NextResponse.json({
+          ok: true,
+          warning:
+            "Event saved without organizer ownership because the database migration has not been applied yet.",
+        });
+      }
+    }
 
     if (error) {
       console.error("[events/create] Supabase upsert error:", error);
