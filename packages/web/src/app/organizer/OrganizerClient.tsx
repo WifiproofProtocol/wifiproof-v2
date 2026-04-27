@@ -24,6 +24,7 @@ import {
 
 import WalletCard from "@/components/wallet/WalletCard";
 import DateTimePicker from "@/components/DateTimePicker";
+import { getClientBaseRpcUrl } from "@/lib/base-rpc";
 import { withBuilderCode } from "@/lib/builder-codes";
 import { preparePosterImage } from "@/lib/poster-image";
 
@@ -158,13 +159,19 @@ export default function OrganizerClient() {
     ? `mailto:${organizerContactEmail}?subject=WiFiProof organizer access`
     : "https://x.com/WiFiProof";
   const organizerContactLabel = organizerContactEmail ?? "@WiFiProof on X";
-
-  const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL ?? "https://sepolia.base.org";
+  const [rpcUrl, setRpcUrl] = useState("");
 
   const publicClient = useMemo(
-    () => createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) }),
+    () =>
+      rpcUrl
+        ? createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) })
+        : null,
     [rpcUrl]
   );
+
+  useEffect(() => {
+    setRpcUrl(getClientBaseRpcUrl());
+  }, []);
 
   useEffect(() => {
     if (!walletAddress && step !== 0) {
@@ -177,7 +184,7 @@ export default function OrganizerClient() {
   }, [step, walletAddress]);
 
   useEffect(() => {
-    if (!walletAddress) {
+    if (!walletAddress || !publicClient) {
       return;
     }
 
@@ -351,6 +358,10 @@ export default function OrganizerClient() {
       const scaledLat = BigInt(toScaled(lat));
       const scaledLon = BigInt(toScaled(lon));
       const thresholdSq = thresholdSqScaled(radius);
+
+      if (!publicClient) {
+        throw new Error("RPC client is still loading. Try again in a second.");
+      }
 
       setStatusMsg("Computing venue hash...");
       const computedVenueHash = await publicClient.readContract({
