@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>WiFiProof Research Proposal</title>
+  <style>
+    @page {
+      margin-top: 1in;
+      margin-right: 1in;
+      margin-bottom: 1in;
+      margin-left: 1.5in;
+    }
+
+    body {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 12pt;
+      line-height: 1.5;
+      color: #000;
+      margin: 0;
+    }
+
+    p {
+      margin: 0 0 12pt 0;
+      text-align: justify;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      margin: 0 0 12pt 0;
+    }
+
+    h1.section-title {
+      font-size: 14pt;
+      font-weight: 700;
+      text-align: center;
+      text-transform: uppercase;
+      margin-bottom: 18pt;
+    }
+
+    h1.chapter {
+      font-size: 14pt;
+      font-weight: 700;
+      text-align: center;
+      text-transform: uppercase;
+      margin: 24pt 0 18pt 0;
+    }
+
+    h2 {
+      font-size: 12pt;
+      font-weight: 700;
+      margin-top: 12pt;
+    }
+
+    h3 {
+      font-size: 12pt;
+      font-weight: 700;
+      margin-top: 10pt;
+    }
+
+    .cover {
+      text-align: center;
+      margin-top: 110pt;
+    }
+
+    .cover h1 {
+      font-size: 16pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      text-align: center;
+      margin-bottom: 24pt;
+    }
+
+    .cover p {
+      text-align: center;
+      margin-bottom: 12pt;
+    }
+
+    .spacer-lg {
+      height: 36pt;
+    }
+
+    .page-break {
+      page-break-before: always;
+    }
+
+    ul,
+    ol {
+      margin: 0 0 12pt 24pt;
+      padding: 0;
+    }
+
+    li {
+      margin: 0 0 6pt 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12pt 0 18pt 0;
+    }
+
+    th,
+    td {
+      border: 1px solid #000;
+      padding: 6pt;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .note {
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="cover">
+    <h1>WIFIPROOF: PRIVACY-PRESERVING PROOF-OF-ATTENDANCE PLATFORM USING ZERO-KNOWLEDGE VERIFICATION ON BASE</h1>
+    <p>Nelly Wambui - BSE-05-0132/2022</p>
+    <div class="spacer-lg"></div>
+    <p>A Research Proposal Submitted to the Department of Information Technology and Engineering in Partial Fulfillment of the Requirements for the Award of Bachelor of Science in Information Technology</p>
+    <div class="spacer-lg"></div>
+    <p>Zetech University</p>
+    <p>2026</p>
+  </div>
+
+  <div class="page-break"></div>
+  <h1 class="section-title">Declaration</h1>
+  <h2>Candidate's Declaration</h2>
+  <p>This research proposal is my original work and has not been presented for a degree or diploma in any other institution.</p>
+  <p>Author: Nelly Wambui</p>
+  <p>Signature: ____________________________ Date: ____________________________</p>
+
+  <h2>Supervisor's Declaration</h2>
+  <p>This research proposal has been submitted for examination with my approval as the university supervisor.</p>
+  <p>Supervisor's Name: ____________________________</p>
+  <p>Signature: ____________________________ Date: ____________________________</p>
+
+  <div class="page-break"></div>
+  <h1 class="section-title">Abstract</h1>
+  <p>Event organizers, communities, and conference sponsors increasingly rely on digital attendance records for rewards, access control, credentials, and community analytics. However, common attendance methods such as paper registers, QR code check-ins, and transferable proof-of-attendance tokens are vulnerable to fraud, remote claiming, identity duplication, and privacy leakage. A person can claim remotely when a QR code is shared, transfer a collectible to a non-attendee, or expose exact location history through public on-chain records. These limitations reduce trust in attendance systems and make them unsuitable for high-integrity use cases such as hackathons, grants, conferences, and gated community programs.</p>
+  <p>This project proposes WiFiProof, a privacy-preserving proof-of-attendance platform that combines zero-knowledge geolocation proofs, venue WiFi verification, identity checks, and on-chain attestations. The platform allows an attendee to prove presence within a defined venue radius without revealing exact GPS coordinates. It also checks that the attendee is connected to the expected venue network, binds each claim to a specific event, and mints a non-transferable attendance attestation on Base through the Ethereum Attestation Service. The proposed implementation uses a Next.js web application, Noir circuits, Barretenberg proof generation, Solidity smart contracts, Supabase for event metadata, and Storacha for archival of claim artifacts.</p>
+  <p>The study seeks to demonstrate that a multi-layer attendance protocol can improve authenticity, reduce fraudulent claims, protect user privacy, and provide a verifiable attendance record suitable for real-world events. By integrating cryptography, blockchain, and web-based usability, WiFiProof aims to offer a practical alternative to conventional event check-in systems.</p>
+
+  <div class="page-break"></div>
+  <h1 class="section-title">Table of Contents</h1>
+  <p>DECLARATION</p>
+  <p>ABSTRACT</p>
+  <p>TABLE OF CONTENTS</p>
+  <p>LIST OF TABLES</p>
+  <p>LIST OF FIGURES</p>
+  <p>ACRONYMS</p>
+  <p>DEFINITION OF TERMS</p>
+  <p>CHAPTER 1: INTRODUCTION</p>
+  <p>CHAPTER 2: LITERATURE REVIEW</p>
+  <p>CHAPTER 3: SYSTEM METHODOLOGY</p>
+  <p>CHAPTER 4: SYSTEM ANALYSIS AND DESIGN</p>
+  <p>CHAPTER 5: SYSTEM IMPLEMENTATION, TESTING, CONCLUSIONS, AND RECOMMENDATIONS</p>
+  <p>REFERENCES</p>
+  <p>APPENDICES</p>
+
+  <h1 class="section-title">List of Tables</h1>
+  <p>Table 1: Comparison of Existing Attendance Approaches</p>
+  <p>Table 2: Software Tools</p>
+  <p>Table 3: Hardware Requirements</p>
+  <p>Table 4: Feasibility Study Summary</p>
+  <p>Table 5: Planned Functional Test Cases</p>
+  <p>Table 6: Anticipated Limitations</p>
+  <p>Table 7: MVP Budget</p>
+  <p>Table 8: Work Plan</p>
+
+  <h1 class="section-title">List of Figures</h1>
+  <p>Figure 1: Use Case Diagram</p>
+  <p>Figure 2: System Architecture Diagram</p>
+  <p>Figure 3: Entity-Relationship Diagram</p>
+  <p>Figure 4: Flow Chart</p>
+  <p class="note">Figures, diagrams, and wireframes should be inserted in the final document where indicated.</p>
+
+  <h1 class="section-title">Acronyms</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Acronym</th>
+        <th>Full Meaning</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>API</td><td>Application Programming Interface</td></tr>
+      <tr><td>Base</td><td>Ethereum Layer 2 network used by WiFiProof</td></tr>
+      <tr><td>EAS</td><td>Ethereum Attestation Service</td></tr>
+      <tr><td>GPS</td><td>Global Positioning System</td></tr>
+      <tr><td>IP</td><td>Internet Protocol</td></tr>
+      <tr><td>KYC</td><td>Know Your Customer</td></tr>
+      <tr><td>MVP</td><td>Minimum Viable Product</td></tr>
+      <tr><td>NFT</td><td>Non-Fungible Token</td></tr>
+      <tr><td>POAP</td><td>Proof of Attendance Protocol</td></tr>
+      <tr><td>QR</td><td>Quick Response</td></tr>
+      <tr><td>UI</td><td>User Interface</td></tr>
+      <tr><td>UX</td><td>User Experience</td></tr>
+      <tr><td>WiFi</td><td>Wireless Fidelity</td></tr>
+      <tr><td>ZK</td><td>Zero Knowledge</td></tr>
+    </tbody>
+  </table>
+
+  <h1 class="section-title">Definition of Terms</h1>
+  <p><strong>Zero-Knowledge Proof:</strong> A cryptographic method that allows one party to prove a statement is true without revealing the private information used to prove it.</p>
+  <p><strong>Proof of Attendance:</strong> A digital record showing that a participant attended a specific event, session, or venue.</p>
+  <p><strong>Soulbound Attestation:</strong> A non-transferable credential issued to a wallet and intended to remain permanently associated with that wallet.</p>
+  <p><strong>Venue Hash:</strong> A cryptographic representation of approved event location values, including venue coordinates, allowed radius, and event identity.</p>
+  <p><strong>Event Binding:</strong> A security mechanism that ties a proof or signature to one specific event so it cannot be reused for another event.</p>
+  <p><strong>Sybil Resistance:</strong> A system property that limits a person from creating many fake or duplicate identities to gain unfair advantage.</p>
+  <p><strong>Subnet Verification:</strong> A technique that checks whether a request appears to originate from a network range associated with the event venue.</p>
+  <p><strong>Attestation:</strong> A signed on-chain statement issued by a trusted contract or account to confirm a claim about a user or event.</p>
+
+  <div class="page-break"></div>
+  <h1 class="chapter">Chapter 1: Introduction</h1>
+
+  <h2>1.1 Background of the Study</h2>
+  <p>Digital attendance has become important in conferences, university events, hackathons, community meetups, and incentive-driven ecosystems. Organizers need reliable proof that a participant was physically present, while attendees increasingly expect privacy, portability, and verifiable credentials. In practice, many attendance systems remain weak. Manual registers are easy to manipulate, QR code systems can be shared remotely, and common on-chain collectibles are often transferable. These weaknesses make it difficult to distinguish genuine attendance from remote farming or credential resale.</p>
+  <p>Blockchain technologies introduce verifiable and tamper-resistant records, but blockchain alone does not solve attendance fraud. A transferable token can still be claimed by the wrong person or moved after minting. Likewise, a GPS-only solution can expose sensitive location data, while a WiFi-only solution may fail to prove a person was truly within the intended venue radius. A stronger design must combine authenticity, privacy, uniqueness, and usability.</p>
+  <p>WiFiProof addresses this challenge through layered verification. First, a zero-knowledge circuit proves that a user is inside an approved geographic radius without exposing exact coordinates. Second, the system checks whether the participant is connected to the expected venue network. Third, the claim is tied to a specific event and can be reinforced with identity verification to reduce duplicate or fraudulent claims. The final output is a non-transferable attendance attestation on Base, making the record auditable without making private location data public.</p>
+
+  <h2>1.2 Statement of the Problem</h2>
+  <p>Current attendance systems are affected by several major problems:</p>
+  <ul>
+    <li><strong>Weak authenticity:</strong> QR codes, screenshots, and shared links can allow remote users to claim attendance they did not earn.</li>
+    <li><strong>Transferability of credentials:</strong> Many attendance NFTs can be transferred, which breaks the link between the original attendee and the credential.</li>
+    <li><strong>Poor privacy:</strong> Systems that store exact location information create privacy risks and discourage adoption.</li>
+    <li><strong>Duplicate claims:</strong> Without strong identity or uniqueness checks, one person can claim multiple times using multiple wallets or accounts.</li>
+    <li><strong>Limited auditability:</strong> Traditional systems rarely produce a cryptographically verifiable attendance trail that sponsors, organizers, and third-party applications can trust.</li>
+  </ul>
+  <p>These problems reduce the value of attendance credentials and undermine their use in community rewards, access control, scholarship programs, and event analytics. A secure and privacy-preserving alternative is therefore required.</p>
+
+  <h2>1.3 Proposed Solution</h2>
+  <p>This project proposes the development of WiFiProof, a decentralized proof-of-attendance platform built on Base. The platform combines cryptographic proof generation, venue-context verification, and non-transferable attestations. The main solution components are:</p>
+  <ul>
+    <li><strong>Zero-knowledge geolocation proofs:</strong> Attendees prove they are within a venue radius without revealing exact GPS coordinates.</li>
+    <li><strong>Venue WiFi verification:</strong> The system checks that the claim request originates from the expected venue network range.</li>
+    <li><strong>Event-bound signatures:</strong> Proofs and signatures are tied to a specific event to prevent replay attacks.</li>
+    <li><strong>Identity and uniqueness checks:</strong> The web application supports proof-of-personhood verification, while the contract can enforce optional verified-account checks.</li>
+    <li><strong>On-chain attestations:</strong> Successful claims mint a soulbound attendance attestation using the Ethereum Attestation Service.</li>
+    <li><strong>Supporting services:</strong> Supabase stores event metadata and Storacha archives claim artifacts for auditability.</li>
+  </ul>
+
+  <h2>1.4 Objectives of the Study</h2>
+  <p><strong>General Objective:</strong></p>
+  <p>To design and develop WiFiProof, a privacy-preserving proof-of-attendance platform that verifies physical presence using zero-knowledge geolocation, venue WiFi context, and on-chain attestations.</p>
+  <p><strong>Specific Objectives:</strong></p>
+  <ul>
+    <li>To develop a decentralized attendance platform that binds event participation to verifiable on-chain attestations.</li>
+    <li>To implement a zero-knowledge mechanism that proves venue proximity without exposing exact location data.</li>
+    <li>To integrate venue network verification in order to strengthen proof of physical presence.</li>
+    <li>To reduce fake or duplicate attendance claims by introducing identity and event-binding controls.</li>
+    <li>To provide an organizer workflow for event creation, venue configuration, and secure attendee claiming.</li>
+    <li>To evaluate the usability, performance, and security of the proposed WiFiProof platform.</li>
+  </ul>
+
+  <h2>1.5 Research Questions</h2>
+  <ul>
+    <li>How can zero-knowledge proofs improve privacy in digital attendance verification?</li>
+    <li>How effective is the combination of venue WiFi verification and geolocation proof in reducing fake attendance claims?</li>
+    <li>How can on-chain attestations provide a stronger and non-transferable attendance record compared to standard NFT-based approaches?</li>
+    <li>What technical and usability challenges arise when deploying a privacy-preserving attendance protocol in real event environments?</li>
+  </ul>
+
+  <h2>1.6 Justification of the Study</h2>
+  <p>This study is important because digital communities increasingly depend on trustworthy attendance data. Hackathons use attendance records for prizes and eligibility, conferences use them for certification, and community programs use them for gated access and reputation. Existing tools are often either insecure or invasive. WiFiProof is justified because it aims to balance four needs that are normally in tension: proof, privacy, usability, and interoperability.</p>
+  <p>The project is also significant from a technical perspective. It demonstrates how zero-knowledge circuits, event-bound signatures, and attestation-based credentials can be combined into a practical system rather than treated as isolated technologies. This makes the study relevant to academic work on blockchain applications, privacy-preserving systems, and applied cryptography.</p>
+
+  <h2>1.7 Scope of the Study</h2>
+  <p>The scope of this project includes:</p>
+  <ul>
+    <li>Developing a web-based platform for event creation and attendee claiming.</li>
+    <li>Building a Noir-based circuit for privacy-preserving proximity verification.</li>
+    <li>Implementing Solidity smart contracts for event registration and attendance attestations on Base.</li>
+    <li>Adding venue subnet verification, event binding, and identity checks to the claim workflow.</li>
+    <li>Testing the system on Base Sepolia before final deployment considerations.</li>
+  </ul>
+  <p>The study does not include:</p>
+  <ul>
+    <li>Offline attendance verification without internet connectivity.</li>
+    <li>Support for non-EVM blockchains in the initial version.</li>
+    <li>Full production-grade mobile applications beyond the browser-based experience.</li>
+    <li>Advanced biometric identity systems developed in-house by the project.</li>
+  </ul>
+
+  <div class="page-break"></div>
+  <h1 class="chapter">Chapter 2: Literature Review</h1>
+
+  <h2>2.1 Introduction</h2>
+  <p>This chapter reviews the concepts and systems relevant to WiFiProof. The discussion focuses on blockchain-based credentials, zero-knowledge privacy, location-aware verification, and identity-backed anti-fraud mechanisms. The review highlights what existing approaches solve, where they fall short, and why a layered attendance protocol is necessary.</p>
+
+  <h2>2.2 Theoretical Review</h2>
+
+  <h3>2.2.1 Blockchain and Verifiable Records</h3>
+  <p>Blockchain systems provide immutability, transparency, and auditability. Once a transaction or credential is recorded on-chain, it becomes difficult to alter without consensus from the network. This property is useful for attendance verification because organizers, sponsors, and third-party applications can independently confirm that a credential exists and was issued by an approved contract. However, blockchain records alone do not prove the underlying event claim was genuine; therefore, the integrity of the issuance process remains critical.</p>
+
+  <h3>2.2.2 Zero-Knowledge Proofs and Privacy Preservation</h3>
+  <p>Zero-knowledge proofs allow a user to prove a statement without disclosing the private data behind it. In the context of WiFiProof, the statement is that the attendee is within an approved radius of the venue. Instead of publishing raw latitude and longitude values, the system generates a proof in the browser and submits only the proof and public verification inputs. This makes zero-knowledge cryptography appropriate for attendance systems where presence matters but exact location should remain private.</p>
+
+  <h3>2.2.3 Context-Aware Verification</h3>
+  <p>Attendance is stronger when it is linked to context. Location alone can be spoofed. Network presence alone can be shared or tunneled. Identity alone does not prove the person is physically there. Context-aware verification combines multiple signals to reduce fraud. WiFiProof applies this principle by linking spatial proximity, venue network access, event identity, and optional proof-of-personhood into one attendance flow.</p>
+
+  <h3>2.2.4 Sybil Resistance and Unique Participation</h3>
+  <p>Sybil resistance is the ability of a system to limit abuse caused by one person creating many identities. In attendance systems, weak identity controls allow multiple claims from the same participant. Proof-of-personhood services and verified-account attestations help reduce this risk by making repeated fraudulent claiming more difficult. Their integration into attendance systems is therefore important when credentials have monetary or reputational value.</p>
+
+  <h2>2.3 Review of Existing Literature and Systems</h2>
+
+  <h3>2.3.1 Manual and QR-Based Attendance Systems</h3>
+  <p>Manual attendance sheets and QR-based check-ins are easy to deploy and affordable for most event organizers. However, they do not offer cryptographic guarantees, can be manipulated by insiders, and are difficult to audit independently. QR codes are especially weak in environments where screenshots and remote sharing are common. Their usability is high, but their integrity is low.</p>
+
+  <h3>2.3.2 NFT-Based Proof of Attendance</h3>
+  <p>NFT-based attendance systems introduced public verifiability and composability, but many of them are transferable. This means the token may no longer reflect who actually attended. Even when the token is not transferred, simple claim links or public mint pages still allow remote farming if access control is weak. As a result, the model is useful for collectibles but insufficient for high-trust attendance verification.</p>
+
+  <h3>2.3.3 Privacy-Preserving Location Proofs</h3>
+  <p>Location proofs that preserve privacy have become more relevant as geolocation data gains commercial and social value. Zero-knowledge systems are well suited to this domain because they allow a verifier to check whether a user satisfies a radius constraint without learning the exact coordinates. This approach reduces surveillance risk while still enabling mathematically verifiable access control.</p>
+
+  <h3>2.3.4 Attestation and Identity Systems</h3>
+  <p>Attestation frameworks allow a trusted issuer to publish structured claims about users, events, or assets. They are especially useful where a credential should remain non-transferable and queryable by external applications. Identity attestation systems extend this concept by allowing one credential to represent uniqueness, verification status, or eligibility. Their use in attendance systems can improve trust when combined with privacy-preserving presence proofs.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Platform or Approach</th>
+        <th>Key Strength</th>
+        <th>Main Limitation</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Manual register</td>
+        <td>Low cost and easy to understand</td>
+        <td>Easy to forge, low auditability</td>
+      </tr>
+      <tr>
+        <td>QR code check-in</td>
+        <td>Fast onboarding for attendees</td>
+        <td>QR codes can be shared remotely</td>
+      </tr>
+      <tr>
+        <td>Transferable attendance NFT</td>
+        <td>Public verifiability and ecosystem interoperability</td>
+        <td>Credential may not remain tied to the real attendee</td>
+      </tr>
+      <tr>
+        <td>WiFi-only check system</td>
+        <td>Confirms local network context</td>
+        <td>Does not privately prove precise physical proximity</td>
+      </tr>
+      <tr>
+        <td>WiFiProof</td>
+        <td>Combines privacy, context, identity, and non-transferable attestations</td>
+        <td>Higher implementation complexity than simple check-in tools</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2.4 Research Gaps</h2>
+  <p>The literature and current systems reveal several gaps that WiFiProof seeks to address:</p>
+  <ul>
+    <li>Many attendance systems do not combine privacy preservation with strong fraud resistance.</li>
+    <li>Existing proof-of-attendance tokens often remain transferable or weakly bound to the original claimant.</li>
+    <li>Few solutions integrate venue network context, geolocation proof, and identity verification in a single attendance flow.</li>
+    <li>Attendance systems rarely provide both user-friendly web interfaces and cryptographically verifiable back-end security.</li>
+  </ul>
+  <p>This project fills these gaps by proposing a multi-layer architecture that produces a non-transferable and verifiable attendance credential while minimizing exposure of private user data.</p>
+
+  <div class="page-break"></div>
+  <h1 class="chapter">Chapter 3: System Methodology</h1>
+
+  <h2>3.1 Introduction</h2>
+  <p>This chapter presents the methodology that will guide the design, implementation, and evaluation of WiFiProof. It explains the research approach, development method, software tools, hardware requirements, and the rationale for selecting each approach.</p>
+
+  <h2>3.2 Research Methodology</h2>
+  <p>The project will use a design science and prototype-driven methodology supported by both qualitative and quantitative techniques.</p>
+  <ul>
+    <li><strong>Qualitative approach:</strong> Literature review, analysis of existing attendance systems, and stakeholder-oriented requirements gathering from organizers and attendees.</li>
+    <li><strong>Quantitative approach:</strong> Measurement of proof generation time, claim completion time, network verification success rate, and system responsiveness under concurrent use.</li>
+    <li><strong>Artifact evaluation:</strong> The WiFiProof prototype itself serves as the research artifact and will be evaluated against security, privacy, and usability goals.</li>
+  </ul>
+
+  <h2>3.3 System Development Methodology</h2>
+  <p>The system will be developed using Agile methodology. Agile is suitable because WiFiProof combines several tightly connected components: a browser-based proving flow, a smart contract, API routes, organizer tooling, and external integrations. Incremental development allows each layer to be built, tested, and refined without blocking the entire project.</p>
+  <ol>
+    <li><strong>Planning and requirements analysis:</strong> Define system actors, event flows, privacy requirements, and threat model.</li>
+    <li><strong>Design and prototyping:</strong> Model the organizer workflow, attendee claiming flow, and contract interfaces.</li>
+    <li><strong>Iterative implementation:</strong> Build frontend components, proof generation package, and smart contracts in parallel.</li>
+    <li><strong>Testing and refinement:</strong> Validate correctness, usability, and security using structured tests and user feedback.</li>
+    <li><strong>Deployment preparation:</strong> Test on Base Sepolia and prepare for staged production deployment.</li>
+  </ol>
+
+  <h2>3.4 Tools and Technologies Used</h2>
+
+  <h3>3.4.1 Software Tools</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Tool</th>
+        <th>Purpose</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Next.js 16.2.1</td><td>Builds the web application for organizers and attendees.</td></tr>
+      <tr><td>React 19 and TypeScript 5</td><td>Support interactive UI logic and type-safe frontend development.</td></tr>
+      <tr><td>Tailwind CSS 4</td><td>Provides responsive and consistent styling for the user interface.</td></tr>
+      <tr><td>Noir 1.0.0-beta.18</td><td>Defines the zero-knowledge circuit used for venue proximity proof.</td></tr>
+      <tr><td>Barretenberg bb.js 3.0.2</td><td>Generates and verifies browser-side zero-knowledge proofs.</td></tr>
+      <tr><td>Solidity 0.8.28</td><td>Implements the WiFiProof smart contracts.</td></tr>
+      <tr><td>Foundry</td><td>Builds, tests, and deploys smart contracts.</td></tr>
+      <tr><td>Ethereum Attestation Service</td><td>Mints non-transferable attendance attestations.</td></tr>
+      <tr><td>Supabase</td><td>Stores event metadata, poster images, and indexed claim records.</td></tr>
+      <tr><td>Storacha</td><td>Archives claim artifact metadata for long-term auditability.</td></tr>
+      <tr><td>viem and wagmi</td><td>Provide wallet and contract interaction in the web application.</td></tr>
+      <tr><td>World IDKit</td><td>Supports proof-of-personhood verification in the attendee flow.</td></tr>
+      <tr><td>Git and GitHub</td><td>Version control and collaboration.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.4.2 Hardware Requirements</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Hardware Component</th>
+        <th>Specification</th>
+        <th>Purpose</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Development laptop</td><td>8 GB RAM, Core i5 or better</td><td>Programming, testing, smart contract execution, and frontend development.</td></tr>
+      <tr><td>Smartphone</td><td>Modern Android or iOS device</td><td>Testing mobile wallet flows, geolocation permission prompts, and mobile responsiveness.</td></tr>
+      <tr><td>Stable internet connection</td><td>Broadband, 10 Mbps or above</td><td>Cloud connectivity, dependency management, and live verification requests.</td></tr>
+      <tr><td>Venue WiFi router</td><td>Configurable subnet and local network access</td><td>Testing venue-network verification.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3.5 Justification for the Chosen Methodology</h2>
+  <p>Agile and prototype-driven development are justified because WiFiProof is not a single application layer. The project spans cryptography, user experience, distributed systems, and smart contracts. It is necessary to test assumptions early, especially around proof generation time, wallet interaction, and real-world venue constraints. A rigid linear model would delay critical feedback until too late in the project.</p>
+  <p>The chosen stack is also justified by suitability. Noir and Barretenberg make privacy-preserving proof generation practical in browser-oriented settings. Base and EAS support composable and non-transferable on-chain attestations. Supabase and Storacha reduce the need to place non-essential metadata on-chain, improving efficiency while preserving auditability.</p>
+
+  <div class="page-break"></div>
+  <h1 class="chapter">Chapter 4: System Analysis and Design</h1>
+
+  <h2>4.1 Introduction</h2>
+  <p>This chapter analyzes the WiFiProof system requirements and presents the proposed system design. The chapter covers feasibility, stakeholder requirements, functional and non-functional specifications, and the main system models.</p>
+
+  <h2>4.2 System Development Methodology</h2>
+  <p>The system analysis and design process follows Agile software development principles. Each major capability of WiFiProof is treated as a deliverable module: organizer configuration, attendee verification, proof generation, and on-chain attestation. This modular approach simplifies testing and allows the project to evolve without destabilizing the full system.</p>
+
+  <h2>4.3 Feasibility Study</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Feasibility Type</th>
+        <th>Assessment</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Technical Feasibility</td>
+        <td>Technically feasible because the project already has a defined web architecture, smart contract layer, and proof package. The required technologies are supported by open-source tooling and modern browsers.</td>
+      </tr>
+      <tr>
+        <td>Economic Feasibility</td>
+        <td>Feasible for an academic MVP because most development tools are open source. Costs are mainly hosting, network testing, archival storage, and deployment-related expenses.</td>
+      </tr>
+      <tr>
+        <td>Operational Feasibility</td>
+        <td>Suitable for events where attendees already use smartphones and wallets. The organizer workflow and attendee flow are web-based, which reduces onboarding friction.</td>
+      </tr>
+      <tr>
+        <td>Legal and Ethical Feasibility</td>
+        <td>Supports privacy by avoiding publication of exact raw location coordinates. The system still requires careful handling of consent, event policy disclosure, and identity-provider compliance.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>4.4 Requirements Elicitation</h2>
+  <p>Requirements for WiFiProof were identified from the project problem space and the actual architecture of the system. The primary stakeholders are:</p>
+  <ul>
+    <li><strong>Organizers:</strong> Need secure event creation, venue setup, and confidence that only real attendees can claim.</li>
+    <li><strong>Attendees:</strong> Need privacy, a simple claim flow, and a credential that can be verified later.</li>
+    <li><strong>Sponsors and ecosystem applications:</strong> Need trustworthy attendance records for rewards, access, or analytics.</li>
+    <li><strong>System administrators:</strong> Need manageable infrastructure, signer control, and audit trails.</li>
+  </ul>
+
+  <h2>4.5 System Specifications</h2>
+
+  <h3>Functional Requirements</h3>
+  <ul>
+    <li>The system shall allow an organizer to create an event with venue coordinates, allowed radius, time window, and subnet information.</li>
+    <li>The system shall allow an attendee to connect a wallet and begin a claim flow for a specific event.</li>
+    <li>The system shall verify attendee humanity or uniqueness before attendance is claimed.</li>
+    <li>The system shall verify that the attendee request originates from an approved venue network range.</li>
+    <li>The system shall generate a zero-knowledge proof of geolocation in the browser.</li>
+    <li>The smart contract shall validate the proof and required signatures before issuing an attestation.</li>
+    <li>The system shall prevent duplicate attendance claims for the same event and wallet.</li>
+    <li>The system shall archive claim metadata for later audit and retrieval.</li>
+  </ul>
+
+  <h3>Non-Functional Requirements</h3>
+  <ul>
+    <li><strong>Privacy:</strong> Exact attendee coordinates must not be stored or revealed on-chain.</li>
+    <li><strong>Security:</strong> Claims must resist replay, forgery, and duplicate issuance.</li>
+    <li><strong>Usability:</strong> The claim flow should remain simple enough for non-technical attendees.</li>
+    <li><strong>Performance:</strong> Proof generation and claim submission should complete within an acceptable user-wait window.</li>
+    <li><strong>Scalability:</strong> The design should support multiple events and many claim attempts without redesigning the protocol.</li>
+    <li><strong>Interoperability:</strong> Issued credentials should be queryable by third-party systems.</li>
+  </ul>
+
+  <h2>4.6 System Design Models</h2>
+
+  <h3>Use Case Diagram</h3>
+  <p>Figure 1 should illustrate interactions between the organizer, attendee, verification services, and WiFiProof smart contract. The major use cases are event creation, event authorization, proof generation, claim verification, attestation minting, and archival lookup.</p>
+
+  <h3>System Architecture Diagram</h3>
+  <p>Figure 2 should show the relationship among the Next.js frontend, proof-app package, Supabase database, API routes, identity provider, archival storage, and Base smart contract.</p>
+
+  <h3>Entity-Relationship Diagram (ERD)</h3>
+  <p>Figure 3 should model the core entities: events, claims, archived artifacts, organizers, and optional verification records. It should show how one event can have many claims and how each claim may map to one archival record.</p>
+
+  <h3>Flow Chart</h3>
+  <p>Figure 4 should describe the step-by-step process: organizer creates event, attendee opens claim page, verifies humanity, verifies venue network, generates zero-knowledge proof, submits on-chain claim, and receives an attendance attestation.</p>
+
+  <div class="page-break"></div>
+  <h1 class="chapter">Chapter 5: System Implementation, Testing, Conclusions, and Recommendations</h1>
+
+  <h2>5.1 Introduction</h2>
+  <p>This chapter outlines the planned implementation approach for WiFiProof, the testing strategy that will be used to evaluate the prototype, the expected conclusions of the study, and recommendations for future improvement.</p>
+
+  <h2>5.2 System Implementation Plan</h2>
+  <p>WiFiProof will be implemented as a modular system composed of a web application, a zero-knowledge proving package, smart contracts, storage services, and verification APIs.</p>
+
+  <h3>5.2.1 Key Code Components</h3>
+  <p><strong>Frontend:</strong> The frontend will be built in Next.js and React. It will provide an organizer interface for event setup and an attendee interface for privacy-preserving claim submission.</p>
+  <p><strong>Proof Layer:</strong> The proof-app package will generate geolocation proofs in the browser using Noir and Barretenberg. The proof will show that the attendee is within the allowed radius of the venue.</p>
+  <p><strong>Smart Contracts:</strong> Solidity contracts will register events, verify claim inputs, prevent duplicate claims, and mint attendance attestations through the Ethereum Attestation Service.</p>
+  <p><strong>Storage and Archival:</strong> Supabase will store event metadata and related application records, while Storacha will archive claim artifacts for later audit and retrieval.</p>
+  <p><strong>Verification Services:</strong> Server routes will issue event-bound signatures, verify venue network context, and coordinate identity-gated claim steps.</p>
+
+  <h2>5.3 Testing Plan</h2>
+  <p>Testing will be carried out across functionality, usability, performance, and security dimensions. Because the system handles cryptographic proofs and on-chain state changes, testing must cover both expected behavior and failure conditions.</p>
+
+  <h3>5.3.1 Functional Testing</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Test Case ID</th>
+        <th>Test Scenario</th>
+        <th>Expected Result</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>TC01</td><td>Create a new event as an approved organizer</td><td>Event is created and stored with the correct venue parameters.</td></tr>
+      <tr><td>TC02</td><td>Attempt event creation as an unauthorized wallet</td><td>Request is rejected.</td></tr>
+      <tr><td>TC03</td><td>Verify attendee humanity before claim</td><td>Attendee receives approval token for the claim flow.</td></tr>
+      <tr><td>TC04</td><td>Submit a claim from the approved venue network</td><td>System accepts the subnet verification request.</td></tr>
+      <tr><td>TC05</td><td>Generate a valid zero-knowledge proof within venue radius</td><td>Proof is generated and accepted by the contract.</td></tr>
+      <tr><td>TC06</td><td>Attempt a claim with invalid or replayed signature</td><td>Claim is rejected.</td></tr>
+      <tr><td>TC07</td><td>Attempt duplicate claim for same event and wallet</td><td>Second claim is rejected.</td></tr>
+      <tr><td>TC08</td><td>Archive claim artifact after successful attestation</td><td>Artifact record is stored and retrievable.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.3.2 Usability Testing</h3>
+  <p>Usability testing will be conducted with a small sample of organizers and attendees. Participants will be observed while creating events, claiming attendance, and retrieving proofs. Feedback will focus on clarity of instructions, wallet friction, proof wait time, and confidence in privacy.</p>
+
+  <h3>5.3.3 Performance Testing</h3>
+  <p>Performance tests will measure browser proof generation time, API response time, and the time required to submit and confirm a claim transaction. Load simulations will be used to understand behavior during high-attendance events.</p>
+
+  <h3>5.3.4 Security Testing</h3>
+  <p>Security testing will include smart contract tests, signature validation tests, replay-attack checks, duplicate-claim protection checks, and privacy reviews to confirm that raw location values are not exposed in claim outputs.</p>
+
+  <h2>5.4 Expected Conclusions</h2>
+  <p>The expected conclusion of the study is that a privacy-preserving and context-aware proof-of-attendance system is practical for real-world event environments. WiFiProof is expected to show that combining zero-knowledge geolocation, venue WiFi context, identity checks, and on-chain attestations can produce stronger attendance guarantees than traditional check-in methods.</p>
+
+  <h2>5.5 Anticipated Limitations</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Limitation</th>
+        <th>Impact</th>
+        <th>Possible Mitigation</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Dependence on internet connectivity</td>
+        <td>Attendees may fail to complete claims in low-connectivity venues.</td>
+        <td>Introduce fallback claim windows or low-bandwidth recovery flows.</td>
+      </tr>
+      <tr>
+        <td>Browser proof generation overhead</td>
+        <td>Older devices may experience slower proof generation times.</td>
+        <td>Optimize circuit size and provide user feedback during proof generation.</td>
+      </tr>
+      <tr>
+        <td>Wallet onboarding complexity</td>
+        <td>Non-technical users may find wallet setup difficult.</td>
+        <td>Improve onboarding screens and provide guided instructions.</td>
+      </tr>
+      <tr>
+        <td>Reliance on external verification providers</td>
+        <td>Identity-dependent flows may be affected by third-party availability.</td>
+        <td>Support optional or modular verification backends.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>5.6 Recommendations</h2>
+  <ul>
+    <li>Extend the system with improved onboarding for first-time wallet users.</li>
+    <li>Investigate faster proving strategies for lower-end mobile devices.</li>
+    <li>Expand organizer analytics and post-event verification dashboards.</li>
+    <li>Explore additional identity and reputation integrations for flexible Sybil resistance.</li>
+    <li>Evaluate support for more chains and broader production deployment after MVP validation.</li>
+  </ul>
+
+  <h2>5.7 Overview of the Chapter</h2>
+  <p>This chapter has presented the implementation plan, test strategy, expected outcomes, anticipated limitations, and recommendations for WiFiProof. Together, these elements provide a roadmap for turning the proposal into a practical, secure, and privacy-preserving attendance platform.</p>
+
+  <div class="page-break"></div>
+  <h1 class="section-title">References</h1>
+  <p>Aztec. (n.d.). Noir documentation. https://noir-lang.org</p>
+  <p>Buterin, V., Ohlhaver, P., and Weyl, E. G. (2022). Decentralized society: Finding Web3's soul. SSRN Electronic Journal.</p>
+  <p>Ethereum Foundation. (2019). EIP-712: Typed structured data hashing and signing. https://eips.ethereum.org/EIPS/eip-712</p>
+  <p>Ethereum Attestation Service. (n.d.). Documentation. https://docs.attest.org</p>
+  <p>Goldwasser, S., Micali, S., and Rackoff, C. (1989). The knowledge complexity of interactive proof-systems. SIAM Journal on Computing, 18(1), 186-208.</p>
+  <p>Nakamoto, S. (2008). Bitcoin: A peer-to-peer electronic cash system. https://bitcoin.org/bitcoin.pdf</p>
+  <p>POAP. (n.d.). POAP documentation. https://poap.xyz</p>
+  <p>Swan, M. (2015). Blockchain: Blueprint for a new economy. O'Reilly Media.</p>
+  <p>Tapscott, D., and Tapscott, A. (2016). Blockchain revolution: How the technology behind Bitcoin is changing money, business, and the world. Penguin.</p>
+  <p>WiFiProof Protocol. (2026). WiFiProof V2 project documentation. Internal project documentation.</p>
+  <p>World Foundation. (n.d.). World ID developer documentation. https://docs.world.org</p>
+
+  <div class="page-break"></div>
+  <h1 class="section-title">Appendices</h1>
+
+  <h2>Appendix A: Sample Questionnaire</h2>
+  <p>This appendix contains sample questions for organizers and attendees during requirement gathering and usability assessment.</p>
+  <ol>
+    <li>How important is privacy when you prove attendance at an event?</li>
+    <li>Would you trust an attendance system more if it did not reveal your exact location?</li>
+    <li>How easy is it for you to complete wallet-based check-in on a mobile device?</li>
+    <li>What problems have you experienced with QR code or manual attendance systems?</li>
+    <li>How valuable would a non-transferable attendance credential be for your use case?</li>
+  </ol>
+
+  <h2>Appendix B: Budget Breakdown</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Estimated Cost (Ksh)</th>
+        <th>Remarks</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Development tools</td><td>0</td><td>Open-source tools such as Next.js, Foundry, Noir, and TypeScript.</td></tr>
+      <tr><td>Web hosting and deployment</td><td>5,000</td><td>Preview or demo hosting for the frontend.</td></tr>
+      <tr><td>Storage and database</td><td>6,000</td><td>Supabase and archival-related costs for MVP usage.</td></tr>
+      <tr><td>Blockchain deployment and testing</td><td>4,000</td><td>Testnet operations and deployment preparation.</td></tr>
+      <tr><td>Internet and field testing</td><td>8,000</td><td>Venue visits, connectivity, and mobile testing.</td></tr>
+      <tr><td>Miscellaneous</td><td>7,000</td><td>Contingency and unforeseen project needs.</td></tr>
+      <tr><td><strong>Total MVP Budget</strong></td><td><strong>30,000</strong></td><td>Within a manageable academic project scope.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Appendix C: Work Plan / Timeline</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Phase</th>
+        <th>Tasks</th>
+        <th>Timeline</th>
+        <th>Duration</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Planning and Research</td><td>Literature review, requirements analysis, and problem framing.</td><td>May 2026</td><td>1 month</td></tr>
+      <tr><td>Design and Prototyping</td><td>Architecture design, wireframes, and system models.</td><td>June 2026</td><td>1 month</td></tr>
+      <tr><td>Development Phase 1</td><td>Organizer flow, event storage, and venue setup interfaces.</td><td>July 2026</td><td>1 month</td></tr>
+      <tr><td>Development Phase 2</td><td>Zero-knowledge proof integration and attendee claim workflow.</td><td>August 2026</td><td>1 month</td></tr>
+      <tr><td>Development Phase 3</td><td>Smart contracts, attestations, archival, and identity integration.</td><td>September 2026</td><td>1 month</td></tr>
+      <tr><td>Testing and Refinement</td><td>Functional, usability, performance, and security testing.</td><td>October 2026</td><td>1 month</td></tr>
+      <tr><td>Documentation and Presentation</td><td>Final report preparation, corrections, and project presentation.</td><td>November 2026</td><td>1 month</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Appendix D: System Diagrams</h2>
+  <p>Figure D.1: Use Case Diagram</p>
+  <p>Figure D.2: System Architecture Diagram</p>
+  <p>Figure D.3: Entity-Relationship Diagram</p>
+  <p>Figure D.4: Flow Chart</p>
+  <p class="note">These diagrams can be inserted into the final document after visual models are exported from the design tool of choice.</p>
+</body>
+</html>
