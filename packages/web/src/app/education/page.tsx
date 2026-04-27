@@ -1,8 +1,4 @@
-const educationNotes = [
-  "Presence verification, not identity replacement",
-  "Works with existing school identity systems",
-  "Private beta and pilot deployments",
-];
+import EducationClient from "./EducationClient";
 
 export default function EducationPage() {
   const organizerContactEmail = process.env.NEXT_PUBLIC_ORGANIZER_CONTACT_EMAIL?.trim();
@@ -38,17 +34,6 @@ export default function EducationPage() {
               identity under its own control.
             </p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
-              {educationNotes.map((note) => (
-                <span
-                  key={note}
-                  className="rounded-full border border-[#cfe1ff] bg-white/86 px-4 py-2 text-sm font-medium text-[#31517f]"
-                >
-                  {note}
-                </span>
-              ))}
-            </div>
-
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <a
                 href={contactHref}
@@ -66,8 +51,9 @@ export default function EducationPage() {
             </div>
 
             <p className="mt-4 text-sm leading-7 text-[#61728d]">
-              Institutional deployments are currently handled as guided pilots. Contact {contactLabel}
-              {' '}to discuss your setup.
+              Institutional deployments can keep student identity in existing systems while
+              WiFiProof handles the presence layer. Contact {contactLabel} to discuss your
+              setup.
             </p>
           </div>
 
@@ -100,6 +86,12 @@ export default function EducationPage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="px-6 pb-10">
+        <div className="mx-auto max-w-6xl">
+          <EducationClient />
         </div>
       </section>
     </main>
