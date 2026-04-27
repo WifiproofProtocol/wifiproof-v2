@@ -13,7 +13,7 @@ const faqs = [
   {
     question: "Which verification methods do you support?",
     answer:
-      "Events can use World ID or Coinbase Verified today. Schools can rely on existing student identity systems instead of separate proof-of-humanity checks.",
+      "Events can use World ID, Coinbase Verified, or Self Pass today. Schools can rely on existing student identity systems instead of separate proof-of-humanity checks.",
   },
   {
     question: "What kind of record does WiFiProof produce?",

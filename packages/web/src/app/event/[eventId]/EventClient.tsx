@@ -8,6 +8,7 @@ import {
   type IDKitResult,
   type RpContext,
 } from "@worldcoin/idkit";
+import { SelfAppBuilder, SelfQRcodeWrapper } from "@selfxyz/qrcode";
 import {
   createPublicClient,
   decodeEventLog,
@@ -32,6 +33,7 @@ import {
 } from "lucide-react";
 
 import WalletCard from "@/components/wallet/WalletCard";
+import { getClientBaseRpcUrl } from "@/lib/base-rpc";
 import { getBuilderCodeDataSuffix, withBuilderCode } from "@/lib/builder-codes";
 import { getPaymasterProxyUrl } from "@/lib/paymaster";
 
@@ -78,13 +80,41 @@ type EventRecord = {
 type HumanityVerifyResponse = {
   ok: boolean;
   token: string;
-  provider: "world" | "coinbase";
+  provider: "world" | "coinbase" | "self";
   expiresAt: number;
 };
 
 type RpContextResponse = {
   rp_context: RpContext;
 };
+
+function VerificationMark({
+  provider,
+}: {
+  provider: "world" | "coinbase" | "self";
+}) {
+  if (provider === "world") {
+    return (
+      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#2563eb] text-sm font-semibold text-white shadow-[0_12px_30px_rgba(37,99,235,0.28)]">
+        W
+      </div>
+    );
+  }
+
+  if (provider === "coinbase") {
+    return (
+      <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#b8d4ff] bg-[#eff6ff] text-sm font-semibold text-[#0052ff] shadow-[0_12px_30px_rgba(0,82,255,0.12)]">
+        CB
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#10233f] text-sm font-semibold text-white shadow-[0_12px_30px_rgba(16,35,63,0.18)]">
+      S
+    </div>
+  );
+}
 
 function toBytes32Hex(value: string) {
   const big = BigInt(value);
@@ -138,12 +168,16 @@ export default function EventClient({ eventId }: { eventId: string }) {
   const [errorMsg, setErrorMsg] = useState("");
   const [attestationUid, setAttestationUid] = useState("");
   const [humanityToken, setHumanityToken] = useState("");
-  const [humanityMethod, setHumanityMethod] = useState<"world" | "coinbase" | null>(null);
+  const [humanityMethod, setHumanityMethod] = useState<"world" | "coinbase" | "self" | null>(null);
   const [worldStatus, setWorldStatus] = useState("");
   const [isPreparingWorld, setIsPreparingWorld] = useState(false);
   const [isVerifyingWorld, setIsVerifyingWorld] = useState(false);
   const [coinbaseStatus, setCoinbaseStatus] = useState("");
   const [isVerifyingCoinbase, setIsVerifyingCoinbase] = useState(false);
+  const [selfStatus, setSelfStatus] = useState("");
+  const [isSelfCardOpen, setIsSelfCardOpen] = useState(false);
+  const [isFetchingSelfToken, setIsFetchingSelfToken] = useState(false);
+  const [selfEndpoint, setSelfEndpoint] = useState("");
   const [isWorldModalOpen, setIsWorldModalOpen] = useState(false);
   const [rpContext, setRpContext] = useState<RpContext | null>(null);
   const [artifactCid, setArtifactCid] = useState("");
@@ -162,13 +196,17 @@ export default function EventClient({ eventId }: { eventId: string }) {
     "0xbcEfE9B5a2f1C0FA6f0E02c8c678CF41884e3f7C"
   ).trim();
 
-  const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL ?? "https://sepolia.base.org";
+  const [rpcUrl, setRpcUrl] = useState("");
   const worldAppId = (process.env.NEXT_PUBLIC_WORLD_APP_ID ?? "").trim();
   const worldActionId = (process.env.NEXT_PUBLIC_WORLD_ACTION_ID ?? "").trim();
+  const selfScope = (process.env.NEXT_PUBLIC_SELF_SCOPE ?? "wifiproof-humanity").trim();
   const isWorldConfigured = Boolean(worldAppId && worldActionId);
 
   const publicClient = useMemo(
-    () => createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) }),
+    () =>
+      rpcUrl
+        ? createPublicClient({ chain: baseSepolia, transport: http(rpcUrl) })
+        : null,
     [rpcUrl]
   );
 
@@ -177,9 +215,28 @@ export default function EventClient({ eventId }: { eventId: string }) {
   const humanityMethodLabel =
     humanityMethod === "coinbase"
       ? "Coinbase Verified"
+      : humanityMethod === "self"
+        ? "Self Pass"
       : humanityMethod === "world"
         ? "World ID"
         : null;
+  const selfApp = useMemo(() => {
+    if (!walletAddress || !selfEndpoint) {
+      return null;
+    }
+
+    return new SelfAppBuilder({
+      appName: "WiFiProof",
+      scope: selfScope,
+      endpoint: selfEndpoint,
+      userId: walletAddress.toLowerCase(),
+      userIdType: "hex",
+      userDefinedData: eventId,
+      disclosures: {
+        ofac: true,
+      },
+    }).build();
+  }, [eventId, selfEndpoint, selfScope, walletAddress]);
   const stageLabels = [
     "Connect wallet",
     "Verify attendee",
@@ -228,6 +285,16 @@ export default function EventClient({ eventId }: { eventId: string }) {
   }, [fetchEvent]);
 
   useEffect(() => {
+    setRpcUrl(getClientBaseRpcUrl());
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setSelfEndpoint(new URL("/api/humanity/self", window.location.origin).toString());
+    }
+  }, []);
+
+  useEffect(() => {
     if (!walletAddress && step !== 0) {
       setStep(0);
     }
@@ -238,6 +305,9 @@ export default function EventClient({ eventId }: { eventId: string }) {
     setHumanityMethod(null);
     setWorldStatus("");
     setCoinbaseStatus("");
+    setSelfStatus("");
+    setIsSelfCardOpen(false);
+    setIsFetchingSelfToken(false);
     setRpContext(null);
     setIsWorldModalOpen(false);
     setArtifactCid("");
@@ -371,6 +441,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
     try {
       setErrorMsg("");
       setWorldStatus("");
+      setSelfStatus("");
 
       if (!walletAddress) {
         throw new Error("Connect wallet before checking Coinbase verification.");
@@ -415,6 +486,71 @@ export default function EventClient({ eventId }: { eventId: string }) {
     }
   }
 
+  function handleOpenSelfVerification() {
+    setErrorMsg("");
+    setWorldStatus("");
+    setCoinbaseStatus("");
+    setSelfStatus("Scan the QR code with Self to verify document-backed humanity.");
+    setIsSelfCardOpen(true);
+  }
+
+  async function completeSelfVerification() {
+    try {
+      if (!walletAddress) {
+        throw new Error("Connect wallet before using Self verification.");
+      }
+
+      setErrorMsg("");
+      setWorldStatus("");
+      setCoinbaseStatus("");
+      setIsFetchingSelfToken(true);
+      setSelfStatus("Finalizing Self verification...");
+
+      let result: Partial<HumanityVerifyResponse & { error: string }> | null = null;
+      let lastError = "Self verification failed.";
+
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const response = await fetch(
+          `/api/humanity/self?wallet=${encodeURIComponent(walletAddress)}&eventId=${encodeURIComponent(eventId)}`,
+          { cache: "no-store" }
+        );
+
+        result = (await response.json().catch(() => ({}))) as Partial<
+          HumanityVerifyResponse & { error: string }
+        >;
+
+        if (response.ok && result.ok && result.token) {
+          break;
+        }
+
+        lastError = result.error || "Self verification failed.";
+        if (response.status !== 404 || attempt === 4) {
+          throw new Error(lastError);
+        }
+
+        await new Promise((resolve) => window.setTimeout(resolve, 800));
+      }
+
+      if (!result?.ok || !result.token) {
+        throw new Error(lastError);
+      }
+
+      setHumanityToken(result.token);
+      setHumanityMethod("self");
+      setSelfStatus("Verified with Self Pass.");
+      setIsSelfCardOpen(false);
+    } catch (error) {
+      if (humanityMethod === "self") {
+        setHumanityToken("");
+        setHumanityMethod(null);
+      }
+      setSelfStatus("");
+      setErrorMsg((error as Error).message);
+    } finally {
+      setIsFetchingSelfToken(false);
+    }
+  }
+
   async function handleClaim() {
     try {
       setErrorMsg("");
@@ -424,6 +560,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
       if (!event) throw new Error("Event data not loaded.");
       if (!walletAddress) throw new Error("Wallet not connected.");
       if (!humanityToken) throw new Error("Humanity verification is required before claiming.");
+      if (!publicClient) throw new Error("RPC client is still loading. Try again in a second.");
 
       setStatusMsg("Verifying venue subnet...");
       const deadline = Math.floor(Date.now() / 1000) + 90;
@@ -925,45 +1062,134 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   Humanity check
                 </span>
                 <p className="mt-2 text-sm leading-7 text-[#52637e]">
-                  Use either World ID or an existing Coinbase Verified attestation on Base.
+                  Use World ID, Coinbase Verified, or Self Pass to prove the attendee is a real person before minting.
                 </p>
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
                   <button
                     onClick={prepareWorldVerification}
                     disabled={!isWorldConfigured || isPreparingWorld || isVerifyingWorld}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#2563eb] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:bg-[#9db8e4]"
+                    className={`rounded-[1.4rem] border px-4 py-4 text-left transition ${
+                      humanityMethod === "world"
+                        ? "border-[#7fb0ff] bg-[#e9f2ff] shadow-[0_18px_50px_rgba(37,99,235,0.12)]"
+                        : "border-[#c9daf5] bg-white hover:bg-[#eef4ff]"
+                    } disabled:cursor-not-allowed disabled:border-[#d7e4f6] disabled:bg-[#f5f8fc]`}
                   >
-                    {isPreparingWorld ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Preparing...
-                      </>
-                    ) : isVerifyingWorld ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Confirming...
-                      </>
-                    ) : (
-                      "Verify with World ID"
-                    )}
+                    <div className="flex items-start gap-3">
+                      <VerificationMark provider="world" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-[#10233f]">World ID</p>
+                        <p className="mt-1 text-xs leading-6 text-[#5c6f8d]">
+                          Privacy-first human verification for event attendees.
+                        </p>
+                        <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#2563eb]">
+                          {isPreparingWorld
+                            ? "Preparing verification"
+                            : isVerifyingWorld
+                              ? "Confirming proof"
+                              : humanityMethod === "world"
+                                ? "Verified"
+                                : "Verify with World"}
+                        </p>
+                      </div>
+                    </div>
                   </button>
 
                   <button
                     onClick={handleCoinbaseVerification}
                     disabled={isVerifyingCoinbase}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#c9daf5] bg-white px-5 py-3 text-sm font-semibold text-[#10233f] transition hover:bg-[#eef4ff] disabled:cursor-not-allowed disabled:border-[#d7e4f6] disabled:bg-[#f5f8fc] disabled:text-[#8da2c1]"
+                    className={`rounded-[1.4rem] border px-4 py-4 text-left transition ${
+                      humanityMethod === "coinbase"
+                        ? "border-[#7fb0ff] bg-[#e9f2ff] shadow-[0_18px_50px_rgba(0,82,255,0.10)]"
+                        : "border-[#c9daf5] bg-white hover:bg-[#eef4ff]"
+                    } disabled:cursor-not-allowed disabled:border-[#d7e4f6] disabled:bg-[#f5f8fc]`}
                   >
-                    {isVerifyingCoinbase ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Checking...
-                      </>
-                    ) : (
-                      "Use Coinbase Verified"
-                    )}
+                    <div className="flex items-start gap-3">
+                      <VerificationMark provider="coinbase" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-[#10233f]">Coinbase Verified</p>
+                        <p className="mt-1 text-xs leading-6 text-[#5c6f8d]">
+                          Checks the Coinbase/Base human verification already tied to this wallet.
+                        </p>
+                        <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#0052ff]">
+                          {isVerifyingCoinbase
+                            ? "Checking on Base"
+                            : humanityMethod === "coinbase"
+                              ? "Verified"
+                              : "Use Coinbase"}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={handleOpenSelfVerification}
+                    disabled={isFetchingSelfToken || !selfApp}
+                    className={`rounded-[1.4rem] border px-4 py-4 text-left transition ${
+                      humanityMethod === "self"
+                        ? "border-[#7fb0ff] bg-[#e9f2ff] shadow-[0_18px_50px_rgba(16,35,63,0.10)]"
+                        : "border-[#c9daf5] bg-white hover:bg-[#eef4ff]"
+                    } disabled:cursor-not-allowed disabled:border-[#d7e4f6] disabled:bg-[#f5f8fc]`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <VerificationMark provider="self" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-[#10233f]">Self Pass</p>
+                        <p className="mt-1 text-xs leading-6 text-[#5c6f8d]">
+                          Scan in the Self app to prove document-backed humanity with a QR flow.
+                        </p>
+                        <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#10233f]">
+                          {isFetchingSelfToken
+                            ? "Finalizing proof"
+                            : humanityMethod === "self"
+                              ? "Verified"
+                              : "Open Self QR"}
+                        </p>
+                      </div>
+                    </div>
                   </button>
                 </div>
+
+                {isSelfCardOpen && selfApp ? (
+                  <div className="mt-5 rounded-[1.45rem] border border-[#d7e4f6] bg-white p-4 shadow-[0_16px_40px_rgba(37,99,235,0.08)]">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                      <div className="max-w-md">
+                        <p className="text-sm font-semibold text-[#10233f]">
+                          Verify with Self Pass
+                        </p>
+                        <p className="mt-2 text-sm leading-7 text-[#52637e]">
+                          Scan this QR code in Self to prove document-backed humanity without
+                          revealing unnecessary personal data to WiFiProof.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsSelfCardOpen(false)}
+                        className="rounded-full border border-[#d7e4f6] bg-[#f8fbff] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#5e7ca8] transition hover:bg-white"
+                      >
+                        Hide Self QR
+                      </button>
+                    </div>
+
+                    <div className="mt-5 flex justify-center">
+                      <div className="rounded-[1.75rem] border border-[#e2ebfa] bg-[#fbfdff] p-4">
+                        <SelfQRcodeWrapper
+                          selfApp={selfApp}
+                          onSuccess={() => {
+                            void completeSelfVerification();
+                          }}
+                          onError={(data) => {
+                            setSelfStatus("");
+                            setErrorMsg(
+                              data.reason || data.error_code || "Self verification failed."
+                            );
+                          }}
+                          size={260}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
 
                 {isHumanityVerified ? (
                   <div className="mt-4 rounded-[1.2rem] border border-[#b9d8be] bg-[#edf7ef] px-4 py-4">
@@ -983,10 +1209,12 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   <p className="mt-4 text-sm font-medium text-[#1d6f42]">{worldStatus}</p>
                 ) : coinbaseStatus ? (
                   <p className="mt-4 text-sm font-medium text-[#1d6f42]">{coinbaseStatus}</p>
+                ) : selfStatus ? (
+                  <p className="mt-4 text-sm font-medium text-[#1d6f42]">{selfStatus}</p>
                 ) : null}
                 {!isWorldConfigured && (
                   <p className="mt-4 text-sm font-medium text-[#9c6a0a]">
-                    World ID is not configured in this environment, but Coinbase verification is still available.
+                    World ID is not configured in this environment, but Coinbase and Self verification are still available.
                   </p>
                 )}
                 <p className="mt-3 text-xs leading-6 text-[#6a7891]">
@@ -994,6 +1222,9 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 </p>
                 <p className="mt-2 text-xs leading-6 text-[#6a7891]">
                   Coinbase path: connect the wallet that already holds your Coinbase/Base verification.
+                </p>
+                <p className="mt-2 text-xs leading-6 text-[#6a7891]">
+                  Self path: use the Self app to prove document-backed humanity, then return here to mint.
                 </p>
               </div>
 
@@ -1012,7 +1243,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   Checks
                 </p>
                 <ul className="mt-4 space-y-3 text-sm leading-7 text-[#52637e]">
-                  <li>Humanity via World ID or Coinbase</li>
+                  <li>Humanity via World ID, Coinbase, or Self Pass</li>
                   <li>Venue network</li>
                   <li>Location proof</li>
                   <li>On-chain verification</li>
