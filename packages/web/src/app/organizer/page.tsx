@@ -1,8 +1,4 @@
-const organizerNotes = [
-  "Approved wallet required",
-  "Venue Wi-Fi + location check",
-  "Poster, details, QR, and onchain flow",
-];
+import OrganizerDashboardClient from "./OrganizerDashboardClient";
 
 export default function OrganizerPage() {
   const organizerContactEmail = process.env.NEXT_PUBLIC_ORGANIZER_CONTACT_EMAIL?.trim();
@@ -35,19 +31,8 @@ export default function OrganizerPage() {
             <p className="mt-6 max-w-2xl text-lg leading-8 text-[#52637e] md:text-xl">
               WiFiProof keeps event setup tight for conferences, hackathons, and communities:
               approved wallet, venue boundary, network check, shareable attendee page, and
-              an attendance record that can plug into onchain reputation or rewards.
+              now a live organizer dashboard for monitoring attendance as claims come in.
             </p>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              {organizerNotes.map((note) => (
-                <span
-                  key={note}
-                  className="rounded-full border border-[#cfe1ff] bg-white/86 px-4 py-2 text-sm font-medium text-[#31517f]"
-                >
-                  {note}
-                </span>
-              ))}
-            </div>
 
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <a
@@ -95,11 +80,17 @@ export default function OrganizerPage() {
                   03
                 </p>
                 <p className="mt-2 text-sm leading-7 text-[#425779] md:text-base">
-                  Publish the attendee page and display the generated QR on-site.
+                  Publish the attendee page, display the generated QR on-site, and track claims from the organizer dashboard.
                 </p>
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="px-6 pb-16">
+        <div className="mx-auto max-w-6xl">
+          <OrganizerDashboardClient />
         </div>
       </section>
     </main>
