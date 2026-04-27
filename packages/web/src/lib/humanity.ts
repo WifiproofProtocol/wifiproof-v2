@@ -4,7 +4,7 @@ import { requireAddress, requireBytes32 } from "@/lib/world";
 
 const DEFAULT_TOKEN_TTL_SECONDS = 15 * 60;
 
-export type HumanityProvider = "world" | "coinbase";
+export type HumanityProvider = "world" | "coinbase" | "self";
 
 export type HumanityTokenClaims = {
   wallet: `0x${string}`;
@@ -82,7 +82,11 @@ export function verifyHumanityToken(token: string): HumanityTokenClaims | null {
       return null;
     }
 
-    if (claims.provider !== "world" && claims.provider !== "coinbase") {
+    if (
+      claims.provider !== "world" &&
+      claims.provider !== "coinbase" &&
+      claims.provider !== "self"
+    ) {
       return null;
     }
 

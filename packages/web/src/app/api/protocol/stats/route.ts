@@ -6,14 +6,28 @@ import { getAttendanceClaimStats } from "@/lib/wifiproof-chain";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function isEnabled(value: string | undefined) {
+  const normalized = value?.trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes";
+}
+
+function isMissingSchemaField(detail: string | undefined, field: string) {
+  if (!detail) return false;
+  return detail.includes(`Could not find the '${field}' relation`) ||
+    detail.includes(`Could not find the '${field}' column`);
+}
+
 export async function GET() {
   try {
     const supabase = getSupabaseAdmin();
-    const [eventsResult, worldResult, archivedClaimsResult, latestArtifactResult] =
+    const [eventsResult, worldResult, selfResult, archivedClaimsResult, latestArtifactResult] =
       await Promise.all([
         supabase.from("events").select("*", { count: "exact", head: true }),
         supabase
           .from("world_verifications")
+          .select("*", { count: "exact", head: true }),
+        supabase
+          .from("self_verifications")
           .select("*", { count: "exact", head: true }),
         supabase
           .from("attendance_artifacts")
@@ -26,7 +40,16 @@ export async function GET() {
           .maybeSingle(),
       ]);
 
-    if (eventsResult.error || worldResult.error || archivedClaimsResult.error || latestArtifactResult.error) {
+    if (
+      eventsResult.error ||
+      worldResult.error ||
+      archivedClaimsResult.error ||
+      latestArtifactResult.error
+    ) {
+      return NextResponse.json({ error: "Stats lookup failed" }, { status: 500 });
+    }
+
+    if (selfResult.error && !isMissingSchemaField(selfResult.error.message, "self_verifications")) {
       return NextResponse.json({ error: "Stats lookup failed" }, { status: 500 });
     }
 
@@ -42,10 +65,12 @@ export async function GET() {
         : null,
     };
 
-    try {
-      attendanceStats = await getAttendanceClaimStats();
-    } catch (error) {
-      console.error("Failed to fetch on-chain attendance stats", error);
+    if (isEnabled(process.env.ENABLE_ONCHAIN_ATTENDANCE_STATS)) {
+      try {
+        attendanceStats = await getAttendanceClaimStats();
+      } catch (error) {
+        console.error("Failed to fetch on-chain attendance stats", error);
+      }
     }
 
     let latestAttestation: {
@@ -79,7 +104,7 @@ export async function GET() {
       stats: {
         eventsCount: eventsResult.count ?? 0,
         attestationsCount: attendanceStats.count,
-        humanityChecksCount: worldResult.count ?? 0,
+        humanityChecksCount: (worldResult.count ?? 0) + (selfResult.error ? 0 : (selfResult.count ?? 0)),
       },
       latestAttestation,
     });
