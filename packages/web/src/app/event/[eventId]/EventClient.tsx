@@ -81,6 +81,8 @@ type HumanityVerifyResponse = {
   ok: boolean;
   token: string;
   provider: "world" | "coinbase" | "self";
+  network?: string;
+  attestationUid?: string;
   expiresAt: number;
 };
 
@@ -95,23 +97,30 @@ function VerificationMark({
 }) {
   if (provider === "world") {
     return (
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#2563eb] text-sm font-semibold text-white shadow-[0_12px_30px_rgba(37,99,235,0.28)]">
-        W
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#2563eb] text-white shadow-[0_12px_30px_rgba(37,99,235,0.25)]">
+        <svg aria-hidden="true" viewBox="0 0 32 32" className="h-7 w-7">
+          <circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" strokeWidth="2.4" />
+          <path d="M6 16h20M16 5c4 4.2 4 17.8 0 22M16 5c-4 4.2-4 17.8 0 22" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+        </svg>
       </div>
     );
   }
 
   if (provider === "coinbase") {
     return (
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#b8d4ff] bg-[#eff6ff] text-sm font-semibold text-[#0052ff] shadow-[0_12px_30px_rgba(0,82,255,0.12)]">
-        CB
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#0052ff] text-white shadow-[0_12px_30px_rgba(0,82,255,0.18)]">
+        <span className="text-2xl font-semibold leading-none">c</span>
       </div>
     );
   }
 
   return (
-    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#10233f] text-sm font-semibold text-white shadow-[0_12px_30px_rgba(16,35,63,0.18)]">
-      S
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#10233f] text-white shadow-[0_12px_30px_rgba(16,35,63,0.18)]">
+      <svg aria-hidden="true" viewBox="0 0 32 32" className="h-7 w-7">
+        <rect x="7" y="6" width="18" height="20" rx="4" fill="none" stroke="currentColor" strokeWidth="2.2" />
+        <circle cx="16" cy="13" r="3" fill="currentColor" />
+        <path d="M11 21c1.2-2.2 8.8-2.2 10 0" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+      </svg>
     </div>
   );
 }
@@ -473,7 +482,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
       setHumanityToken(result.token);
       setHumanityMethod("coinbase");
-      setCoinbaseStatus("Verified with Coinbase.");
+      setCoinbaseStatus(`Verified with Coinbase${result.network ? ` on ${result.network}` : ""}.`);
     } catch (error) {
       if (humanityMethod === "coinbase") {
         setHumanityToken("");
@@ -1065,32 +1074,37 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   Use World ID, Coinbase Verified, or Self Pass to prove the attendee is a real person before minting.
                 </p>
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <div className="mt-4 grid gap-3 xl:grid-cols-3">
                   <button
                     onClick={prepareWorldVerification}
                     disabled={!isWorldConfigured || isPreparingWorld || isVerifyingWorld}
-                    className={`rounded-[1.4rem] border px-4 py-4 text-left transition ${
+                    className={`min-h-[156px] rounded-[1.4rem] border px-4 py-4 text-left transition ${
                       humanityMethod === "world"
                         ? "border-[#7fb0ff] bg-[#e9f2ff] shadow-[0_18px_50px_rgba(37,99,235,0.12)]"
                         : "border-[#c9daf5] bg-white hover:bg-[#eef4ff]"
                     } disabled:cursor-not-allowed disabled:border-[#d7e4f6] disabled:bg-[#f5f8fc]`}
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex h-full flex-col justify-between gap-4">
+                      <div className="flex items-center justify-between gap-3">
                       <VerificationMark provider="world" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-[#10233f]">World ID</p>
-                        <p className="mt-1 text-xs leading-6 text-[#5c6f8d]">
-                          Privacy-first human verification for event attendees.
+                        {humanityMethod === "world" ? (
+                          <CheckCircle2 className="h-5 w-5 text-[#1d6f42]" />
+                        ) : null}
+                      </div>
+                      <div>
+                        <p className="text-base font-semibold text-[#10233f]">World ID</p>
+                        <p className="mt-2 text-sm leading-6 text-[#5c6f8d]">
+                          Private proof through World App.
                         </p>
-                        <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#2563eb]">
-                          {isPreparingWorld
-                            ? "Preparing verification"
-                            : isVerifyingWorld
-                              ? "Confirming proof"
-                              : humanityMethod === "world"
-                                ? "Verified"
-                                : "Verify with World"}
-                        </p>
+                      </div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#2563eb]">
+                        {isPreparingWorld
+                          ? "Preparing"
+                          : isVerifyingWorld
+                            ? "Confirming"
+                            : humanityMethod === "world"
+                              ? "Verified"
+                              : "Verify"}
                       </div>
                     </div>
                   </button>
@@ -1098,26 +1112,31 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   <button
                     onClick={handleCoinbaseVerification}
                     disabled={isVerifyingCoinbase}
-                    className={`rounded-[1.4rem] border px-4 py-4 text-left transition ${
+                    className={`min-h-[156px] rounded-[1.4rem] border px-4 py-4 text-left transition ${
                       humanityMethod === "coinbase"
                         ? "border-[#7fb0ff] bg-[#e9f2ff] shadow-[0_18px_50px_rgba(0,82,255,0.10)]"
                         : "border-[#c9daf5] bg-white hover:bg-[#eef4ff]"
                     } disabled:cursor-not-allowed disabled:border-[#d7e4f6] disabled:bg-[#f5f8fc]`}
                   >
-                    <div className="flex items-start gap-3">
-                      <VerificationMark provider="coinbase" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-[#10233f]">Coinbase Verified</p>
-                        <p className="mt-1 text-xs leading-6 text-[#5c6f8d]">
-                          Checks the Coinbase/Base human verification already tied to this wallet.
+                    <div className="flex h-full flex-col justify-between gap-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <VerificationMark provider="coinbase" />
+                        {humanityMethod === "coinbase" ? (
+                          <CheckCircle2 className="h-5 w-5 text-[#1d6f42]" />
+                        ) : null}
+                      </div>
+                      <div>
+                        <p className="text-base font-semibold text-[#10233f]">Coinbase Verified</p>
+                        <p className="mt-2 text-sm leading-6 text-[#5c6f8d]">
+                          Checks the Base mainnet verification tied to this wallet.
                         </p>
-                        <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#0052ff]">
-                          {isVerifyingCoinbase
-                            ? "Checking on Base"
-                            : humanityMethod === "coinbase"
-                              ? "Verified"
-                              : "Use Coinbase"}
-                        </p>
+                      </div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#0052ff]">
+                        {isVerifyingCoinbase
+                          ? "Checking"
+                          : humanityMethod === "coinbase"
+                            ? "Verified"
+                            : "Use Coinbase"}
                       </div>
                     </div>
                   </button>
@@ -1125,26 +1144,31 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   <button
                     onClick={handleOpenSelfVerification}
                     disabled={isFetchingSelfToken || !selfApp}
-                    className={`rounded-[1.4rem] border px-4 py-4 text-left transition ${
+                    className={`min-h-[156px] rounded-[1.4rem] border px-4 py-4 text-left transition ${
                       humanityMethod === "self"
                         ? "border-[#7fb0ff] bg-[#e9f2ff] shadow-[0_18px_50px_rgba(16,35,63,0.10)]"
                         : "border-[#c9daf5] bg-white hover:bg-[#eef4ff]"
                     } disabled:cursor-not-allowed disabled:border-[#d7e4f6] disabled:bg-[#f5f8fc]`}
                   >
-                    <div className="flex items-start gap-3">
-                      <VerificationMark provider="self" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-[#10233f]">Self Pass</p>
-                        <p className="mt-1 text-xs leading-6 text-[#5c6f8d]">
-                          Scan in the Self app to prove document-backed humanity with a QR flow.
+                    <div className="flex h-full flex-col justify-between gap-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <VerificationMark provider="self" />
+                        {humanityMethod === "self" ? (
+                          <CheckCircle2 className="h-5 w-5 text-[#1d6f42]" />
+                        ) : null}
+                      </div>
+                      <div>
+                        <p className="text-base font-semibold text-[#10233f]">Self Pass</p>
+                        <p className="mt-2 text-sm leading-6 text-[#5c6f8d]">
+                          Opens a QR proof from the Self app.
                         </p>
-                        <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#10233f]">
-                          {isFetchingSelfToken
-                            ? "Finalizing proof"
-                            : humanityMethod === "self"
-                              ? "Verified"
-                              : "Open Self QR"}
-                        </p>
+                      </div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#10233f]">
+                        {isFetchingSelfToken
+                          ? "Finalizing"
+                          : humanityMethod === "self"
+                            ? "Verified"
+                            : "Open QR"}
                       </div>
                     </div>
                   </button>
