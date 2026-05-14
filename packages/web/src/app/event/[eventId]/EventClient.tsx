@@ -187,6 +187,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
   const [isSelfCardOpen, setIsSelfCardOpen] = useState(false);
   const [isFetchingSelfToken, setIsFetchingSelfToken] = useState(false);
   const [selfEndpoint, setSelfEndpoint] = useState("");
+  const [selfQrSize, setSelfQrSize] = useState(260);
   const [isWorldModalOpen, setIsWorldModalOpen] = useState(false);
   const [rpContext, setRpContext] = useState<RpContext | null>(null);
   const [artifactCid, setArtifactCid] = useState("");
@@ -295,6 +296,29 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
   useEffect(() => {
     setRpcUrl(getClientBaseRpcUrl());
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const updateSelfQrSize = () => {
+      const viewportWidth = window.innerWidth;
+      if (viewportWidth < 360) {
+        setSelfQrSize(176);
+      } else if (viewportWidth < 420) {
+        setSelfQrSize(196);
+      } else if (viewportWidth < 640) {
+        setSelfQrSize(224);
+      } else {
+        setSelfQrSize(260);
+      }
+    };
+
+    updateSelfQrSize();
+    window.addEventListener("resize", updateSelfQrSize);
+    return () => window.removeEventListener("resize", updateSelfQrSize);
   }, []);
 
   useEffect(() => {
@@ -893,7 +917,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
             )}
           </div>
 
-          <div className="overflow-hidden rounded-[2rem] border border-[#cfe1ff] bg-white/84 shadow-[0_28px_80px_rgba(37,99,235,0.12)]">
+          <div className="overflow-hidden rounded-[1.6rem] border border-[#cfe1ff] bg-white/84 shadow-[0_28px_80px_rgba(37,99,235,0.12)] sm:rounded-[2rem]">
             {event?.poster_image_url ? (
               <div className="relative aspect-[16/10] bg-[#dcecff]">
                 <Image
@@ -905,7 +929,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 />
               </div>
             ) : (
-              <div className="aspect-[16/10] bg-[radial-gradient(circle_at_top_left,_rgba(96,165,250,0.36),_transparent_28%),linear-gradient(135deg,_#dbeafe,_#eff6ff_52%,_#ffffff)] px-8 py-10">
+              <div className="aspect-[16/10] bg-[radial-gradient(circle_at_top_left,_rgba(96,165,250,0.36),_transparent_28%),linear-gradient(135deg,_#dbeafe,_#eff6ff_52%,_#ffffff)] px-5 py-6 sm:px-8 sm:py-10">
                 <div className="flex h-full flex-col justify-between">
                   <div className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-white/60 bg-white/70 text-[#2563eb] shadow-lg">
                     <ShieldCheck className="h-7 w-7" />
@@ -958,7 +982,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
         {step === 0 && (
           <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="rounded-[2rem] border border-[#cfe1ff] bg-white/86 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.08)] md:p-8">
+            <div className="rounded-[1.6rem] border border-[#cfe1ff] bg-white/86 p-4 shadow-[0_24px_70px_rgba(37,99,235,0.08)] sm:rounded-[2rem] sm:p-6 md:p-8">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
                 Step 1
               </p>
@@ -995,7 +1019,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
               </div>
             </div>
 
-            <div className="ink-panel rounded-[2rem] p-6 md:p-8">
+            <div className="ink-panel rounded-[1.6rem] p-5 sm:rounded-[2rem] sm:p-6 md:p-8">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d6e7ff]">
                 Flow
               </p>
@@ -1016,7 +1040,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
         {step === 1 && (
           <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="rounded-[2rem] border border-[#cfe1ff] bg-white/86 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.08)] md:p-8">
+            <div className="rounded-[1.6rem] border border-[#cfe1ff] bg-white/86 p-4 shadow-[0_24px_70px_rgba(37,99,235,0.08)] sm:rounded-[2rem] sm:p-6 md:p-8">
               <div className="flex flex-col gap-4 border-b border-[#dbe8fb] pb-6 md:flex-row md:items-end md:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
@@ -1066,7 +1090,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 </p>
               </div>
 
-              <div className="mt-6 rounded-[1.6rem] border border-[#d7e4f6] bg-[#f8fbff] p-5">
+              <div className="mt-6 rounded-[1.35rem] border border-[#d7e4f6] bg-[#f8fbff] p-4 sm:rounded-[1.6rem] sm:p-5">
                 <span className="block text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
                   Humanity check
                 </span>
@@ -1086,7 +1110,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   >
                     <div className="flex h-full flex-col justify-between gap-4">
                       <div className="flex items-center justify-between gap-3">
-                      <VerificationMark provider="world" />
+                        <VerificationMark provider="world" />
                         {humanityMethod === "world" ? (
                           <CheckCircle2 className="h-5 w-5 text-[#1d6f42]" />
                         ) : null}
@@ -1175,7 +1199,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 </div>
 
                 {isSelfCardOpen && selfApp ? (
-                  <div className="mt-5 rounded-[1.45rem] border border-[#d7e4f6] bg-white p-4 shadow-[0_16px_40px_rgba(37,99,235,0.08)]">
+                  <div className="mt-5 overflow-hidden rounded-[1.25rem] border border-[#d7e4f6] bg-white p-3 shadow-[0_16px_40px_rgba(37,99,235,0.08)] sm:rounded-[1.45rem] sm:p-4">
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                       <div className="max-w-md">
                         <p className="text-sm font-semibold text-[#10233f]">
@@ -1189,14 +1213,14 @@ export default function EventClient({ eventId }: { eventId: string }) {
                       <button
                         type="button"
                         onClick={() => setIsSelfCardOpen(false)}
-                        className="rounded-full border border-[#d7e4f6] bg-[#f8fbff] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#5e7ca8] transition hover:bg-white"
+                        className="min-h-11 rounded-full border border-[#d7e4f6] bg-[#f8fbff] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#5e7ca8] transition hover:bg-white"
                       >
                         Hide Self QR
                       </button>
                     </div>
 
-                    <div className="mt-5 flex justify-center">
-                      <div className="rounded-[1.75rem] border border-[#e2ebfa] bg-[#fbfdff] p-4">
+                    <div className="mt-5 flex justify-center overflow-hidden">
+                      <div className="max-w-full rounded-[1.35rem] border border-[#e2ebfa] bg-[#fbfdff] p-2 sm:rounded-[1.75rem] sm:p-4">
                         <SelfQRcodeWrapper
                           selfApp={selfApp}
                           onSuccess={() => {
@@ -1208,7 +1232,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                               data.reason || data.error_code || "Self verification failed."
                             );
                           }}
-                          size={260}
+                          size={selfQrSize}
                         />
                       </div>
                     </div>
@@ -1315,12 +1339,12 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
         {step === 2 && (
           <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-            <div className="ink-panel rounded-[2rem] p-8">
+            <div className="ink-panel rounded-[1.6rem] p-5 sm:rounded-[2rem] sm:p-8">
               <Loader2 className="h-12 w-12 animate-spin text-[#d6e7ff]" />
               <p className="mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-[#d6e7ff]">
                 Step 3
               </p>
-              <h2 className="display-type mt-3 text-4xl leading-tight tracking-[-0.03em] text-white md:text-5xl">
+              <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-white sm:text-4xl md:text-5xl">
                 Building your on-site proof.
               </h2>
               <p className="mt-4 text-sm leading-7 text-[#d6e7ff] md:text-base">
@@ -1340,7 +1364,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   />
                 </div>
               </div>
-              <div className="mt-8 rounded-[1.5rem] border border-white/10 bg-white/5 p-4 font-mono text-sm text-[#f5f9ff]">
+              <div className="mt-8 break-words rounded-[1.5rem] border border-white/10 bg-white/5 p-4 font-mono text-sm text-[#f5f9ff]">
                 {statusMsg}
               </div>
               {proofDurationMs !== null && proofBytes !== null && (
@@ -1358,7 +1382,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
               </p>
             </div>
 
-            <div className="rounded-[2rem] border border-[#cfe1ff] bg-white/86 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.08)] md:p-8">
+            <div className="rounded-[1.6rem] border border-[#cfe1ff] bg-white/86 p-4 shadow-[0_24px_70px_rgba(37,99,235,0.08)] sm:rounded-[2rem] sm:p-6 md:p-8">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
                 Current progress
               </p>
@@ -1370,7 +1394,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   return (
                     <div
                       key={item.label}
-                      className={`flex items-center gap-4 rounded-[1.25rem] border px-4 py-4 ${
+                      className={`flex items-start gap-3 rounded-[1.25rem] border px-4 py-4 sm:items-center sm:gap-4 ${
                         isCurrent
                           ? "border-[#6a8fcb] bg-[#e7f0ff]"
                           : isComplete
@@ -1389,7 +1413,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                       >
                         {isCurrent ? <Loader2 className="h-4 w-4 animate-spin" /> : index + 1}
                       </div>
-                      <p className="text-sm font-medium text-[#10233f]">{item.label}</p>
+                      <p className="min-w-0 text-sm font-medium leading-6 text-[#10233f]">{item.label}</p>
                     </div>
                   );
                 })}
@@ -1405,14 +1429,14 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
         {step === 3 && (
           <div className="space-y-6">
-            <div className="ink-panel rounded-[2.25rem] p-8 md:p-10">
+            <div className="ink-panel rounded-[1.6rem] p-5 sm:rounded-[2.25rem] sm:p-8 md:p-10">
               <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
                 <div>
                   <CheckCircle2 className="h-16 w-16 text-[#a7d99a]" />
                   <p className="mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-[#d6e7ff]">
                     Step 4
                   </p>
-                  <h2 className="display-type mt-3 max-w-3xl text-4xl leading-[0.94] tracking-[-0.04em] text-white md:text-6xl">
+                  <h2 className="display-type mt-3 max-w-3xl text-3xl leading-[0.98] tracking-[-0.04em] text-white sm:text-4xl md:text-6xl">
                     Presence verified.
                   </h2>
                   <p className="mt-4 max-w-2xl text-sm leading-7 text-[#d6e7ff] md:text-base">
@@ -1490,11 +1514,11 @@ export default function EventClient({ eventId }: { eventId: string }) {
             </div>
 
             <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="rounded-[2rem] border border-[#cfe1ff] bg-white/88 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.08)] md:p-8">
+              <div className="rounded-[1.6rem] border border-[#cfe1ff] bg-white/88 p-4 shadow-[0_24px_70px_rgba(37,99,235,0.08)] sm:rounded-[2rem] sm:p-6 md:p-8">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
                   Attestation card
                 </p>
-                <div className="mt-6 rounded-[1.8rem] border border-[#dbe8fb] bg-[#f8fbff] p-5 md:p-6">
+                <div className="mt-6 rounded-[1.4rem] border border-[#dbe8fb] bg-[#f8fbff] p-4 sm:rounded-[1.8rem] sm:p-5 md:p-6">
                   <div className="grid gap-5 md:grid-cols-2">
                     <div>
                       <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-[#6a89b6]">
