@@ -393,7 +393,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
       if (!walletAddress) throw new Error("Connect wallet before World verification.");
       if (!isWorldConfigured) {
-        throw new Error("World ID is not configured in environment variables.");
+        throw new Error("World ID is unavailable here. Try Coinbase or Self.");
       }
 
       setIsPreparingWorld(true);
@@ -413,7 +413,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
       const result = (await response.json()) as RpContextResponse;
       if (!result.rp_context) {
-        throw new Error("Missing rp_context from backend.");
+        throw new Error("World verification could not start. Try another method.");
       }
 
       setRpContext(result.rp_context);
@@ -970,30 +970,11 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 Step 1
               </p>
               <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#10233f] md:text-4xl">
-                Connect the wallet for this attestation.
+                Connect your wallet.
               </h2>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-[#52637e] md:text-base">
-                This wallet will receive the attestation on Base Sepolia.
+                This wallet receives your attendance record.
               </p>
-              <div className="mt-4 rounded-[1.25rem] border border-[#d7e4f6] bg-[#f8fbff] px-4 py-3 text-sm text-[#52637e]">
-                {isCheckingSponsorship ? (
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-[#2563eb]" />
-                    Checking if this wallet can use sponsored claims...
-                  </span>
-                ) : isSponsoredClaimAvailable ? (
-                  <span className="inline-flex items-center gap-2 text-[#155734]">
-                    <CheckCircle2 className="h-4 w-4" />
-                    Smart-wallet sponsorship is available for this wallet.
-                  </span>
-                ) : walletAddress ? (
-                  <span>
-                    This wallet will use a normal transaction and pay gas if you continue.
-                  </span>
-                ) : (
-                  <span>Connect a wallet to see whether gasless claims are supported.</span>
-                )}
-              </div>
               <div className="mt-6">
                 <WalletCard
                   walletAddress={walletAddress}
@@ -1004,17 +985,17 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
             <div className="ink-panel rounded-[1.6rem] p-5 sm:rounded-[2rem] sm:p-6 md:p-8">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d6e7ff]">
-                Flow
+                Next
               </p>
               <div className="mt-5 flex flex-wrap gap-3 text-sm text-[#e8f1ff]">
                 <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
-                  Verify humanity
+                  Verify
                 </span>
                 <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
-                  Generate proof
+                  Prove presence
                 </span>
                 <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
-                  Mint attestation
+                  Mint
                 </span>
               </div>
             </div>
@@ -1038,16 +1019,10 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 </div>
               </div>
 
-              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+              <div className="mt-8">
                 <div className="rounded-[1.4rem] border border-[#d7e4f6] bg-[#f8fbff] p-4">
                   <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
-                    Network
-                  </span>
-                  <p className="text-sm font-semibold text-[#10233f]">Base Sepolia</p>
-                </div>
-                <div className="rounded-[1.4rem] border border-[#d7e4f6] bg-[#f8fbff] p-4">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
-                    Wallet
+                    Connected wallet
                   </span>
                   <p className="truncate font-mono text-sm text-[#2563eb]">
                     {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
@@ -1055,30 +1030,28 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-[1.4rem] border border-[#d7e4f6] bg-[#f8fbff] p-4">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
-                  Gasless claim
-                </span>
-                <p className="text-sm font-semibold text-[#10233f]">
-                  {isCheckingSponsorship
-                    ? "Checking wallet capabilities..."
-                    : isSponsoredClaimAvailable
-                      ? "Available for this wallet"
-                      : "Not available on this wallet"}
-                </p>
-                <p className="mt-1 text-xs leading-6 text-[#6a7891]">
-                  {isSponsoredClaimAvailable
-                    ? "WiFiProof will try a sponsored smart-wallet claim first. Base Smart Wallet works best here."
-                    : "This wallet will use a standard onchain claim."}
-                </p>
-              </div>
+              {(isCheckingSponsorship || isSponsoredClaimAvailable) && (
+                <div className="mt-4 rounded-[1.4rem] border border-[#d7e4f6] bg-[#f8fbff] p-4 text-sm font-medium text-[#52637e]">
+                  {isCheckingSponsorship ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-[#2563eb]" />
+                      Checking wallet support...
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-2 text-[#155734]">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Sponsored claim available.
+                    </span>
+                  )}
+                </div>
+              )}
 
               <div className="mt-6 rounded-[1.35rem] border border-[#d7e4f6] bg-[#f8fbff] p-4 sm:rounded-[1.6rem] sm:p-5">
                 <span className="block text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
                   Humanity check
                 </span>
                 <p className="mt-2 text-sm leading-7 text-[#52637e]">
-                  Use World ID, Coinbase Verified, or Self Pass to prove the attendee is a real person before minting.
+                  Choose one verification method to continue.
                 </p>
 
                 <div className="mt-4 grid gap-3 xl:grid-cols-3">
@@ -1101,7 +1074,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                       <div>
                         <p className="text-base font-semibold text-[#10233f]">World ID</p>
                         <p className="mt-2 text-sm leading-6 text-[#5c6f8d]">
-                          Private proof through World App.
+                          Verify with World App.
                         </p>
                       </div>
                       <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#2563eb]">
@@ -1135,7 +1108,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                       <div>
                         <p className="text-base font-semibold text-[#10233f]">Coinbase Verified</p>
                         <p className="mt-2 text-sm leading-6 text-[#5c6f8d]">
-                          Checks the Base mainnet verification tied to this wallet.
+                          Use your Coinbase attestation.
                         </p>
                       </div>
                       <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#0052ff]">
@@ -1167,7 +1140,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                       <div>
                         <p className="text-base font-semibold text-[#10233f]">Self Pass</p>
                         <p className="mt-2 text-sm leading-6 text-[#5c6f8d]">
-                          Opens a QR proof from the Self app.
+                          Scan with the Self app.
                         </p>
                       </div>
                       <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#10233f]">
@@ -1186,11 +1159,10 @@ export default function EventClient({ eventId }: { eventId: string }) {
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                       <div className="max-w-md">
                         <p className="text-sm font-semibold text-[#10233f]">
-                          Verify with Self Pass
+                          Self Pass
                         </p>
                         <p className="mt-2 text-sm leading-7 text-[#52637e]">
-                          Scan this QR code in Self to prove document-backed humanity without
-                          revealing unnecessary personal data to WiFiProof.
+                          Scan the QR, then return here.
                         </p>
                       </div>
                       <button
@@ -1231,7 +1203,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                       <div>
                         <p className="text-sm font-semibold text-[#155734]">Humanity verified</p>
                         <p className="text-xs leading-6 text-[#35634a]">
-                          Verified with {humanityMethodLabel}. You can continue to claim.
+                          {humanityMethodLabel} is ready.
                         </p>
                       </div>
                     </div>
@@ -1245,18 +1217,9 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 ) : null}
                 {!isWorldConfigured && (
                   <p className="mt-4 text-sm font-medium text-[#9c6a0a]">
-                    World ID is not configured in this environment, but Coinbase and Self verification are still available.
+                    World ID is unavailable here. Coinbase and Self still work.
                   </p>
                 )}
-                <p className="mt-3 text-xs leading-6 text-[#6a7891]">
-                  Desktop: scan in World App. Mobile: approve and return here.
-                </p>
-                <p className="mt-2 text-xs leading-6 text-[#6a7891]">
-                  Coinbase path: connect the wallet that already holds your Coinbase/Base verification.
-                </p>
-                <p className="mt-2 text-xs leading-6 text-[#6a7891]">
-                  Self path: use the Self app to prove document-backed humanity, then return here to mint.
-                </p>
               </div>
 
               <button
@@ -1271,50 +1234,13 @@ export default function EventClient({ eventId }: { eventId: string }) {
             <div className="space-y-4">
               <aside className="rounded-[1.75rem] border border-[#cfe1ff] bg-white/86 p-5 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
-                  Checks
+                  Before you mint
                 </p>
                 <ul className="mt-4 space-y-3 text-sm leading-7 text-[#52637e]">
-                  <li>Humanity via World ID, Coinbase, or Self Pass</li>
-                  <li>Venue network</li>
-                  <li>Location proof</li>
-                  <li>On-chain verification</li>
+                  <li>Join the venue Wi-Fi.</li>
+                  <li>Allow location when prompted.</li>
+                  <li>Keep your wallet open.</li>
                 </ul>
-              </aside>
-
-              <aside className="ink-panel rounded-[1.75rem] p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#d6e7ff]">
-                  Event
-                </p>
-                <div className="mt-4 space-y-4 text-sm leading-7 text-[#e8f1ff]">
-                  <div>
-                    <span className="block text-xs uppercase tracking-[0.14em] text-[#c0d8ff]">
-                      Time
-                    </span>
-                    <span>{event ? formatEventWindow(event.start_time, event.end_time) : "-"}</span>
-                  </div>
-                  {event?.event_description?.trim() && (
-                    <div>
-                      <span className="block text-xs uppercase tracking-[0.14em] text-[#c0d8ff]">
-                        About this event
-                      </span>
-                      <span>{event.event_description}</span>
-                    </div>
-                  )}
-                  <div>
-                    <span className="block text-xs uppercase tracking-[0.14em] text-[#c0d8ff]">
-                      Radius
-                    </span>
-                    <span>{event ? `${event.radius_meters}m boundary` : "-"}</span>
-                  </div>
-                  <div>
-                    <span className="block text-xs uppercase tracking-[0.14em] text-[#c0d8ff]">
-                      Event ID
-                    </span>
-                    <span className="block break-all font-mono text-xs text-[#cfe1ff]">
-                      {eventId}
-                    </span>
-                  </div>
-                </div>
               </aside>
             </div>
           </div>
@@ -1328,12 +1254,10 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 Step 3
               </p>
               <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-white sm:text-4xl md:text-5xl">
-                Building your on-site proof.
+                Creating your proof.
               </h2>
               <p className="mt-4 text-sm leading-7 text-[#d6e7ff] md:text-base">
-                We are checking the venue network, reading geolocation in the
-                browser, generating the ZK proof locally, sending the wallet
-                transaction, and archiving the claim receipt.
+                Stay on this page while WiFiProof checks presence and confirms your claim.
               </p>
               <div className="mt-8 rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
                 <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-[#c6d9f7]">
@@ -1361,13 +1285,13 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 </div>
               )}
               <p className="mt-4 text-xs leading-6 text-[#c6d9f7]">
-                Your exact coordinates are not sent to the backend while this is happening.
+                Exact coordinates stay off the server.
               </p>
             </div>
 
             <div className="rounded-[1.6rem] border border-[#cfe1ff] bg-white/86 p-4 shadow-[0_24px_70px_rgba(37,99,235,0.08)] sm:rounded-[2rem] sm:p-6 md:p-8">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
-                Current progress
+                Progress
               </p>
               <div className="mt-6 space-y-4">
                 {processingSteps.map((item, index) => {
@@ -1403,7 +1327,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
               </div>
               {proofDurationMs !== null && proofBytes !== null && (
                 <div className="mt-6 rounded-[1.5rem] border border-[#dbe8fb] bg-[#f8fbff] p-4 text-sm leading-7 text-[#52637e]">
-                  The zero-knowledge proof was generated in your browser, not on the server.
+                  Proof generated in your browser.
                 </div>
               )}
             </div>
@@ -1423,8 +1347,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                     Presence verified.
                   </h2>
                   <p className="mt-4 max-w-2xl text-sm leading-7 text-[#d6e7ff] md:text-base">
-                    This is your permanent, on-chain record that you were at{" "}
-                    {event?.venue_name ?? "this event"}.
+                    Your attendance record is ready for {event?.venue_name ?? "this event"}.
                   </p>
                 </div>
 
