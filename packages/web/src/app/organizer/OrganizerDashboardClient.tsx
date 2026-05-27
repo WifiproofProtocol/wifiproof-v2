@@ -163,11 +163,10 @@ export default function OrganizerDashboardClient() {
             Organizer dashboard
           </p>
           <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#10233f] md:text-4xl">
-            Connect the organizer wallet to manage live events.
+            Connect your organizer wallet.
           </h2>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-[#52637e] md:text-base">
-            This dashboard shows the events created by your approved wallet, recent
-            attendance claims, and quick links back into the check-in flow.
+            View events, claims, and check-in links.
           </p>
 
           <div className="mt-6">
@@ -177,17 +176,17 @@ export default function OrganizerDashboardClient() {
 
         <div className="ink-panel rounded-[2rem] p-6 md:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d6e7ff]">
-            What you get
+            Dashboard
           </p>
           <div className="mt-6 space-y-4 text-sm leading-7 text-[#d6e7ff]">
             <div className="rounded-[1.5rem] border border-white/10 bg-white/5 px-4 py-4">
-              Per-event attendance counts and live status.
+              Live event status.
             </div>
             <div className="rounded-[1.5rem] border border-white/10 bg-white/5 px-4 py-4">
-              Recent attendee wallets and claim timestamps.
+              Recent claims.
             </div>
             <div className="rounded-[1.5rem] border border-white/10 bg-white/5 px-4 py-4">
-              Fast links to the attendee check-in page and organizer setup flow.
+              Check-in links.
             </div>
           </div>
         </div>
@@ -203,7 +202,7 @@ export default function OrganizerDashboardClient() {
             Organizer dashboard
           </p>
           <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#10233f] md:text-4xl">
-            Monitor event activity without leaving the app.
+            Monitor event activity.
           </h2>
           <p className="mt-3 text-sm leading-7 text-[#52637e] md:text-base">
             Connected as {formatWallet(walletAddress)}.
@@ -254,9 +253,7 @@ export default function OrganizerDashboardClient() {
           <p className="mt-3 text-3xl font-semibold text-[#10233f]">
             {data?.summary.totalClaims ?? 0}
           </p>
-          <p className="mt-2 text-sm text-[#6a7891]">
-            Across all organizer events
-          </p>
+          <p className="mt-2 text-sm text-[#6a7891]">Total claims</p>
         </div>
         <div className="rounded-[1.5rem] border border-[#cfe1ff] bg-white/88 p-5 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
@@ -265,9 +262,7 @@ export default function OrganizerDashboardClient() {
           <p className="mt-3 text-3xl font-semibold text-[#10233f]">
             {data?.summary.totalAttendees ?? 0}
           </p>
-          <p className="mt-2 text-sm text-[#6a7891]">
-            Distinct wallets across your events
-          </p>
+          <p className="mt-2 text-sm text-[#6a7891]">Distinct wallets</p>
         </div>
         <div className="rounded-[1.5rem] border border-[#cfe1ff] bg-white/88 p-5 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
@@ -292,8 +287,7 @@ export default function OrganizerDashboardClient() {
         <div className="rounded-[1.9rem] border border-dashed border-[#cfe1ff] bg-white/70 px-5 py-12 text-center shadow-[0_18px_50px_rgba(37,99,235,0.06)]">
           <p className="text-lg font-semibold text-[#10233f]">No events yet for this wallet.</p>
           <p className="mt-3 text-sm leading-7 text-[#6a7891]">
-            Use organizer setup to publish your first event and start collecting
-            attendance records.
+            Publish your first event to start tracking attendance.
           </p>
           <Link
             href="/organizer/setup"
@@ -340,7 +334,7 @@ export default function OrganizerDashboardClient() {
                   <p className="mt-2 text-sm leading-7 text-[#52637e]">
                     {event.eventDescription?.trim()
                       ? event.eventDescription
-                      : "Private attendance verification with venue network checks and local proof generation."}
+                      : "No description added."}
                   </p>
                 </div>
               </div>
@@ -393,7 +387,7 @@ export default function OrganizerDashboardClient() {
                   </div>
                 ) : (
                   <p className="mt-3 text-sm text-[#6a7891]">
-                    No attendee claims have been archived yet for this event.
+                    No claims yet.
                   </p>
                 )}
               </div>
