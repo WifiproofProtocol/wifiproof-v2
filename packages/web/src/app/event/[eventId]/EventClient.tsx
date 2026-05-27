@@ -26,10 +26,8 @@ import {
   CheckCircle2,
   Copy,
   Loader2,
-  MapPin,
   Share2,
   ShieldCheck,
-  Wifi,
 } from "lucide-react";
 
 import WalletCard from "@/components/wallet/WalletCard";
@@ -879,21 +877,6 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 ? event.event_description
                 : "Check in privately and mint your attendance attestation."}
             </p>
-
-            <div className="flex flex-wrap items-center gap-3 text-sm text-[#486284]">
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#cfe1ff] bg-white/80 px-3 py-2">
-                <ShieldCheck className="h-4 w-4 text-[#2563eb]" />
-                Privacy-preserving proof
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#cfe1ff] bg-white/80 px-3 py-2">
-                <MapPin className="h-4 w-4 text-[#2563eb]" />
-                Radius check
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#cfe1ff] bg-white/80 px-3 py-2">
-                <Wifi className="h-4 w-4 text-[#2563eb]" />
-                Venue network
-              </span>
-            </div>
 
             {event && (
               <div className="grid gap-3 sm:grid-cols-2">
