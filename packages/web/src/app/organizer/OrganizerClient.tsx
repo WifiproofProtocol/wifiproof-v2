@@ -147,7 +147,6 @@ export default function OrganizerClient() {
   const [statusMsg, setStatusMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [eventId, setEventId] = useState("");
-  const [venueHash, setVenueHash] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
   const { data: walletClient } = useWalletClient();
   const wifiproofAddress = (
@@ -243,11 +242,11 @@ export default function OrganizerClient() {
 
   const processingSteps = [
     { label: "Prepare payload", match: "Preparing event payload" },
-    { label: "Compute venue hash", match: "Computing venue hash" },
-    { label: "Generate organizer proof", match: "Generating organizer proof" },
+    { label: "Prepare venue", match: "Preparing venue" },
+    { label: "Prepare event", match: "Preparing event proof" },
     { label: "Check organizer access", match: "Requesting organizer authorization" },
     { label: "Confirm wallet transaction", match: "Confirm transaction in your wallet" },
-    { label: "Wait for chain confirmation", match: "Waiting for Base Sepolia confirmation" },
+    { label: "Confirm event", match: "Confirming event" },
     { label: "Save event metadata", match: "Saving metadata" },
   ] as const;
 
@@ -301,7 +300,7 @@ export default function OrganizerClient() {
       const result = (await response.json()) as NetworkPrefixResponse;
       setSubnetPrefix(result.suggestedPrefix);
       setDetectedNetworkHint(
-        `Detected ${result.ip} via ${result.source === "request" ? "request IP" : "ipify"}.`
+        `Detected ${result.ip}.`
       );
     } catch (error) {
       setErrorMsg((error as Error).message);
@@ -363,7 +362,7 @@ export default function OrganizerClient() {
         throw new Error("RPC client is still loading. Try again in a second.");
       }
 
-      setStatusMsg("Computing venue hash...");
+      setStatusMsg("Preparing venue...");
       const computedVenueHash = await publicClient.readContract({
         address: wifiproofAddress as `0x${string}`,
         abi: WIFI_PROOF_ABI,
@@ -371,7 +370,7 @@ export default function OrganizerClient() {
         args: [scaledLat, scaledLon, thresholdSq, derivedEventId],
       });
 
-      setStatusMsg("Generating organizer proof...");
+      setStatusMsg("Preparing event proof...");
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject);
       });
@@ -454,7 +453,7 @@ export default function OrganizerClient() {
         ],
       }));
 
-      setStatusMsg("Waiting for Base Sepolia confirmation...");
+      setStatusMsg("Confirming event...");
       const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
       if (receipt.status !== "success") {
         throw new Error("Transaction failed. Event not created.");
@@ -495,7 +494,6 @@ export default function OrganizerClient() {
       );
 
       setEventId(derivedEventId);
-      setVenueHash(computedVenueHash);
       setStep(3);
       setStatusMsg("");
     } catch (error) {
@@ -512,8 +510,7 @@ export default function OrganizerClient() {
           Create your event.
         </h1>
         <p className="max-w-2xl text-base leading-8 text-[#5f564d] md:text-lg">
-          Approved organizers can set the venue, publish the attendee page, and
-          share the QR from here.
+          Set the venue, publish the check-in page, and share the QR.
         </p>
       </div>
 
@@ -559,8 +556,7 @@ export default function OrganizerClient() {
               Connect your organizer wallet.
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-[#5f564d] md:text-base">
-              We will check whether the connected wallet is approved before the
-              event form is unlocked.
+              Approved wallets can create and manage events.
             </p>
             <div className="mt-6">
               <WalletCard
@@ -627,13 +623,12 @@ export default function OrganizerClient() {
 
             <aside className="ink-panel rounded-[1.75rem] p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ccb9a2]">
-                Setup includes
+                After approval
               </p>
               <ul className="mt-4 space-y-3 text-sm leading-7 text-[#e8ddd1]">
-                <li>Event details and poster</li>
-                <li>Venue location and radius</li>
-                <li>Wi-Fi subnet and schedule</li>
-                <li>Shareable attendee page and QR</li>
+                <li>Add event details.</li>
+                <li>Set the venue boundary.</li>
+                <li>Publish the QR.</li>
               </ul>
             </aside>
           </div>
@@ -677,7 +672,7 @@ export default function OrganizerClient() {
                     className={`${inputClass} min-h-[132px] resize-y`}
                     value={eventDescription}
                     onChange={(e) => setEventDescription(e.target.value)}
-                    placeholder="Tell attendees what this event is, what room they are checking into, or what they should expect before minting."
+                    placeholder="A short note for attendees."
                     maxLength={500}
                   />
                   <span className="mt-2 block text-right text-xs leading-6 text-[#6a7891]">
@@ -690,7 +685,6 @@ export default function OrganizerClient() {
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-[#1f1b17]">Event poster</h3>
-                    <p className="mt-2 text-sm leading-7 text-[#5f564d]">Shown on the event page and list.</p>
                   </div>
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-[#d2c5b0] bg-white px-4 py-2 text-sm font-medium text-[#1f1b17] transition hover:bg-[#f3ebdf]">
                     {isPosterProcessing ? (
@@ -733,10 +727,6 @@ export default function OrganizerClient() {
                         <p className="text-sm font-semibold text-[#1f1b17]">
                           {posterFileName || "Event poster ready"}
                         </p>
-                        <p className="text-xs leading-6 text-[#6a7891]">
-                          This artwork will appear on the attendee page and the
-                          events index.
-                        </p>
                       </div>
                       <button
                         type="button"
@@ -757,8 +747,7 @@ export default function OrganizerClient() {
                       No poster uploaded yet
                     </p>
                     <p className="mt-2 text-xs leading-6 text-[#6a7891]">
-                      A wide poster works best. PNG, JPEG, and WebP are
-                      accepted.
+                      Wide images work best.
                     </p>
                   </div>
                 )}
@@ -768,7 +757,6 @@ export default function OrganizerClient() {
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-[#1f1b17]">Venue boundary</h3>
-                    <p className="mt-2 text-sm leading-7 text-[#5f564d]">Guests must be inside this radius.</p>
                   </div>
                   <button
                     type="button"
@@ -816,9 +804,6 @@ export default function OrganizerClient() {
                 <h3 className="text-lg font-semibold text-[#1f1b17]">
                   Network and time window
                 </h3>
-                <p className="mt-2 text-sm leading-7 text-[#5f564d]">
-                  Attendees must be on the venue network during this window.
-                </p>
 
                 <label className="mt-5 block">
                   <span className={labelClass}>WiFi subnet prefix</span>
@@ -848,9 +833,6 @@ export default function OrganizerClient() {
                       </>
                     )}
                   </button>
-                  <p className="text-xs leading-6 text-[#6a7891]">
-                    Uses the same request IP check as the backend.
-                  </p>
                 </div>
 
                 {detectedNetworkHint && (
@@ -874,7 +856,7 @@ export default function OrganizerClient() {
                 </div>
 
                 <p className="mt-4 text-xs leading-6 text-[#7a7063]">
-                  Times use your local timezone while configuring.
+                  Times use your local timezone.
                 </p>
               </section>
             </div>
@@ -884,35 +866,18 @@ export default function OrganizerClient() {
               onClick={handleCreateEvent}
               className="mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-[#201b18] px-5 py-4 text-sm font-semibold text-[#f7f1e7] transition hover:bg-[#362e27] active:scale-[0.99]"
             >
-              Create organizer proof and event page <ChevronRight className="h-5 w-5" />
+              Publish event <ChevronRight className="h-5 w-5" />
             </button>
           </div>
 
           <div className="space-y-4">
-            <aside className="rounded-[1.75rem] border border-[#d2c5b0] bg-white/70 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">Saved</p>
-              <ul className="mt-4 space-y-3 text-sm leading-7 text-[#5f564d]">
-                <li>Event ID and venue hash</li>
-                <li>Event name, summary, and schedule</li>
-                <li>Poster artwork for the attendee page</li>
-                <li>Shareable attendee page and QR code</li>
-              </ul>
-            </aside>
-
-            <aside className="ink-panel rounded-[1.75rem] p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#ccb9a2]">Private</p>
-              <ul className="mt-4 space-y-3 text-sm leading-7 text-[#e8ddd1]">
-                <li>Exact attendee coordinates</li>
-                <li>Raw device location history</li>
-                <li>Guest emails, phones, and identity fields</li>
-              </ul>
-            </aside>
-
             <aside className="rounded-[1.75rem] border border-[#d2c5b0] bg-[#efe2d0] p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#7b684f]">Before publish</p>
-              <p className="mt-4 text-sm leading-7 text-[#5b5249]">
-                Check the poster, network prefix, and schedule one more time.
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#7b684f]">Review</p>
+              <ul className="mt-4 space-y-3 text-sm leading-7 text-[#5b5249]">
+                <li>Venue boundary</li>
+                <li>Wi-Fi prefix</li>
+                <li>Event window</li>
+              </ul>
             </aside>
           </div>
         </div>
@@ -929,7 +894,7 @@ export default function OrganizerClient() {
               Publishing your event.
             </h2>
             <p className="mt-4 text-sm leading-7 text-[#d7c7b6] md:text-base">
-              Generating the organizer proof, sending the transaction, and saving the event.
+              Keep this page open while the event is created.
             </p>
             <div className="mt-8 rounded-[1.5rem] border border-white/10 bg-white/5 p-4 font-mono text-sm text-[#f5efe6]">
               {statusMsg}
@@ -938,7 +903,7 @@ export default function OrganizerClient() {
 
           <div className="rounded-[2rem] border border-[#d2c5b0] bg-white/70 p-6 shadow-[0_24px_60px_rgba(57,43,30,0.08)] md:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
-              Current progress
+              Progress
             </p>
             <div className="mt-6 space-y-4">
               {processingSteps.map((item, index) => {
@@ -979,39 +944,17 @@ export default function OrganizerClient() {
       {step === 3 && (
         <div className="space-y-6">
           <div className="ink-panel rounded-[2.25rem] p-8 md:p-10">
-            <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
-              <div>
-                <CheckCircle2 className="h-16 w-16 text-[#9dc28d]" />
-                <p className="mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-[#ccb9a2]">
-                  Step 4
-                </p>
-                <h2 className="display-type mt-3 max-w-3xl text-4xl leading-[0.94] tracking-[-0.04em] text-white md:text-6xl">
-                  Event created and ready to share.
-                </h2>
-                <p className="mt-4 max-w-2xl text-sm leading-7 text-[#d7c7b6] md:text-base">
-                  Your event is live on Base Sepolia. Put the QR on a screen,
-                  share the attendee link, and let guests check in on-site.
-                </p>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-[1.6rem] border border-white/10 bg-white/5 p-4">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-[#ccb9a2]">
-                    Event ID
-                  </span>
-                  <span className="block break-all font-mono text-sm leading-7 text-[#f5efe6]">
-                    {eventId}
-                  </span>
-                </div>
-                <div className="rounded-[1.6rem] border border-white/10 bg-white/5 p-4">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-[#ccb9a2]">
-                    Venue hash
-                  </span>
-                  <span className="block break-all font-mono text-sm leading-7 text-[#f5efe6]">
-                    {venueHash}
-                  </span>
-                </div>
-              </div>
+            <div className="max-w-3xl">
+              <CheckCircle2 className="h-16 w-16 text-[#9dc28d]" />
+              <p className="mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-[#ccb9a2]">
+                Step 4
+              </p>
+              <h2 className="display-type mt-3 text-4xl leading-[0.94] tracking-[-0.04em] text-white md:text-6xl">
+                Event ready.
+              </h2>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-[#d7c7b6] md:text-base">
+                Share the attendee page or display the QR on-site.
+              </p>
             </div>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -1036,7 +979,7 @@ export default function OrganizerClient() {
           <div className="grid gap-6 lg:grid-cols-[1.18fr_0.82fr]">
             <div className="rounded-[2rem] border border-[#d2c5b0] bg-white/78 p-6 shadow-[0_24px_60px_rgba(57,43,30,0.08)] md:p-8">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
-                Display card
+                Check-in card
               </p>
 
               <div className="mt-6 overflow-hidden rounded-[1.9rem] border border-[#d7e4f6] bg-white text-left shadow-[0_18px_40px_rgba(57,43,30,0.12)]">
@@ -1105,20 +1048,10 @@ export default function OrganizerClient() {
                   Next steps
                 </p>
                 <ul className="mt-4 space-y-3 text-sm leading-7 text-[#5f564d]">
-                  <li>Display the QR or attendee page at the venue entrance.</li>
-                  <li>Make sure guests can connect to the venue Wi-Fi.</li>
-                  <li>Keep the event page open during the event window.</li>
+                  <li>Display the QR.</li>
+                  <li>Keep venue Wi-Fi available.</li>
+                  <li>Monitor claims from the dashboard.</li>
                 </ul>
-              </div>
-
-              <div className="rounded-[1.75rem] border border-[#cfe1ff] bg-white/86 p-5 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
-                  Share assets
-                </p>
-                <div className="mt-4 space-y-4 text-sm leading-7 text-[#52637e]">
-                  <p>The attendee page and QR are ready for a projector, TV screen, or printed sign.</p>
-                  <p>Keep this page open while guests arrive so the check-in link stays easy to access.</p>
-                </div>
               </div>
             </div>
           </div>
