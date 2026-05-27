@@ -29,9 +29,8 @@ export default function OrganizerPage() {
               Create the event. Share the check-in.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-[#52637e] md:text-xl">
-              WiFiProof keeps event setup tight for conferences, hackathons, and communities:
-              approved wallet, venue boundary, network check, shareable attendee page, and
-              now a live organizer dashboard for monitoring attendance as claims come in.
+              Set up venue-based attendance for conferences, hackathons, and live programs.
+              Track claims as they happen.
             </p>
 
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
@@ -51,8 +50,7 @@ export default function OrganizerPage() {
             </div>
 
             <p className="mt-4 text-sm leading-7 text-[#61728d]">
-              Demo event creation is allowlisted. If your wallet is not approved yet,
-              contact {contactLabel}.
+              Event creation is invite-only. Contact {contactLabel} for access.
             </p>
           </div>
 
@@ -64,7 +62,7 @@ export default function OrganizerPage() {
                   01
                 </p>
                 <p className="mt-2 text-sm leading-7 text-[#425779] md:text-base">
-                  Connect the organizer wallet and confirm it is approved.
+                  Connect an approved wallet.
                 </p>
               </div>
               <div className="rounded-[1.5rem] border border-[#d6e5fb] bg-[#f8fbff] px-4 py-4">
@@ -72,7 +70,7 @@ export default function OrganizerPage() {
                   02
                 </p>
                 <p className="mt-2 text-sm leading-7 text-[#425779] md:text-base">
-                  Add the event details, poster, location, and network prefix.
+                  Add venue, time, and network details.
                 </p>
               </div>
               <div className="rounded-[1.5rem] border border-[#d6e5fb] bg-[#f8fbff] px-4 py-4">
@@ -80,7 +78,7 @@ export default function OrganizerPage() {
                   03
                 </p>
                 <p className="mt-2 text-sm leading-7 text-[#425779] md:text-base">
-                  Publish the attendee page, display the generated QR on-site, and track claims from the organizer dashboard.
+                  Share the QR and monitor check-ins.
                 </p>
               </div>
             </div>
