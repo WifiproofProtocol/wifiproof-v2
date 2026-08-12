@@ -2,6 +2,7 @@ import FAQ from "@/components/landing/FAQ";
 import Footer from "@/components/landing/Footer";
 import Hero from "@/components/landing/Hero";
 import HowItWorks from "@/components/landing/HowItWorks";
+import IntegrationMarquee from "@/components/landing/IntegrationMarquee";
 import Navbar from "@/components/landing/Navbar";
 import PrivacyStatement from "@/components/landing/PrivacyStatement";
 import Products from "@/components/landing/Products";
@@ -12,6 +13,7 @@ export default function Home() {
     <main className="brand-surface min-h-[100dvh] overflow-x-hidden bg-[var(--signal-canvas)] text-[var(--signal-ink)]">
       <Navbar />
       <Hero />
+      <IntegrationMarquee />
       <HowItWorks />
       <Products />
       <PrivacyStatement />

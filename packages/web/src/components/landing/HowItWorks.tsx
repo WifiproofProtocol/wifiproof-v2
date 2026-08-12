@@ -10,7 +10,7 @@ const steps = [
   {
     number: "02",
     title: "Prove, privately",
-    copy: "Your device proves proximity and humanity without publishing identity or coordinates.",
+    copy: "Your device proves proximity and humanity with World ID and Self, without publishing identity or coordinates.",
     Icon: Fingerprint,
   },
   {

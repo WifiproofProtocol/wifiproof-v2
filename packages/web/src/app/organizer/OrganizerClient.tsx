@@ -337,10 +337,10 @@ export default function OrganizerClient() {
   }, [eventId, step, walletAddress, walletClient]);
 
   const stageLabels = [
-    "Connect wallet",
-    "Configure venue",
-    "Authorize event",
-    "Share check-in",
+    "Wallet",
+    "Event details",
+    "Publish",
+    "Share",
   ] as const;
 
   const processingSteps = [
@@ -687,33 +687,28 @@ export default function OrganizerClient() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-3 border-b border-[var(--signal-line)] pb-8">
-        <p className="product-label">Organizer</p>
-        <h1 className="product-page-title">
-          Create an event
-        </h1>
-        <p className="max-w-xl text-sm leading-7 text-[var(--signal-muted)]">
-          Set the venue and publish its live check-in.
-        </p>
-      </div>
+    <div className="organizer-flow">
+      <header className="organizer-flow-heading">
+        <h1 className="organizer-flow-title">Create an event</h1>
+        <p>Set the venue, time and network.</p>
+      </header>
 
       <StepRail labels={stageLabels} current={step} />
 
       {errorMsg && (
-        <div className="flex items-start gap-3 rounded-[1.5rem] border border-[#d8b3ab] bg-[#fff2ef] p-4 text-[#a5483c]">
+        <div role="alert" className="organizer-error">
           <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
           <p className="text-sm font-medium leading-7">{errorMsg}</p>
         </div>
       )}
 
       {step === 0 && (
-        <div className="max-w-2xl">
-          <div className="product-panel p-6 md:p-8">
+        <div className="organizer-card max-w-2xl">
+          <div>
             <h2 className="text-2xl font-semibold tracking-[-0.03em] md:text-3xl">
               Connect your wallet
             </h2>
-            <p className="mt-3 text-sm leading-7 text-[var(--signal-muted)]">
+            <p className="mt-2 text-sm leading-6 text-[var(--signal-muted)]">
               This wallet will own the event.
             </p>
             <div className="mt-6">
@@ -724,85 +719,69 @@ export default function OrganizerClient() {
             </div>
           </div>
 
-          <div className="mt-4">
-            <aside className="rounded-2xl border border-[var(--signal-line)] p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
-                Status
+          <div className="mt-6 border-t border-[var(--signal-line)] pt-5">
+            {!walletAddress && (
+              <p className="text-sm leading-6 text-[var(--signal-muted)]">
+                Connect a wallet to check organizer access.
               </p>
+            )}
 
-              {!walletAddress && (
-                <p className="mt-4 text-sm leading-7 text-[#5f564d]">
-                  Connect a wallet to check access.
-                </p>
-              )}
+            {walletAddress && organizerAccess === "checking" && (
+              <div className="flex items-center gap-3 text-sm font-medium">
+                <Loader2 className="h-4 w-4 animate-spin text-[var(--signal-cobalt)]" />
+                Checking organizer access...
+              </div>
+            )}
 
-              {walletAddress && organizerAccess === "checking" && (
-                <div className="mt-4 flex items-center gap-3 text-sm font-medium text-[#1f1b17]">
-                  <Loader2 className="h-4 w-4 animate-spin text-[#2563eb]" />
-                  Checking organizer access...
+            {walletAddress && organizerAccess === "approved" && (
+              <div className="organizer-inline-status organizer-inline-status-success">
+                <CheckCircle2 className="h-5 w-5" />
+                <div>
+                  <p className="text-sm font-semibold">Organizer approved</p>
+                  <p className="text-xs leading-5">Your setup form is ready.</p>
                 </div>
-              )}
+              </div>
+            )}
 
-              {walletAddress && organizerAccess === "approved" && (
-                <div className="mt-4 rounded-[1.35rem] border border-[#b9cfad] bg-[#eef4ea] p-4">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-[#5f6f52]" />
-                    <div>
-                      <p className="text-sm font-semibold text-[#1f1b17]">
-                        Organizer approved
-                      </p>
-                      <p className="text-xs leading-6 text-[#52604a]">
-                        Your setup form is ready.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {walletAddress && organizerAccess === "rejected" && (
-                <div className="mt-4 rounded-[1.35rem] border border-[#e2cbc4] bg-[#fff3ef] p-4">
-                  <p className="text-sm font-semibold text-[#7d3f33]">
-                    This wallet is not approved yet.
-                  </p>
-                  <p className="mt-2 text-xs leading-6 text-[#7b5c53]">
-                    Request organizer access first, then come back to setup.
-                  </p>
+            {walletAddress && organizerAccess === "rejected" && (
+              <div className="organizer-inline-status organizer-inline-status-error">
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold">This wallet is not approved yet.</p>
+                  <p className="mt-1 text-xs leading-5">Request organizer access, then return to setup.</p>
                   <a
                     href={organizerContactHref}
                     target={organizerContactEmail ? undefined : "_blank"}
                     rel={organizerContactEmail ? undefined : "noreferrer noopener"}
-                    className="mt-4 inline-flex rounded-full border border-[#dfb4ab] bg-white px-4 py-2 text-sm font-semibold text-[#7d3f33] transition hover:bg-[#fff9f7]"
+                    className="mt-3 inline-flex text-sm font-semibold underline decoration-current/30 underline-offset-4"
                   >
                     Contact {organizerContactLabel}
                   </a>
                 </div>
-              )}
-            </aside>
-
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {step === 1 && (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_340px]">
-          <div className="product-panel p-6 md:p-8">
-            <div className="flex flex-col gap-4 border-b border-[#d8cebf] pb-6 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
-                  Step 2
-                </p>
-                <h2 className="text-2xl font-semibold tracking-[-0.03em] md:text-3xl">
-                  Event details
-                </h2>
-              </div>
-              <div className="rounded-full bg-[#efe2d0] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#7b684f]">
-                Approved organizer
-              </div>
+        <div className="organizer-form-shell">
+          <div className="organizer-form-header">
+            <div>
+              <h2>Event details</h2>
+              <p>Everything attendees need to find and join this check-in.</p>
             </div>
+            <div className="organizer-verified">
+              <CheckCircle2 className="h-4 w-4" />
+              Organizer verified
+            </div>
+          </div>
 
-            <div className="mt-8 space-y-6">
-              <section className="border-b border-[var(--signal-line)] pb-7">
-                <h3 className="text-lg font-semibold text-[#1f1b17]">Event identity</h3>
+          <div className="organizer-form-body">
+            <section className="organizer-form-section organizer-form-section-first">
+              <div>
+                <h3>About</h3>
+              </div>
 
                 <label className="mt-5 block">
                   <span className={labelClass}>Event name</span>
@@ -811,13 +790,14 @@ export default function OrganizerClient() {
                     value={venueName}
                     onChange={(e) => setVenueName(e.target.value)}
                     placeholder="ETH Safari - Day 1"
+                    required
                   />
                 </label>
 
                 <label className="mt-5 block">
-                  <span className={labelClass}>Short description</span>
+                  <span className={labelClass}>Short description (optional)</span>
                   <textarea
-                    className={`${inputClass} min-h-[132px] resize-y`}
+                    className={`${inputClass} min-h-24 resize-y`}
                     value={eventDescription}
                     onChange={(e) => setEventDescription(e.target.value)}
                     placeholder="A short note for attendees."
@@ -827,14 +807,15 @@ export default function OrganizerClient() {
                     {eventDescription.trim().length}/500
                   </span>
                 </label>
-              </section>
 
-              <section className="border-b border-[var(--signal-line)] pb-7">
-                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div className="organizer-upload-row">
                   <div>
-                    <h3 className="text-lg font-semibold text-[#1f1b17]">Event poster</h3>
+                    <p className="text-sm font-semibold">Event poster</p>
+                    <p className="mt-1 text-xs leading-5 text-[var(--signal-muted)]">
+                      Optional. PNG, JPG or WebP.
+                    </p>
                   </div>
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-[#d2c5b0] bg-white px-4 py-2 text-sm font-medium text-[#1f1b17] transition hover:bg-[#f3ebdf]">
+                  <label className="organizer-secondary-action cursor-pointer">
                     {isPosterProcessing ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -859,9 +840,9 @@ export default function OrganizerClient() {
                   </label>
                 </div>
 
-                {posterImageUrl ? (
-                  <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-[#d7e4f6] bg-white">
-                    <div className="relative aspect-[16/9] bg-[#eaf2ff]">
+                {posterImageUrl && (
+                  <div className="organizer-poster-preview">
+                    <div className="relative aspect-[16/9] overflow-hidden rounded-xl bg-[var(--signal-canvas)]">
                       <Image
                         src={posterImageUrl}
                         alt="Poster preview"
@@ -870,52 +851,47 @@ export default function OrganizerClient() {
                         className="object-cover"
                       />
                     </div>
-                    <div className="flex flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between">
-                      <div>
-                        <p className="text-sm font-semibold text-[#1f1b17]">
-                          {posterFileName || "Event poster ready"}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPosterImageUrl("");
-                          setPosterFileName("");
-                        }}
-                        className="inline-flex items-center gap-2 rounded-full border border-[#d8c6bc] px-3 py-2 text-sm font-medium text-[#7b4d2e] transition hover:bg-[#fff6f0]"
-                      >
-                        <X className="h-4 w-4" />
-                        Remove poster
-                      </button>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">
+                        {posterFileName || "Event poster ready"}
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--signal-muted)]">Ready to publish</p>
                     </div>
-                  </div>
-                ) : (
-                  <div className="mt-5 rounded-[1.5rem] border border-dashed border-[#c8d9f2] bg-white/70 px-4 py-8 text-center">
-                    <p className="text-sm font-medium text-[#1f1b17]">
-                      No poster uploaded yet
-                    </p>
-                    <p className="mt-2 text-xs leading-6 text-[#6a7891]">
-                      Wide images work best.
-                    </p>
+                    <div>
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPosterImageUrl("");
+                            setPosterFileName("");
+                          }}
+                          className="organizer-icon-action"
+                          aria-label="Remove event poster"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </section>
 
-              <section className="border-b border-[var(--signal-line)] pb-7">
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <section className="organizer-form-section">
+                <div className="organizer-section-heading">
                   <div>
-                    <h3 className="text-lg font-semibold text-[#1f1b17]">Venue boundary</h3>
+                    <h3>Venue</h3>
+                    <p>Set the center point and check-in radius.</p>
                   </div>
                   <button
                     type="button"
                     onClick={handleUseCurrentLocation}
-                    className="inline-flex items-center gap-2 rounded-full border border-[#d2c5b0] bg-white px-4 py-2 text-sm font-medium text-[#1f1b17] transition hover:bg-[#f3ebdf]"
+                    className="organizer-secondary-action"
                   >
                     <MapPin className="h-4 w-4" /> Use current location
                   </button>
                 </div>
 
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <div className="mt-5 grid gap-4 sm:grid-cols-2 md:grid-cols-[1fr_1fr_0.72fr]">
                   <label className="block">
                     <span className={labelClass}>Latitude</span>
                     <input
@@ -923,6 +899,7 @@ export default function OrganizerClient() {
                       value={venueLat}
                       onChange={(e) => setVenueLat(e.target.value)}
                       placeholder="-1.1018"
+                      required
                     />
                   </label>
                   <label className="block">
@@ -932,52 +909,55 @@ export default function OrganizerClient() {
                       value={venueLon}
                       onChange={(e) => setVenueLon(e.target.value)}
                       placeholder="37.0144"
+                      required
                     />
                   </label>
-                </div>
-
-                <div className="mt-4 max-w-xs">
                   <label className="block">
                     <span className={labelClass}>Radius (meters)</span>
                     <input
                       className={`${inputClass} font-mono`}
                       value={radiusMeters}
                       onChange={(e) => setRadiusMeters(e.target.value)}
+                      inputMode="numeric"
+                      required
                     />
                   </label>
                 </div>
               </section>
 
-              <section className="pb-2">
-                <h3 className="text-lg font-semibold text-[#1f1b17]">
-                  Network and time window
-                </h3>
+              <section className="organizer-form-section">
+                <div className="organizer-section-heading">
+                  <div>
+                    <h3>Network and time</h3>
+                    <p>Use the venue&apos;s public egress network.</p>
+                  </div>
+                </div>
 
-                <label className="mt-5 block">
-                  <span className={labelClass}>Venue public IP or CIDR</span>
-                  <input
-                    className={`${inputClass} font-mono`}
-                    value={subnetPrefix}
-                    onChange={(e) => setSubnetPrefix(e.target.value)}
-                    placeholder="203.0.113.42/32"
-                  />
-                </label>
-
-                <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+                  <label className="block">
+                    <span className={labelClass}>Venue public IP or CIDR</span>
+                    <input
+                      className={`${inputClass} font-mono`}
+                      value={subnetPrefix}
+                      onChange={(e) => setSubnetPrefix(e.target.value)}
+                      placeholder="203.0.113.42/32"
+                      required
+                    />
+                  </label>
                   <button
                     type="button"
                     onClick={handleUseCurrentPrefix}
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-[#d2c5b0] bg-white px-4 py-2 text-sm font-medium text-[#1f1b17] transition hover:bg-[#f3ebdf]"
+                    className="organizer-secondary-action min-h-12 justify-center"
                   >
                     {isResolvingPrefix ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Detecting network...
+                        Detecting...
                       </>
                     ) : (
                       <>
                         <Wifi className="h-4 w-4" />
-                        Use this venue network
+                        Detect network
                       </>
                     )}
                   </button>
@@ -989,7 +969,7 @@ export default function OrganizerClient() {
                   </p>
                 )}
 
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   <DateTimePicker
                     label="Start"
                     value={startDateTime}
@@ -1002,33 +982,25 @@ export default function OrganizerClient() {
                     minDate={startDateTime ?? undefined}
                   />
                 </div>
-
-                <p className="mt-4 text-xs leading-6 text-[#7a7063]">
-                  Use the venue&apos;s public egress IP. Times use your local timezone.
-                </p>
+                <p className="mt-3 text-xs leading-5 text-[var(--signal-muted)]">Times use your local timezone.</p>
               </section>
             </div>
 
-            <button
-              type="button"
-              onClick={handleCreateEvent}
-              className="signal-button signal-button-primary mt-8 w-full py-4"
-            >
-              Publish event <ChevronRight className="h-5 w-5" />
-            </button>
+            <div className="organizer-form-footer">
+              <p>
+                {wifiproofV2Address
+                  ? "5 USDC event fee on Base."
+                  : "Publishes to the Base Sepolia prototype."}
+              </p>
+              <button
+                type="button"
+                onClick={handleCreateEvent}
+                className="signal-button signal-button-primary min-w-44 px-6 py-3"
+              >
+                Publish event <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
           </div>
-
-          <div className="space-y-4">
-            <aside className="rounded-[1.75rem] border border-[#d2c5b0] bg-[#efe2d0] p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#7b684f]">Review</p>
-              <ul className="mt-4 space-y-3 text-sm leading-7 text-[#5b5249]">
-                <li>Venue boundary</li>
-                <li>Venue network CIDR</li>
-                <li>Event window</li>
-              </ul>
-            </aside>
-          </div>
-        </div>
       )}
 
       {step === 2 && (
