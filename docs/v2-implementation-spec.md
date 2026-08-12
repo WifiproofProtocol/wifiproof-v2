@@ -704,3 +704,4 @@ The next concrete deliverables should be:
 And the most important architectural principle is:
 
 keep the contract generic, keep humanity pluggable, and treat `v1` as history rather than something that must be replaced.
+> **Archived prototype proposal.** This document predates the immutable, relayed V2 design now implemented in the repository and is retained only for history. It is not the release specification. Use [`README.md`](../README.md), [`SECURITY.md`](../SECURITY.md), and [`PRODUCT.md`](../PRODUCT.md) for current behavior.

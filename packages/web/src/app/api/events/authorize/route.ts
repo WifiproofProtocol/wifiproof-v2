@@ -10,6 +10,7 @@ import { baseSepolia } from "viem/chains";
 import { issueEventMetadataToken } from "@/lib/event-metadata-token";
 import { signEventAuthorization } from "@/lib/signer";
 import { getTrustedClientIp } from "@/lib/trusted-ip";
+import { isIpInCidrs, normalizeCidrs } from "@/lib/ip-cidr";
 
 const VERIFIER_ABI = [
   {
@@ -84,8 +85,9 @@ export async function POST(request: Request) {
     const normalizedVenueName = typeof venueName === "string" ? venueName.trim() : "";
     const normalizedEventDescription =
       typeof eventDescription === "string" ? eventDescription.trim() : "";
-    const normalizedSubnetPrefix =
-      typeof subnetPrefix === "string" ? subnetPrefix.trim() : "";
+    const normalizedSubnetPrefix = normalizeCidrs(
+      typeof subnetPrefix === "string" ? subnetPrefix : "",
+    )[0];
     const normalizedPosterImageUrl =
       typeof posterImageUrl === "string" ? posterImageUrl.trim() : "";
 
@@ -107,8 +109,8 @@ export async function POST(request: Request) {
     }
 
     const clientIp = getTrustedClientIp(request);
-    if (!clientIp || !clientIp.startsWith(normalizedSubnetPrefix)) {
-      return NextResponse.json({ error: "Not on venue subnet" }, { status: 403 });
+    if (!clientIp || !isIpInCidrs(clientIp, [normalizedSubnetPrefix])) {
+      return NextResponse.json({ error: "Event setup must use the approved venue network" }, { status: 403 });
     }
 
     const now = Math.floor(Date.now() / 1000);

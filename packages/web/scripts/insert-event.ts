@@ -16,14 +16,13 @@
  *     --name "ETHGlobal SF"
  *
  * Required env vars (in .env.local or set in shell):
- *   SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL
- *   SUPABASE_SERVICE_ROLE_KEY
+ *   EVENTS_SUPABASE_URL
+ *   EVENTS_SUPABASE_SECRET_KEY
  */
 
 import { createClient } from "@supabase/supabase-js";
 import { keccak256 } from "viem";
 import {
-  computeVenueHashFromScaled,
   scaleGPS,
   calculateThresholdSq,
   eventIdToField,
@@ -98,11 +97,11 @@ async function main() {
   // Supabase upsert
   // ---------------------------------------------------------------------------
 
-  const supabaseUrl = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.EVENTS_SUPABASE_URL;
+  const serviceKey = process.env.EVENTS_SUPABASE_SECRET_KEY;
 
   if (!supabaseUrl || !serviceKey) {
-    console.error("\nMissing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY env vars.");
+    console.error("\nMissing EVENTS_SUPABASE_URL / EVENTS_SUPABASE_SECRET_KEY env vars.");
     process.exit(1);
   }
 

@@ -15,7 +15,7 @@
   },
   "packageManager": "pnpm@10.12.4",
   "scripts": {
-    "dev": "pnpm --filter @wifiproof/web dev",
+    "dev": "pnpm --filter web dev",
     "build": "pnpm --filter web build",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
@@ -24,8 +24,9 @@
     "circuit:test": "cd packages/proof-app/circuit && nargo test",
     "circuit:execute": "cd packages/proof-app/circuit && nargo execute",
     "contracts:build": "cd packages/contracts && forge build",
-    "contracts:test": "cd packages/contracts && forge test -vvv",
-    "contracts:deploy:testnet": "cd packages/contracts && forge script script/Deploy.s.sol --rpc-url base-sepolia --broadcast --verify"
+    "web:test": "pnpm --filter web test",
+    "contracts:test": "cd packages/contracts && forge test --offline",
+    "contracts:deploy:testnet": "cd packages/contracts && forge script script/DeployV2.s.sol --rpc-url base-sepolia --broadcast --verify"
   },
   "dependencies": {
     "next": "16.2.1"

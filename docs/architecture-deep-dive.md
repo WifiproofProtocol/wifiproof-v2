@@ -1218,3 +1218,4 @@ On-chain proving does not exist in the same way. The ZK proof is generated off-c
 Proving is computationally expensive (it takes seconds even in WASM). Verification is much cheaper (it is a fixed-cost operation that a smart contract can afford to run). That is the standard ZK architecture: prove locally, verify on-chain.
 
 The privacy benefit of in-browser proving is that the raw private inputs (user coordinates) stay on the device. If proving were done server-side, the server would need to receive the coordinates to compute the proof, which would defeat the privacy goal.
+> **Prototype architecture.** This deep dive describes the earlier wallet-bound Base Sepolia system, including legacy prefix terminology. For the current immutable V2, use [`README.md`](../README.md) and [`SECURITY.md`](../SECURITY.md).

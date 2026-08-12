@@ -1,4 +1,4 @@
--- WiFiProof: events table
+-- Events database: WiFiProof events table.
 -- Used by /api/verify-ip to look up per-event venue hash, subnet, and time window.
 -- event_id and venue_hash must be lowercase hex strings (0x-prefixed).
 

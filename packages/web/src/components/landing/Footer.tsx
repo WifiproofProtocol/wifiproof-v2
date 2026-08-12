@@ -1,9 +1,8 @@
-"use client";
-import Link from "next/link";
 import { Github } from "lucide-react";
-import Image from "next/image";
+import Link from "next/link";
 
-// X Icon Component
+import SignalMark from "./SignalMark";
+
 const XIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="currentColor">
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -12,65 +11,25 @@ const XIcon = ({ className }: { className?: string }) => (
 
 export default function Footer() {
   return (
-    <footer className="border-t border-[#cfe1ff] bg-[#eaf3ff] py-12 text-[#10233f]">
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
-          <div className="text-center md:text-left">
-            <Link href="/" className="mb-3 inline-flex items-center gap-2 justify-center md:justify-start">
-              <div className="relative w-8 h-8 rounded-lg overflow-hidden">
-                <Image
-                  src="/WifiProofLogo.png"
-                  alt="WiFiProof Logo"
-                  fill
-                  className="object-contain"
-                />
-              </div>
-              <span className="text-xl font-semibold text-[#10233f]">WiFiProof</span>
-            </Link>
-            <p className="max-w-sm text-sm leading-7 text-[#52637e]">
-              Privacy-preserving proof of attendance for live events, institutions,
-              and teams building presence verification into their own products.
-            </p>
-          </div>
+    <footer className="border-t border-[var(--signal-line)] px-5 py-10 sm:px-8">
+      <div className="mx-auto flex max-w-7xl flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
+        <Link href="/" className="inline-flex items-center gap-2.5 font-semibold tracking-[-0.03em]">
+          <SignalMark className="h-8 w-8 text-[var(--signal-cobalt)]" />
+          WiFiProof
+        </Link>
 
-          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-[#52637e] md:justify-end">
-            <Link href="/organizer" className="transition hover:text-[#2563eb]">
-              Organizer access
-            </Link>
-            <Link href="/education" className="transition hover:text-[#2563eb]">
-              Education
-            </Link>
-            <Link href="/events" className="transition hover:text-[#2563eb]">
-              Check-in flow
-            </Link>
-            <a
-              href="https://x.com/WiFiProof"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="transition hover:text-[#2563eb]"
-            >
-              <span className="sr-only">X (Twitter)</span>
-              <XIcon className="w-5 h-5" />
-            </a>
-            <a
-              href="https://github.com/WifiproofProtocol"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="transition hover:text-[#2563eb]"
-            >
-              <span className="sr-only">GitHub</span>
-              <Github className="w-5 h-5" />
-            </a>
-          </div>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-[var(--signal-muted)]">
+          <Link href="/events" className="hover:text-[var(--signal-ink)]">Events</Link>
+          <Link href="/school" className="hover:text-[var(--signal-ink)]">School</Link>
+          <a href="https://x.com/WiFiProof" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--signal-ink)]">
+            <span className="sr-only">WiFiProof on X</span><XIcon className="h-4 w-4" />
+          </a>
+          <a href="https://github.com/WifiproofProtocol" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--signal-ink)]">
+            <span className="sr-only">WiFiProof on GitHub</span><Github className="h-4 w-4" />
+          </a>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-[#cfe1ff] pt-8 text-sm text-[#6b7f9e] md:flex-row">
-          <p>© 2026 WiFiProof Protocol. All rights reserved.</p>
-          <div className="flex gap-6">
-            <a href="#" className="transition hover:text-[#2563eb]">Privacy Policy</a>
-            <a href="#" className="transition hover:text-[#2563eb]">Terms of Service</a>
-          </div>
-        </div>
+        <p className="text-sm text-[var(--signal-muted)]">© 2026 WiFiProof Protocol</p>
       </div>
     </footer>
   );

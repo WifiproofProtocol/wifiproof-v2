@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getEventsSupabaseAdmin } from "@/lib/supabase-admin";
 
 type FeedbackBody = {
   eventId: string;
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    const supabase = getSupabaseAdmin();
+    const supabase = getEventsSupabaseAdmin();
     const { error } = await supabase.from("feedback").insert({
       event_id: eventId.toLowerCase(),
       wallet: wallet.toLowerCase(),
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import {
   createPublicClient,
+  encodeAbiParameters,
   http,
   keccak256,
   toBytes,
@@ -24,9 +25,11 @@ import {
 
 import WalletCard from "@/components/wallet/WalletCard";
 import DateTimePicker from "@/components/DateTimePicker";
+import StepRail from "@/components/product/StepRail";
 import { getClientBaseRpcUrl } from "@/lib/base-rpc";
 import { withBuilderCode } from "@/lib/builder-codes";
 import { preparePosterImage } from "@/lib/poster-image";
+import { computeEventMetadataHash } from "@/lib/event-policy";
 
 const WIFI_PROOF_ABI = [
   {
@@ -83,6 +86,42 @@ const WIFI_PROOF_ABI = [
       { name: "signature", type: "bytes" },
     ],
     outputs: [],
+  },
+] as const;
+
+const WIFI_PROOF_V2_ABI = [
+  { type: "function", name: "eventCreationFee", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
+  { type: "function", name: "usdc", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "address" }] },
+  {
+    type: "function",
+    name: "createEvent",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "eventId", type: "bytes32" },
+      { name: "metadataHash", type: "bytes32" },
+      { name: "venueCommitment", type: "bytes32" },
+      { name: "startTime", type: "uint64" },
+      { name: "endTime", type: "uint64" },
+      { name: "requiredFactorBitmap", type: "uint32" },
+    ],
+    outputs: [{ name: "policyHash", type: "bytes32" }],
+  },
+] as const;
+
+const ERC20_ABI = [
+  {
+    type: "function",
+    name: "allowance",
+    stateMutability: "view",
+    inputs: [{ name: "owner", type: "address" }, { name: "spender", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "approve",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "spender", type: "address" }, { name: "amount", type: "uint256" }],
+    outputs: [{ name: "", type: "bool" }],
   },
 ] as const;
 
@@ -148,11 +187,15 @@ export default function OrganizerClient() {
   const [errorMsg, setErrorMsg] = useState("");
   const [eventId, setEventId] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
+  const [challengeExpiresAt, setChallengeExpiresAt] = useState(0);
+  const [challengeFingerprint, setChallengeFingerprint] = useState("");
+  const [challengeError, setChallengeError] = useState("");
   const { data: walletClient } = useWalletClient();
   const wifiproofAddress = (
     process.env.NEXT_PUBLIC_WIFIPROOF_ADDRESS ??
     "0xbcEfE9B5a2f1C0FA6f0E02c8c678CF41884e3f7C"
   ).trim();
+  const wifiproofV2Address = (process.env.NEXT_PUBLIC_WIFIPROOF_V2_ADDRESS ?? "").trim();
   const organizerContactEmail = process.env.NEXT_PUBLIC_ORGANIZER_CONTACT_EMAIL?.trim();
   const organizerContactHref = organizerContactEmail
     ? `mailto:${organizerContactEmail}?subject=WiFiProof organizer access`
@@ -184,6 +227,11 @@ export default function OrganizerClient() {
 
   useEffect(() => {
     if (!walletAddress || !publicClient) {
+      return;
+    }
+
+    if (wifiproofV2Address) {
+      setOrganizerAccess("approved");
       return;
     }
 
@@ -219,7 +267,7 @@ export default function OrganizerClient() {
     return () => {
       cancelled = true;
     };
-  }, [publicClient, walletAddress, wifiproofAddress]);
+  }, [publicClient, walletAddress, wifiproofAddress, wifiproofV2Address]);
 
   useEffect(() => {
     if (walletReady && organizerAccess === "approved" && step === 0) {
@@ -232,6 +280,61 @@ export default function OrganizerClient() {
       setStep(0);
     }
   }, [organizerAccess, step]);
+
+  useEffect(() => {
+    if (step !== 3 || !eventId || !walletAddress || !walletClient) return;
+    let cancelled = false;
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    void (async () => {
+      try {
+        setChallengeError("");
+        const issuedAt = Math.floor(Date.now() / 1000);
+        const message = [
+          "WiFiProof venue display",
+          `Event: ${eventId.toLowerCase()}`,
+          `Organizer: ${walletAddress.toLowerCase()}`,
+          `Issued at: ${issuedAt}`,
+          "Purpose: authorize rotating in-venue check-in challenges",
+        ].join("\n");
+        const signature = await walletClient.signMessage({
+          account: walletAddress as `0x${string}`,
+          message,
+        });
+
+        const refresh = async () => {
+          const response = await fetch(`/api/events/${eventId}/challenge`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ organizer: walletAddress, issuedAt, signature }),
+            cache: "no-store",
+          });
+          if (!response.ok) throw new Error("The live venue challenge could not be refreshed.");
+          const payload = (await response.json()) as { checkInUrl: string; expiresAt: number; fingerprint: string };
+          const dataUrl = await QRCode.toDataURL(payload.checkInUrl, {
+            margin: 1,
+            width: 300,
+            color: { dark: "#171824", light: "#FAF7EF" },
+          });
+          if (!cancelled) {
+            setQrDataUrl(dataUrl);
+            setChallengeExpiresAt(payload.expiresAt);
+            setChallengeFingerprint(payload.fingerprint);
+          }
+        };
+
+        await refresh();
+        interval = setInterval(() => void refresh().catch(() => setChallengeError("Live challenge refresh paused. Check the venue connection.")), 5_000);
+      } catch (error) {
+        if (!cancelled) setChallengeError(error instanceof Error ? error.message : "Venue challenge unavailable.");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (interval) clearInterval(interval);
+    };
+  }, [eventId, step, walletAddress, walletClient]);
 
   const stageLabels = [
     "Connect wallet",
@@ -251,9 +354,9 @@ export default function OrganizerClient() {
   ] as const;
 
   const inputClass =
-    "w-full rounded-[1.25rem] border border-[#d2c5b0] bg-[#fbf7ee] px-4 py-3.5 text-[#1f1b17] placeholder:text-[#948674] shadow-sm transition focus:border-[#8c765b] focus:outline-none";
+    "product-input placeholder:text-[color:oklch(0.48_0.025_260_/_0.6)]";
   const labelClass =
-    "mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]";
+    "product-label";
 
   const processingIndex = Math.max(
     processingSteps.findIndex((item) => statusMsg.includes(item.match)),
@@ -352,7 +455,7 @@ export default function OrganizerClient() {
         throw new Error("Missing required fields.");
       }
 
-      const eventSeed = `${normalizedVenueName}:${start}:${end}`;
+      const eventSeed = `${walletAddress.toLowerCase()}:${normalizedVenueName}:${start}:${end}`;
       const derivedEventId = keccak256(toBytes(eventSeed));
       const scaledLat = BigInt(toScaled(lat));
       const scaledLon = BigInt(toScaled(lon));
@@ -363,12 +466,15 @@ export default function OrganizerClient() {
       }
 
       setStatusMsg("Preparing venue...");
-      const computedVenueHash = await publicClient.readContract({
-        address: wifiproofAddress as `0x${string}`,
-        abi: WIFI_PROOF_ABI,
-        functionName: "computeVenueHashFromScaled",
-        args: [scaledLat, scaledLon, thresholdSq, derivedEventId],
-      });
+      let computedVenueHash = "0x" as `0x${string}`;
+      if (!wifiproofV2Address) {
+        computedVenueHash = await publicClient.readContract({
+          address: wifiproofAddress as `0x${string}`,
+          abi: WIFI_PROOF_ABI,
+          functionName: "computeVenueHashFromScaled",
+          args: [scaledLat, scaledLon, thresholdSq, derivedEventId],
+        });
+      }
 
       setStatusMsg("Preparing event proof...");
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -397,11 +503,98 @@ export default function OrganizerClient() {
         return `0x${hex}`;
       }) as `0x${string}`[];
 
+      if (wifiproofV2Address) {
+        computedVenueHash = keccak256(
+          encodeAbiParameters([{ type: "bytes32[]" }], [publicInputsBytes32]),
+        );
+        const metadataHash = computeEventMetadataHash({
+          venueName: normalizedVenueName,
+          eventDescription: normalizedEventDescription,
+          venueCidr: normalizedSubnetPrefix,
+          posterImageUrl,
+        });
+        const [eventFee, usdcAddress] = await Promise.all([
+          publicClient.readContract({
+            address: wifiproofV2Address as `0x${string}`,
+            abi: WIFI_PROOF_V2_ABI,
+            functionName: "eventCreationFee",
+          }),
+          publicClient.readContract({
+            address: wifiproofV2Address as `0x${string}`,
+            abi: WIFI_PROOF_V2_ABI,
+            functionName: "usdc",
+          }),
+        ]);
+        const allowance = await publicClient.readContract({
+          address: usdcAddress,
+          abi: ERC20_ABI,
+          functionName: "allowance",
+          args: [walletAddress as `0x${string}`, wifiproofV2Address as `0x${string}`],
+        });
+        if (allowance < eventFee) {
+          setStatusMsg("Approve the one-time event fee...");
+          const approvalHash = await walletClient.writeContract({
+            address: usdcAddress,
+            abi: ERC20_ABI,
+            functionName: "approve",
+            account: walletAddress as `0x${string}`,
+            args: [wifiproofV2Address as `0x${string}`, eventFee],
+          });
+          const approvalReceipt = await publicClient.waitForTransactionReceipt({ hash: approvalHash });
+          if (approvalReceipt.status !== "success") throw new Error("USDC fee approval failed.");
+        }
+
+        setStatusMsg("Confirm the 5 USDC event creation...");
+        const txHash = await walletClient.writeContract(withBuilderCode({
+          address: wifiproofV2Address as `0x${string}`,
+          abi: WIFI_PROOF_V2_ABI,
+          functionName: "createEvent",
+          account: walletAddress as `0x${string}`,
+          args: [
+            derivedEventId,
+            metadataHash,
+            computedVenueHash,
+            BigInt(start),
+            BigInt(end),
+            15,
+          ],
+        }));
+        const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+        if (receipt.status !== "success") throw new Error("Event creation failed.");
+
+        setStatusMsg("Saving event policy...");
+        const saveResponse = await fetch("/api/events/create-v2", {
+          method: "POST",
+          headers: { "content-type": "application/json", ...(process.env.NODE_ENV === "development" ? { "x-forwarded-for": normalizedSubnetPrefix.split("/")[0] } : {}) },
+          body: JSON.stringify({
+            organizer: walletAddress,
+            eventId: derivedEventId,
+            venueCommitment: computedVenueHash,
+            startTime: start,
+            endTime: end,
+            requiredFactorBitmap: 15,
+            venueName: normalizedVenueName,
+            eventDescription: normalizedEventDescription,
+            venueLat: lat,
+            venueLon: lon,
+            radiusMeters: radius,
+            venueCidr: normalizedSubnetPrefix,
+            posterImageUrl,
+            txHash,
+          }),
+        });
+        if (!saveResponse.ok) throw new Error(`Event policy save failed: ${await saveResponse.text()}`);
+        setEventId(derivedEventId);
+        setStatusMsg("");
+        setStep(3);
+        return;
+      }
+
       setStatusMsg("Requesting organizer authorization...");
       const deadline = Math.floor(Date.now() / 1000) + 120;
       const devHeaders: Record<string, string> =
         process.env.NODE_ENV === "development"
-          ? { "x-forwarded-for": `${subnetPrefix}1` }
+          ? { "x-forwarded-for": normalizedSubnetPrefix.split("/")[0] }
           : {};
 
       const authorizeResponse = await fetch("/api/events/authorize", {
@@ -484,15 +677,6 @@ export default function OrganizerClient() {
         throw new Error(`Failed to save event metadata: ${await saveResponse.text()}`);
       }
 
-      const eventUrl = `${window.location.origin}/event/${derivedEventId}`;
-      setQrDataUrl(
-        await QRCode.toDataURL(eventUrl, {
-          margin: 1,
-          width: 300,
-          color: { dark: "#02040A", light: "#FFFFFF" },
-        })
-      );
-
       setEventId(derivedEventId);
       setStep(3);
       setStatusMsg("");
@@ -503,41 +687,18 @@ export default function OrganizerClient() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
-      <div className="space-y-3">
-        <p className="section-kicker">Organizer setup</p>
-        <h1 className="display-type text-4xl leading-tight tracking-[-0.03em] text-[#1f1b17] md:text-5xl">
-          Create your event.
+    <div className="space-y-8">
+      <div className="space-y-3 border-b border-[var(--signal-line)] pb-8">
+        <p className="product-label">Organizer</p>
+        <h1 className="product-page-title">
+          Create an event
         </h1>
-        <p className="max-w-2xl text-base leading-8 text-[#5f564d] md:text-lg">
-          Set the venue, publish the check-in page, and share the QR.
+        <p className="max-w-xl text-sm leading-7 text-[var(--signal-muted)]">
+          Set the venue and publish its live check-in.
         </p>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-4">
-        {stageLabels.map((label, index) => {
-          const isActive = step === index;
-          const isComplete = step > index;
-
-          return (
-            <div
-              key={label}
-              className={`rounded-[1.4rem] border px-4 py-4 transition-colors ${
-                isActive
-                  ? "border-[#7b684f] bg-[#efe2d0]"
-                  : isComplete
-                    ? "border-[#a8c09b] bg-[#eef4ea]"
-                    : "border-[#d2c5b0] bg-white/55"
-              }`}
-            >
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
-                Step {index + 1}
-              </p>
-              <p className="mt-2 text-sm font-semibold text-[#1f1b17]">{label}</p>
-            </div>
-          );
-        })}
-      </div>
+      <StepRail labels={stageLabels} current={step} />
 
       {errorMsg && (
         <div className="flex items-start gap-3 rounded-[1.5rem] border border-[#d8b3ab] bg-[#fff2ef] p-4 text-[#a5483c]">
@@ -547,16 +708,13 @@ export default function OrganizerClient() {
       )}
 
       {step === 0 && (
-        <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[2rem] border border-[#d2c5b0] bg-white/70 p-6 shadow-[0_24px_60px_rgba(57,43,30,0.08)] md:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
-              Step 1
-            </p>
-            <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#1f1b17] md:text-4xl">
-              Connect your organizer wallet.
+        <div className="max-w-2xl">
+          <div className="product-panel p-6 md:p-8">
+            <h2 className="text-2xl font-semibold tracking-[-0.03em] md:text-3xl">
+              Connect your wallet
             </h2>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-[#5f564d] md:text-base">
-              Approved wallets can create and manage events.
+            <p className="mt-3 text-sm leading-7 text-[var(--signal-muted)]">
+              This wallet will own the event.
             </p>
             <div className="mt-6">
               <WalletCard
@@ -566,8 +724,8 @@ export default function OrganizerClient() {
             </div>
           </div>
 
-          <div className="space-y-4">
-            <aside className="rounded-[1.75rem] border border-[#d2c5b0] bg-white/70 p-5">
+          <div className="mt-4">
+            <aside className="rounded-2xl border border-[var(--signal-line)] p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
                 Status
               </p>
@@ -621,30 +779,20 @@ export default function OrganizerClient() {
               )}
             </aside>
 
-            <aside className="ink-panel rounded-[1.75rem] p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ccb9a2]">
-                After approval
-              </p>
-              <ul className="mt-4 space-y-3 text-sm leading-7 text-[#e8ddd1]">
-                <li>Add event details.</li>
-                <li>Set the venue boundary.</li>
-                <li>Publish the QR.</li>
-              </ul>
-            </aside>
           </div>
         </div>
       )}
 
       {step === 1 && (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_340px]">
-          <div className="rounded-[2rem] border border-[#d2c5b0] bg-white/70 p-6 shadow-[0_24px_60px_rgba(57,43,30,0.08)] md:p-8">
+          <div className="product-panel p-6 md:p-8">
             <div className="flex flex-col gap-4 border-b border-[#d8cebf] pb-6 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6c6459]">
                   Step 2
                 </p>
-                <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#1f1b17] md:text-4xl">
-                  Set the event details.
+                <h2 className="text-2xl font-semibold tracking-[-0.03em] md:text-3xl">
+                  Event details
                 </h2>
               </div>
               <div className="rounded-full bg-[#efe2d0] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#7b684f]">
@@ -653,7 +801,7 @@ export default function OrganizerClient() {
             </div>
 
             <div className="mt-8 space-y-6">
-              <section className="rounded-[1.75rem] border border-[#ded4c5] bg-[#fbf7ee] p-5">
+              <section className="border-b border-[var(--signal-line)] pb-7">
                 <h3 className="text-lg font-semibold text-[#1f1b17]">Event identity</h3>
 
                 <label className="mt-5 block">
@@ -681,7 +829,7 @@ export default function OrganizerClient() {
                 </label>
               </section>
 
-              <section className="rounded-[1.75rem] border border-[#ded4c5] bg-[#fbf7ee] p-5">
+              <section className="border-b border-[var(--signal-line)] pb-7">
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-[#1f1b17]">Event poster</h3>
@@ -753,7 +901,7 @@ export default function OrganizerClient() {
                 )}
               </section>
 
-              <section className="rounded-[1.75rem] border border-[#ded4c5] bg-[#fbf7ee] p-5">
+              <section className="border-b border-[var(--signal-line)] pb-7">
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-[#1f1b17]">Venue boundary</h3>
@@ -800,18 +948,18 @@ export default function OrganizerClient() {
                 </div>
               </section>
 
-              <section className="rounded-[1.75rem] border border-[#ded4c5] bg-[#fbf7ee] p-5">
+              <section className="pb-2">
                 <h3 className="text-lg font-semibold text-[#1f1b17]">
                   Network and time window
                 </h3>
 
                 <label className="mt-5 block">
-                  <span className={labelClass}>WiFi subnet prefix</span>
+                  <span className={labelClass}>Venue public IP or CIDR</span>
                   <input
                     className={`${inputClass} font-mono`}
                     value={subnetPrefix}
                     onChange={(e) => setSubnetPrefix(e.target.value)}
-                    placeholder="192.168.1."
+                    placeholder="203.0.113.42/32"
                   />
                 </label>
 
@@ -829,7 +977,7 @@ export default function OrganizerClient() {
                     ) : (
                       <>
                         <Wifi className="h-4 w-4" />
-                        Use current network prefix
+                        Use this venue network
                       </>
                     )}
                   </button>
@@ -856,7 +1004,7 @@ export default function OrganizerClient() {
                 </div>
 
                 <p className="mt-4 text-xs leading-6 text-[#7a7063]">
-                  Times use your local timezone.
+                  Use the venue&apos;s public egress IP. Times use your local timezone.
                 </p>
               </section>
             </div>
@@ -864,7 +1012,7 @@ export default function OrganizerClient() {
             <button
               type="button"
               onClick={handleCreateEvent}
-              className="mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-[#201b18] px-5 py-4 text-sm font-semibold text-[#f7f1e7] transition hover:bg-[#362e27] active:scale-[0.99]"
+              className="signal-button signal-button-primary mt-8 w-full py-4"
             >
               Publish event <ChevronRight className="h-5 w-5" />
             </button>
@@ -875,7 +1023,7 @@ export default function OrganizerClient() {
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#7b684f]">Review</p>
               <ul className="mt-4 space-y-3 text-sm leading-7 text-[#5b5249]">
                 <li>Venue boundary</li>
-                <li>Wi-Fi prefix</li>
+                <li>Venue network CIDR</li>
                 <li>Event window</li>
               </ul>
             </aside>
@@ -953,7 +1101,7 @@ export default function OrganizerClient() {
                 Event ready.
               </h2>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-[#d7c7b6] md:text-base">
-                Share the attendee page or display the QR on-site.
+                Display the live QR inside the venue. It rotates every 30 seconds.
               </p>
             </div>
 
@@ -1026,7 +1174,7 @@ export default function OrganizerClient() {
                       <div className="rounded-[1.4rem] bg-white p-3 shadow-[0_10px_24px_rgba(37,99,235,0.12)]">
                         <Image
                           src={qrDataUrl}
-                          alt="Event Check-in QR code"
+                        alt="Rotating in-venue check-in QR code"
                           width={208}
                           height={208}
                           unoptimized
@@ -1034,12 +1182,23 @@ export default function OrganizerClient() {
                         />
                       </div>
                       <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-[#5e7ca8]">
-                        Scan to check in
+                        Live venue signal · {challengeFingerprint || "starting"}
                       </p>
+                      <p className="mt-2 text-xs text-[#6a7891]">
+                        Renews {challengeExpiresAt ? new Date(challengeExpiresAt * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "shortly"}
+                      </p>
+                    </div>
+                  )}
+                  {!qrDataUrl && (
+                    <div className="flex min-h-60 flex-col items-center justify-center rounded-[1.6rem] bg-[#f8fbff] p-5 text-center">
+                      <Loader2 className="h-7 w-7 animate-spin text-[#2563eb]" />
+                      <p className="mt-4 text-sm font-semibold">Authorize live venue display</p>
+                      <p className="mt-2 text-xs leading-5 text-[#6a7891]">Approve the wallet signature. It cannot move funds.</p>
                     </div>
                   )}
                 </div>
               </div>
+              {challengeError && <p role="alert" className="mt-4 text-sm text-[#a5483c]">{challengeError}</p>}
             </div>
 
             <div className="space-y-6">

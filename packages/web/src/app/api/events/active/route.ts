@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getEventsSupabaseAdmin } from "@/lib/supabase-admin";
 
 type EventRow = {
   event_id: string;
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
     const dayEnd = dayStart + 86_399;
     const now = Math.floor(Date.now() / 1000);
 
-    const supabase = getSupabaseAdmin();
+    const supabase = getEventsSupabaseAdmin();
 
     const [liveResult, todayResult] = await Promise.all([
       supabase

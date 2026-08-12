@@ -31,6 +31,8 @@ import {
 } from "lucide-react";
 
 import WalletCard from "@/components/wallet/WalletCard";
+import ProductHeader from "@/components/product/ProductHeader";
+import StepRail from "@/components/product/StepRail";
 import { getClientBaseRpcUrl } from "@/lib/base-rpc";
 import { getBuilderCodeDataSuffix, withBuilderCode } from "@/lib/builder-codes";
 import { getPaymasterProxyUrl } from "@/lib/paymaster";
@@ -73,6 +75,7 @@ type EventRecord = {
   venue_lon: number;
   radius_meters: number;
   poster_image_url: string | null;
+  required_factor_bitmap: number;
 };
 
 type HumanityVerifyResponse = {
@@ -86,6 +89,7 @@ type HumanityVerifyResponse = {
 
 type RpContextResponse = {
   rp_context: RpContext;
+  action: string;
 };
 
 function VerificationMark({
@@ -176,6 +180,9 @@ export default function EventClient({ eventId }: { eventId: string }) {
   const [attestationUid, setAttestationUid] = useState("");
   const [humanityToken, setHumanityToken] = useState("");
   const [humanityMethod, setHumanityMethod] = useState<"world" | "coinbase" | "self" | null>(null);
+  const [additionalHumanityTokens, setAdditionalHumanityTokens] = useState<
+    Partial<Record<"coinbase" | "self", string>>
+  >({});
   const [worldStatus, setWorldStatus] = useState("");
   const [isPreparingWorld, setIsPreparingWorld] = useState(false);
   const [isVerifyingWorld, setIsVerifyingWorld] = useState(false);
@@ -188,6 +195,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
   const [selfQrSize, setSelfQrSize] = useState(260);
   const [isWorldModalOpen, setIsWorldModalOpen] = useState(false);
   const [rpContext, setRpContext] = useState<RpContext | null>(null);
+  const [worldEventAction, setWorldEventAction] = useState("");
   const [artifactCid, setArtifactCid] = useState("");
   const [archiveWarning, setArchiveWarning] = useState("");
   const [proofDurationMs, setProofDurationMs] = useState<number | null>(null);
@@ -203,6 +211,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
     process.env.NEXT_PUBLIC_WIFIPROOF_ADDRESS ??
     "0xbcEfE9B5a2f1C0FA6f0E02c8c678CF41884e3f7C"
   ).trim();
+  const wifiproofV2Address = (process.env.NEXT_PUBLIC_WIFIPROOF_V2_ADDRESS ?? "").trim();
 
   const [rpcUrl, setRpcUrl] = useState("");
   const worldAppId = (process.env.NEXT_PUBLIC_WORLD_APP_ID ?? "").trim();
@@ -220,14 +229,13 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
   const handleWalletReady = useCallback(() => setStep(1), []);
   const isHumanityVerified = Boolean(humanityToken);
-  const humanityMethodLabel =
-    humanityMethod === "coinbase"
-      ? "Coinbase Verified"
-      : humanityMethod === "self"
-        ? "Self Pass"
-      : humanityMethod === "world"
-        ? "World ID"
-        : null;
+  const requiredFactorBitmap = Number(event?.required_factor_bitmap ?? 15);
+  const requiresSelf = (requiredFactorBitmap & 16) !== 0;
+  const requiresCoinbase = (requiredFactorBitmap & 32) !== 0;
+  const additionalHumanitySatisfied =
+    (!requiresSelf || Boolean(additionalHumanityTokens.self)) &&
+    (!requiresCoinbase || Boolean(additionalHumanityTokens.coinbase));
+  const humanityMethodLabel = humanityMethod === "world" ? "World ID" : null;
   const selfApp = useMemo(() => {
     if (!walletAddress || !selfEndpoint) {
       return null;
@@ -252,7 +260,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
     "Mint attestation",
   ] as const;
   const processingSteps = [
-    { label: "Verify venue network", match: "Verifying venue subnet" },
+    { label: "Verify venue network egress", match: "Verifying venue network egress" },
     { label: "Read GPS location", match: "Getting GPS location" },
     { label: "Generate ZK proof", match: "Generating zero-knowledge proof" },
     { label: "Request sponsorship", match: "Requesting sponsored claim" },
@@ -334,12 +342,14 @@ export default function EventClient({ eventId }: { eventId: string }) {
   useEffect(() => {
     setHumanityToken("");
     setHumanityMethod(null);
+    setAdditionalHumanityTokens({});
     setWorldStatus("");
     setCoinbaseStatus("");
     setSelfStatus("");
     setIsSelfCardOpen(false);
     setIsFetchingSelfToken(false);
     setRpContext(null);
+    setWorldEventAction("");
     setIsWorldModalOpen(false);
     setArtifactCid("");
     setArchiveWarning("");
@@ -393,7 +403,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
       if (!walletAddress) throw new Error("Connect wallet before World verification.");
       if (!isWorldConfigured) {
-        throw new Error("World ID is unavailable here. Try Coinbase or Self.");
+        throw new Error("World ID is required but is not configured for this deployment.");
       }
 
       setIsPreparingWorld(true);
@@ -403,7 +413,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          action: worldActionId,
+          eventId,
         }),
       });
 
@@ -417,6 +427,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
       }
 
       setRpContext(result.rp_context);
+      setWorldEventAction(result.action);
       setIsWorldModalOpen(true);
       setWorldStatus("Open World App to complete verification.");
     } catch (error) {
@@ -502,14 +513,10 @@ export default function EventClient({ eventId }: { eventId: string }) {
         throw new Error("Coinbase verification response missing token.");
       }
 
-      setHumanityToken(result.token);
-      setHumanityMethod("coinbase");
+      setAdditionalHumanityTokens((current) => ({ ...current, coinbase: result.token }));
       setCoinbaseStatus(`Verified with Coinbase${result.network ? ` on ${result.network}` : ""}.`);
     } catch (error) {
-      if (humanityMethod === "coinbase") {
-        setHumanityToken("");
-        setHumanityMethod(null);
-      }
+      setAdditionalHumanityTokens((current) => ({ ...current, coinbase: undefined }));
       setCoinbaseStatus("");
       setErrorMsg((error as Error).message);
     } finally {
@@ -566,15 +573,11 @@ export default function EventClient({ eventId }: { eventId: string }) {
         throw new Error(lastError);
       }
 
-      setHumanityToken(result.token);
-      setHumanityMethod("self");
+      setAdditionalHumanityTokens((current) => ({ ...current, self: result.token }));
       setSelfStatus("Verified with Self Pass.");
       setIsSelfCardOpen(false);
     } catch (error) {
-      if (humanityMethod === "self") {
-        setHumanityToken("");
-        setHumanityMethod(null);
-      }
+      setAdditionalHumanityTokens((current) => ({ ...current, self: undefined }));
       setSelfStatus("");
       setErrorMsg((error as Error).message);
     } finally {
@@ -590,14 +593,17 @@ export default function EventClient({ eventId }: { eventId: string }) {
 
       if (!event) throw new Error("Event data not loaded.");
       if (!walletAddress) throw new Error("Wallet not connected.");
-      if (!humanityToken) throw new Error("Humanity verification is required before claiming.");
+      if (!humanityToken) throw new Error("World ID verification is required before claiming.");
+      if (!additionalHumanitySatisfied) throw new Error("Complete this event's additional humanity check.");
       if (!publicClient) throw new Error("RPC client is still loading. Try again in a second.");
+      const challenge = new URLSearchParams(window.location.search).get("challenge");
+      if (!challenge) throw new Error("Scan the rotating QR displayed inside the venue before checking in.");
 
-      setStatusMsg("Verifying venue subnet...");
+      setStatusMsg("Verifying venue network egress...");
       const deadline = Math.floor(Date.now() / 1000) + 90;
       const devHeaders: Record<string, string> =
         process.env.NODE_ENV === "development" && event.subnet_prefix
-          ? { "x-forwarded-for": `${event.subnet_prefix}1` }
+          ? { "x-forwarded-for": event.subnet_prefix.split("/")[0] }
           : {};
 
       const ipRes = await fetch("/api/verify-ip", {
@@ -609,6 +615,8 @@ export default function EventClient({ eventId }: { eventId: string }) {
           venueHash: event.venue_hash,
           deadline,
           humanityToken,
+          additionalHumanityTokens: Object.values(additionalHumanityTokens).filter(Boolean),
+          challenge,
         }),
       });
 
@@ -616,7 +624,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
         throw new Error(`IP verification failed: ${await ipRes.text()}`);
       }
       const { signature: ipSignature } = (await ipRes.json()) as {
-        signature: `0x${string}`;
+        signature?: `0x${string}`;
       };
 
       setStatusMsg("Getting GPS location...");
@@ -651,6 +659,61 @@ export default function EventClient({ eventId }: { eventId: string }) {
       const publicInputsHash = keccak256(
         encodeAbiParameters([{ type: "bytes32[]" }], [publicInputsBytes32])
       );
+
+      if (wifiproofV2Address) {
+        setStatusMsg("Submitting anonymous sponsored claim...");
+        const submitResponse = await fetch("/api/claims/submit", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            eventId,
+            humanityToken,
+            proof: proofHex,
+            publicInputs: publicInputsBytes32,
+          }),
+        });
+        const submitted = (await submitResponse.json().catch(() => ({}))) as {
+          error?: string;
+          jobId?: string;
+          statusToken?: string;
+          status?: "pending" | "submitting" | "confirmed" | "failed";
+          transactionHash?: string;
+          attestationUid?: string;
+        };
+        if (!submitResponse.ok && submitResponse.status !== 202) {
+          throw new Error(submitted.error || "Sponsored claim could not be submitted.");
+        }
+
+        let claimStatus = submitted;
+        for (let attempt = 0; claimStatus.status !== "confirmed" && attempt < 30; attempt += 1) {
+          if (claimStatus.status === "failed") {
+            throw new Error(claimStatus.error || "The relay could not confirm this claim.");
+          }
+          if (!claimStatus.jobId || !claimStatus.statusToken) break;
+          setStatusMsg("Waiting for sponsored Base confirmation...");
+          await new Promise((resolve) => window.setTimeout(resolve, 2_000));
+          const statusResponse = await fetch(
+            `/api/claims/jobs/${claimStatus.jobId}?token=${encodeURIComponent(claimStatus.statusToken)}`,
+            { cache: "no-store" },
+          );
+          if (!statusResponse.ok) throw new Error("Claim status could not be loaded.");
+          claimStatus = { ...claimStatus, ...(await statusResponse.json()) };
+        }
+        if (claimStatus.status !== "confirmed") {
+          throw new Error("The claim is still pending. Keep this page open and try status again shortly.");
+        }
+
+        setClaimTxHash(claimStatus.transactionHash ?? "");
+        setAttestationUid(claimStatus.attestationUid ?? "Pending indexer sync...");
+        setClaimedAt(new Date().toISOString());
+        setStatusMsg("");
+        setStep(3);
+        return;
+      }
+
+      if (!ipSignature) {
+        throw new Error("The prototype attendance signer is not configured.");
+      }
 
       let receipt;
       const builderCodeDataSuffix = getBuilderCodeDataSuffix();
@@ -855,21 +918,13 @@ export default function EventClient({ eventId }: { eventId: string }) {
   }
 
   return (
-    <section className="relative min-h-[100dvh] overflow-x-hidden bg-[#f4f8ff] pb-16 pt-20 text-[#10233f]">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-60"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 10% 12%, rgba(96,165,250,0.18), transparent 26%), radial-gradient(circle at 88% 0%, rgba(37,99,235,0.12), transparent 24%), linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px)",
-          backgroundSize: "auto, auto, 42px 42px, 42px 42px",
-        }}
-      />
-
-      <div className="relative z-10 mx-auto max-w-6xl space-y-8 px-4 md:px-6">
+    <main className="product-shell">
+      <ProductHeader current="events" />
+      <div className="mx-auto max-w-6xl space-y-8 px-5 pb-20 pt-10 sm:px-8 sm:pt-14">
         <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div className="space-y-4">
-            <p className="section-kicker">Attendee check-in</p>
-            <h1 className="display-type text-4xl leading-[0.98] tracking-[-0.04em] text-[#10233f] md:text-6xl">
+            <p className="product-label">Check in</p>
+            <h1 className="product-page-title">
               {event ? event.venue_name : "Loading event details..."}
             </h1>
             <p className="max-w-2xl text-base leading-8 text-[#52637e] md:text-lg">
@@ -931,30 +986,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
           </div>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-4">
-          {stageLabels.map((label, index) => {
-            const isActive = step === index;
-            const isComplete = step > index;
-
-            return (
-              <div
-                key={label}
-                className={`rounded-[1.35rem] border px-4 py-4 transition-colors ${
-                  isActive
-                    ? "border-[#6a8fcb] bg-[#e7f0ff]"
-                    : isComplete
-                      ? "border-[#b9cfad] bg-[#eef4ea]"
-                      : "border-[#d7e4f6] bg-white/70"
-                }`}
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5f7698]">
-                  Step {index + 1}
-                </p>
-                <p className="mt-2 text-sm font-semibold text-[#10233f]">{label}</p>
-              </div>
-            );
-          })}
-        </div>
+        <StepRail labels={stageLabels} current={step} />
 
         {errorMsg && (
           <div className="flex items-start gap-3 rounded-[1.5rem] border border-[#e0b7b2] bg-[#fff3f1] p-4 text-[#a5483c]">
@@ -964,13 +996,10 @@ export default function EventClient({ eventId }: { eventId: string }) {
         )}
 
         {step === 0 && (
-          <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="rounded-[1.6rem] border border-[#cfe1ff] bg-white/86 p-4 shadow-[0_24px_70px_rgba(37,99,235,0.08)] sm:rounded-[2rem] sm:p-6 md:p-8">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
-                Step 1
-              </p>
-              <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#10233f] md:text-4xl">
-                Connect your wallet.
+          <div className="max-w-2xl">
+            <div className="product-panel p-5 sm:p-6 md:p-8">
+              <h2 className="text-2xl font-semibold tracking-[-0.03em] md:text-3xl">
+                Connect your wallet
               </h2>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-[#52637e] md:text-base">
                 This wallet receives your attendance record.
@@ -983,22 +1012,6 @@ export default function EventClient({ eventId }: { eventId: string }) {
               </div>
             </div>
 
-            <div className="ink-panel rounded-[1.6rem] p-5 sm:rounded-[2rem] sm:p-6 md:p-8">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d6e7ff]">
-                Next
-              </p>
-              <div className="mt-5 flex flex-wrap gap-3 text-sm text-[#e8f1ff]">
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
-                  Verify
-                </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
-                  Prove presence
-                </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
-                  Mint
-                </span>
-              </div>
-            </div>
           </div>
         )}
 
@@ -1051,7 +1064,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                   Humanity check
                 </span>
                 <p className="mt-2 text-sm leading-7 text-[#52637e]">
-                  Choose one verification method to continue.
+                  World ID is required. This event may also require one additional credential.
                 </p>
 
                 <div className="mt-4 grid gap-3 xl:grid-cols-3">
@@ -1089,11 +1102,12 @@ export default function EventClient({ eventId }: { eventId: string }) {
                     </div>
                   </button>
 
+                  {requiresCoinbase ? (
                   <button
                     onClick={handleCoinbaseVerification}
                     disabled={isVerifyingCoinbase}
                     className={`min-h-[156px] rounded-[1.4rem] border px-4 py-4 text-left transition ${
-                      humanityMethod === "coinbase"
+                      additionalHumanityTokens.coinbase
                         ? "border-[#7fb0ff] bg-[#e9f2ff] shadow-[0_18px_50px_rgba(0,82,255,0.10)]"
                         : "border-[#c9daf5] bg-white hover:bg-[#eef4ff]"
                     } disabled:cursor-not-allowed disabled:border-[#d7e4f6] disabled:bg-[#f5f8fc]`}
@@ -1101,7 +1115,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                     <div className="flex h-full flex-col justify-between gap-4">
                       <div className="flex items-center justify-between gap-3">
                         <VerificationMark provider="coinbase" />
-                        {humanityMethod === "coinbase" ? (
+                        {additionalHumanityTokens.coinbase ? (
                           <CheckCircle2 className="h-5 w-5 text-[#1d6f42]" />
                         ) : null}
                       </div>
@@ -1114,18 +1128,20 @@ export default function EventClient({ eventId }: { eventId: string }) {
                       <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#0052ff]">
                         {isVerifyingCoinbase
                           ? "Checking"
-                          : humanityMethod === "coinbase"
+                          : additionalHumanityTokens.coinbase
                             ? "Verified"
                             : "Use Coinbase"}
                       </div>
                     </div>
                   </button>
+                  ) : null}
 
+                  {requiresSelf ? (
                   <button
                     onClick={handleOpenSelfVerification}
                     disabled={isFetchingSelfToken || !selfApp}
                     className={`min-h-[156px] rounded-[1.4rem] border px-4 py-4 text-left transition ${
-                      humanityMethod === "self"
+                      additionalHumanityTokens.self
                         ? "border-[#7fb0ff] bg-[#e9f2ff] shadow-[0_18px_50px_rgba(16,35,63,0.10)]"
                         : "border-[#c9daf5] bg-white hover:bg-[#eef4ff]"
                     } disabled:cursor-not-allowed disabled:border-[#d7e4f6] disabled:bg-[#f5f8fc]`}
@@ -1133,7 +1149,7 @@ export default function EventClient({ eventId }: { eventId: string }) {
                     <div className="flex h-full flex-col justify-between gap-4">
                       <div className="flex items-center justify-between gap-3">
                         <VerificationMark provider="self" />
-                        {humanityMethod === "self" ? (
+                        {additionalHumanityTokens.self ? (
                           <CheckCircle2 className="h-5 w-5 text-[#1d6f42]" />
                         ) : null}
                       </div>
@@ -1146,12 +1162,13 @@ export default function EventClient({ eventId }: { eventId: string }) {
                       <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#10233f]">
                         {isFetchingSelfToken
                           ? "Finalizing"
-                          : humanityMethod === "self"
+                          : additionalHumanityTokens.self
                             ? "Verified"
                             : "Open QR"}
                       </div>
                     </div>
                   </button>
+                  ) : null}
                 </div>
 
                 {isSelfCardOpen && selfApp ? (
@@ -1217,17 +1234,21 @@ export default function EventClient({ eventId }: { eventId: string }) {
                 ) : null}
                 {!isWorldConfigured && (
                   <p className="mt-4 text-sm font-medium text-[#9c6a0a]">
-                    World ID is unavailable here. Coinbase and Self still work.
+                    World ID is required and unavailable in this deployment. Claiming is disabled.
                   </p>
                 )}
               </div>
 
               <button
                 onClick={handleClaim}
-                disabled={!humanityToken}
+                disabled={!humanityToken || !additionalHumanitySatisfied}
                 className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#10233f] px-5 py-4 text-sm font-semibold text-white transition hover:bg-[#17345e] disabled:cursor-not-allowed disabled:bg-[#96abc8]"
               >
-                {humanityToken ? "Prove presence and mint" : "Complete humanity check first"}
+                {!humanityToken
+                  ? "Verify with World ID first"
+                  : additionalHumanitySatisfied
+                    ? "Prove presence and mint"
+                    : "Complete the additional check"}
               </button>
             </div>
 
@@ -1539,12 +1560,12 @@ export default function EventClient({ eventId }: { eventId: string }) {
         )}
       </div>
 
-      {isWorldConfigured && rpContext && walletAddress && (
+      {isWorldConfigured && rpContext && worldEventAction && walletAddress && (
         <IDKitRequestWidget
           open={isWorldModalOpen}
           onOpenChange={setIsWorldModalOpen}
           app_id={worldAppId as `app_${string}`}
-          action={worldActionId}
+          action={worldEventAction}
           rp_context={rpContext}
           allow_legacy_proofs={true}
           preset={orbLegacy({ signal: walletAddress.toLowerCase() })}
@@ -1559,6 +1580,6 @@ export default function EventClient({ eventId }: { eventId: string }) {
           }}
         />
       )}
-    </section>
+    </main>
   );
 }

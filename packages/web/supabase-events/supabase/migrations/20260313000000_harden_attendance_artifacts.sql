@@ -1,3 +1,4 @@
+-- Events database migration.
 update attendance_artifacts
 set world_nullifier_hash = null
 where world_nullifier_hash is not null;

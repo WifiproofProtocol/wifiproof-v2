@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getEventsSupabaseAdmin } from "@/lib/supabase-admin";
 import { getAttendanceClaimStats } from "@/lib/wifiproof-chain";
 
 export const runtime = "nodejs";
@@ -19,7 +19,7 @@ function isMissingSchemaField(detail: string | undefined, field: string) {
 
 export async function GET() {
   try {
-    const supabase = getSupabaseAdmin();
+    const supabase = getEventsSupabaseAdmin();
     const [eventsResult, worldResult, selfResult, archivedClaimsResult, latestArtifactResult] =
       await Promise.all([
         supabase.from("events").select("*", { count: "exact", head: true }),

@@ -27,12 +27,22 @@ type SignEventAuthorizationInput = BaseTypedDataInput & {
   deadline: number;
 };
 
+export type AttendanceAuthorizationInput = BaseTypedDataInput & {
+  eventId: `0x${string}`;
+  attendanceNullifier: `0x${string}`;
+  factorBitmap: number;
+  evidenceCommitment: `0x${string}`;
+  publicInputsHash: `0x${string}`;
+  policyHash: `0x${string}`;
+  deadline: number;
+};
+
 function getSignerMode(): SignerMode {
   return process.env.SIGNER_MODE?.trim().toLowerCase() === "lit" ? "lit" : "key";
 }
 
 function shouldFallbackToKey() {
-  return process.env.SIGNER_FALLBACK_TO_KEY?.trim().toLowerCase() !== "false";
+  return process.env.NODE_ENV !== "production" && process.env.SIGNER_FALLBACK_TO_KEY === "true";
 }
 
 function loadPrivateKey(envNames: string[]): `0x${string}` {
@@ -63,6 +73,9 @@ async function signTypedData(params: {
   chainId: number;
   keyEnvNames: string[];
 }): Promise<Hex> {
+  if (process.env.NODE_ENV === "production" && getSignerMode() !== "lit") {
+    throw new Error("Production authorization signing requires the managed Lit signer");
+  }
   if (getSignerMode() === "lit") {
     try {
       return await signTypedDataWithLit({
@@ -81,6 +94,42 @@ async function signTypedData(params: {
   return signTypedDataWithKey({
     typedData: params.typedData,
     keyEnvNames: params.keyEnvNames,
+  });
+}
+
+export async function signAttendanceAuthorization(input: AttendanceAuthorizationInput): Promise<Hex> {
+  return signTypedData({
+    chainId: input.chainId,
+    keyEnvNames: ["ATTENDANCE_AUTHORIZER_PRIVATE_KEY"],
+    typedData: {
+      domain: {
+        name: "WiFiProof",
+        version: "2",
+        chainId: input.chainId,
+        verifyingContract: input.verifyingContract,
+      },
+      types: {
+        AttendanceAuthorization: [
+          { name: "eventId", type: "bytes32" },
+          { name: "attendanceNullifier", type: "bytes32" },
+          { name: "factorBitmap", type: "uint32" },
+          { name: "evidenceCommitment", type: "bytes32" },
+          { name: "publicInputsHash", type: "bytes32" },
+          { name: "policyHash", type: "bytes32" },
+          { name: "deadline", type: "uint64" },
+        ],
+      },
+      primaryType: "AttendanceAuthorization",
+      message: {
+        eventId: input.eventId,
+        attendanceNullifier: input.attendanceNullifier,
+        factorBitmap: input.factorBitmap,
+        evidenceCommitment: input.evidenceCommitment,
+        publicInputsHash: input.publicInputsHash,
+        policyHash: input.policyHash,
+        deadline: BigInt(input.deadline),
+      },
+    } as TypedDataPayload,
   });
 }
 

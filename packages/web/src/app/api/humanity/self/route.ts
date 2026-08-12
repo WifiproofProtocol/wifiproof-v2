@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import { DefaultConfigStore, SelfBackendVerifier } from "@selfxyz/core";
 
 import { issueHumanityToken } from "@/lib/humanity";
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getEventsSupabaseAdmin } from "@/lib/supabase-admin";
 import { requireAddress, requireBytes32 } from "@/lib/world";
 
 type SelfProof = {
@@ -75,10 +76,10 @@ export async function GET(request: Request) {
     const wallet = requireAddress(url.searchParams.get("wallet") ?? "");
     const eventId = requireBytes32(url.searchParams.get("eventId") ?? "");
 
-    const supabase = getSupabaseAdmin();
+    const supabase = getEventsSupabaseAdmin();
     const { data, error } = await supabase
       .from("self_verifications")
-      .select("verified_at")
+      .select("verified_at, nullifier")
       .eq("event_id", eventId)
       .eq("wallet", wallet)
       .order("verified_at", { ascending: false })
@@ -111,6 +112,7 @@ export async function GET(request: Request) {
       wallet,
       eventId,
       provider: "self",
+      subject: data.nullifier,
     });
 
     return NextResponse.json({
@@ -173,7 +175,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const supabase = getSupabaseAdmin();
+    const supabase = getEventsSupabaseAdmin();
     const insertPayload = {
       event_id: eventId,
       wallet,
@@ -182,7 +184,7 @@ export async function POST(request: Request) {
       scope: getSelfScope(),
       user_identifier: verification.userData.userIdentifier,
       user_defined_data: verification.userData.userDefinedData,
-      proof_json: body,
+      proof_hash: createHash("sha256").update(JSON.stringify(body)).digest("hex"),
       disclose_output: verification.discloseOutput,
     };
 

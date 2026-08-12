@@ -1,97 +1,81 @@
 "use client";
 
-import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
-import { motion } from "framer-motion";
+import { useState } from "react";
 
 const faqs = [
   {
-    question: "Why not just use a QR code or a class link?",
-    answer:
-      "A QR code alone can be screenshotted, forwarded, or claimed remotely. WiFiProof adds venue network checks, local ZK proximity proofs, and verifiable records so the attendance signal is harder to fake.",
+    question: "Why use WiFiProof?",
+    answer: "Attendees keep their identity private and receive a verifiable receipt. Organizers get a stronger, auditable attendance count without collecting names, emails, or ID documents.",
   },
   {
-    question: "Which verification methods do you support?",
-    answer:
-      "Events can use World ID, Coinbase Verified, or Self Pass today. Schools can rely on existing student identity systems instead of separate proof-of-humanity checks.",
+    question: "Why not use a normal attendance platform?",
+    answer: "Most attendance tools begin with a roster or profile. WiFiProof begins with the single fact an organizer needs: one eligible person checked in at this event.",
   },
   {
-    question: "What kind of record does WiFiProof produce?",
-    answer:
-      "Events can use onchain attestations. Schools can keep attendance inside institutional systems. Custom teams can use onchain or offchain outputs.",
+    question: "Can the venue network check be spoofed?",
+    answer: "It can be relayed by a determined attacker, so it is never used alone. WiFiProof combines venue network egress, a short-lived room QR, private proximity, and a unique-human check. This deters ordinary remote claims but does not claim perfect physical-presence security.",
   },
   {
-    question: "What stays private?",
-    answer:
-      "The attendee's exact coordinates stay on the device. The browser generates the proof locally, and the system verifies the result instead of storing raw location data.",
+    question: "What if someone is near the venue but outside the room?",
+    answer: "The rotating QR is the live room signal. It expires quickly, so being inside the location radius is not enough by itself. A forwarded QR is still possible, which is why the venue network and other signals are also required.",
   },
   {
-    question: "Could this work for classrooms or lecture halls?",
-    answer:
-      "Yes. Education is one strong use case, but not the only one. A lecturer or school can use WiFiProof to verify presence while keeping student identity in the institution's own systems.",
+    question: "Does WiFiProof know which Wi-Fi name I joined?",
+    answer: "No. A normal browser cannot securely read or prove an SSID. WiFiProof checks that the request exits through a venue-approved network and describes that evidence as a venue network signal.",
   },
   {
-    question: "Is this only for Web3 users?",
-    answer:
-      "No. Web3 events can use onchain records and rewards. Schools and institutions can keep the attendance record inside their own systems.",
+    question: "Why use a zero-knowledge proof?",
+    answer: "It lets the device prove that supplied coordinates fall inside the event radius without publishing those coordinates. Browser location can still be spoofed, so proximity is one signal rather than the whole claim.",
   },
   {
-    question: "Is WiFiProof open to everyone right now?",
-    answer:
-      "Not yet. The current rollout is a mix of private beta, paid pilots, and guided deployments, while the public demo flow stays available for judges and testers.",
+    question: "How do you know a unique person checked in, not only a device?",
+    answer: "World ID supplies the unique-human proof for each event. An organizer may also require Self as an additional credential. The public attendance receipt does not reveal the person behind either proof.",
   },
 ];
 
 export default function FAQ() {
-  const [openIndex, setOpenIndex] = useState<number>(0);
+  const [openIndex, setOpenIndex] = useState(0);
 
   return (
-    <section className="bg-[#f4f8ff] px-6 py-24 text-[#10233f]">
-      <div className="mx-auto max-w-5xl">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="max-w-3xl"
-        >
-          <p className="section-kicker">FAQ</p>
-          <h2 className="display-type mt-4 text-4xl leading-tight tracking-[-0.03em] md:text-6xl">
-            Frequently asked questions.
+    <section id="questions" className="px-5 py-24 sm:px-8 lg:py-32">
+      <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.72fr_1.28fr]">
+        <div>
+          <h2 className="display-type max-w-[9ch] text-[clamp(3rem,6vw,5.8rem)] font-semibold leading-[0.88] tracking-[-0.06em]">
+            Questions
           </h2>
-          <p className="mt-5 text-lg leading-8 text-[#52637e]">
-            Everything people usually want to know right away.
-          </p>
-        </motion.div>
+        </div>
 
-        <div className="mt-10 space-y-4">
+        <div className="divide-y divide-[var(--signal-line)] border-y border-[var(--signal-line)]">
           {faqs.map((item, index) => {
-            const isOpen = index === openIndex;
-
+            const isOpen = openIndex === index;
             return (
-              <div
-                key={item.question}
-                className="overflow-hidden rounded-[1.8rem] border border-[#cfe1ff] bg-white/88 shadow-[0_18px_50px_rgba(37,99,235,0.08)]"
-              >
+              <div key={item.question}>
                 <button
                   type="button"
+                  aria-expanded={isOpen}
                   onClick={() => setOpenIndex(isOpen ? -1 : index)}
-                  className="flex w-full items-center justify-between gap-6 px-6 py-5 text-left"
+                  className="flex w-full items-center justify-between gap-6 py-6 text-left text-lg font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[var(--signal-cobalt)] focus-visible:ring-offset-3 sm:text-xl"
                 >
-                  <span className="text-lg font-semibold leading-7 text-[#10233f]">
-                    {item.question}
-                  </span>
-                  <ChevronDown
-                    className={`h-5 w-5 shrink-0 text-[#2563eb] transition-transform ${
-                      isOpen ? "rotate-180" : ""
-                    }`}
-                  />
+                  {item.question}
+                  <ChevronDown className={`h-5 w-5 shrink-0 text-[var(--signal-cobalt)] transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
                 </button>
-
-                {isOpen && (
-                  <div className="border-t border-[#dbe8fb] px-6 py-5 text-sm leading-7 text-[#52637e] md:text-base">
-                    {item.answer}
-                  </div>
-                )}
+                <AnimatePresence initial={false}>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <p className="max-w-2xl pb-7 text-base leading-7 text-[var(--signal-muted)] sm:text-lg sm:leading-8">
+                        {item.answer}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             );
           })}

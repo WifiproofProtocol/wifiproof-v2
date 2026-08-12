@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    env:
+      EVENTS_SUPABASE_URL: https://events.example.supabase.co
+      EVENTS_SUPABASE_SECRET_KEY: sb_secret_ci_placeholder
+      NEXT_PUBLIC_SCHOOL_SUPABASE_URL: https://school.example.supabase.co
+      NEXT_PUBLIC_SCHOOL_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web lint
+      - run: pnpm --filter web test
+      - run: pnpm --filter web build
+
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - working-directory: packages/contracts
+        run: forge build
+      - working-directory: packages/contracts
+        run: forge test --offline
+
+  circuit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Noir
+        run: |
+          curl -L https://raw.githubusercontent.com/noir-lang/noirup/main/install | bash
+          echo "$HOME/.nargo/bin" >> "$GITHUB_PATH"
+          "$HOME/.nargo/bin/noirup" -v 1.0.0-beta.18
+      - working-directory: packages/proof-app/circuit
+        run: nargo test
+      - working-directory: packages/proof-app/circuit
+        run: nargo compile
+
+  events-database:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - working-directory: packages/web/supabase-events
+        run: supabase start
+      - working-directory: packages/web/supabase-events
+        run: supabase db reset
+      - working-directory: packages/web/supabase-events
+        run: supabase db lint --local
+
+  school-database:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - working-directory: packages/web/supabase-school
+        run: supabase start
+      - working-directory: packages/web/supabase-school
+        run: supabase db reset
+      - working-directory: packages/web/supabase-school
+        run: supabase db lint --local
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
