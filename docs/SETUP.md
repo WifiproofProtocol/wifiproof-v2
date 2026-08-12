@@ -2,6 +2,8 @@
 
 This is the exact order for a Base Sepolia pilot. Do not begin mainnet until the Sepolia release gates pass and an independent reviewer has checked the contract and signer boundaries.
 
+For a single sequential checklist from accounts through the first successful School and Event claims, start with [`END_TO_END.md`](./END_TO_END.md). This document remains the detailed provider reference.
+
 ## 0. Prepare local configuration
 
 1. Install Node 20+, pnpm 10, Foundry, Noir/Nargo, Barretenberg, Docker, and the Supabase CLI.
