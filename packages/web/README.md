@@ -28,7 +28,7 @@ cp packages/web/.env.example packages/web/.env.local
 pnpm --filter web dev
 ```
 
-Use `packages/web/supabase-events` and `packages/web/supabase-school` as independent Supabase CLI working directories. Never link them to the same project.
+Use `packages/web/supabase-events` and `packages/web/supabase-school` as separate Supabase CLI working directories. Production should link them to independent projects. For the fictional free-tier shared pilot, apply the tracked School migration through the existing project's SQL Editor; do not link both independent CLI migration directories to one remote history.
 
 ```bash
 pnpm --filter web lint

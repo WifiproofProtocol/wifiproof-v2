@@ -66,7 +66,7 @@ pnpm install
 pnpm --filter web dev
 ```
 
-Copy `packages/web/.env.example` to `packages/web/.env.local`. Events and School intentionally use different Supabase projects and credentials. Keep all server secrets unprefixed; only public browser configuration may use `NEXT_PUBLIC_*`.
+Copy `packages/web/.env.example` to `packages/web/.env.local`. Events and School use separate environment aliases and logically isolated tables. The fictional free-tier School pilot may share the Events project; a real institution should use a separate Supabase project. Keep all server secrets unprefixed; only public browser configuration may use `NEXT_PUBLIC_*`.
 
 ```bash
 # Events database (server only)

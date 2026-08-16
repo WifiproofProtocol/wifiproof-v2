@@ -1,4 +1,6 @@
--- School database only: multi-tenant, invite-only institutional attendance.
+-- Logically isolated School data: multi-tenant, invite-only institutional attendance.
+-- A fictional free-tier pilot may share the Events project because every table,
+-- function, and policy is school-prefixed. Use a separate project for a real institution.
 -- Apply after Supabase Auth is enabled and public sign-up is disabled.
 
 do $$ begin

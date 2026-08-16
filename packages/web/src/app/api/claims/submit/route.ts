@@ -137,7 +137,7 @@ export async function POST(request: Request) {
       idempotency_key: idempotencyKey,
       event_id: eventId,
       attendance_nullifier: receipt.subjectHash,
-      authorization: storedAuthorization,
+      attendance_authorization: storedAuthorization,
       proof_hex: body.proof,
       public_inputs: body.publicInputs,
       status: "pending",

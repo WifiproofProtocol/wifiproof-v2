@@ -13,10 +13,36 @@ alter table self_verifications
   add column if not exists proof_hash text;
 alter table self_verifications alter column proof_json drop not null;
 
-alter table events
-  add constraint events_factor_bitmap_range check (required_factor_bitmap between 0 and 255),
-  add constraint events_policy_hash_format check (policy_hash is null or policy_hash ~ '^0x[0-9a-f]{64}$'),
-  add constraint events_venue_cidrs_limit check (cardinality(venue_cidrs) <= 16);
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.events'::regclass and conname = 'events_factor_bitmap_range'
+  ) then
+    alter table events
+      add constraint events_factor_bitmap_range
+      check (required_factor_bitmap between 0 and 255);
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.events'::regclass and conname = 'events_policy_hash_format'
+  ) then
+    alter table events
+      add constraint events_policy_hash_format
+      check (policy_hash is null or policy_hash ~ '^0x[0-9a-f]{64}$');
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.events'::regclass and conname = 'events_venue_cidrs_limit'
+  ) then
+    alter table events
+      add constraint events_venue_cidrs_limit
+      check (cardinality(venue_cidrs) <= 16);
+  end if;
+end
+$$;
 
 create table if not exists event_challenge_audit (
   id bigserial primary key,
@@ -53,7 +79,7 @@ create table if not exists claim_jobs (
   idempotency_key text not null unique,
   event_id text not null references events(event_id) on delete cascade,
   attendance_nullifier text not null,
-  authorization jsonb not null,
+  attendance_authorization jsonb not null,
   proof_hex text not null,
   public_inputs jsonb not null,
   status text not null default 'pending' check (status in ('pending', 'submitting', 'confirmed', 'failed')),

@@ -6,7 +6,7 @@ import { relayAttendanceClaim, type RelayAuthorization } from "@/lib/cdp-relay";
 type ClaimJob = {
   id: string;
   idempotency_key: string;
-  authorization: RelayAuthorization;
+  attendance_authorization: RelayAuthorization;
   proof_hex: `0x${string}`;
   public_inputs: `0x${string}`[];
   attempts: number;
@@ -22,7 +22,7 @@ export async function processClaimJob(jobId: string) {
   try {
     const relay = await relayAttendanceClaim({
       idempotencyKey: job.idempotency_key,
-      authorization: job.authorization,
+      authorization: job.attendance_authorization,
       proof: job.proof_hex,
       publicInputs: job.public_inputs,
     });

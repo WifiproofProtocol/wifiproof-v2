@@ -1,7 +1,7 @@
 /**
  * Creates a fictional, invite-only School pilot after the School migration runs.
- * Run only against the School project with NEXT_PUBLIC_SCHOOL_SUPABASE_URL and
- * SCHOOL_SUPABASE_SECRET_KEY set.
+ * The School variables may target a dedicated project or the shared free-tier
+ * pilot project, but the destination must contain the school_* migration.
  * New temporary passwords are printed once; no password is stored in this repo.
  */
 import { randomBytes } from "node:crypto";
