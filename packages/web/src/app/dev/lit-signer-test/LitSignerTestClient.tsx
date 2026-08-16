@@ -6,9 +6,9 @@ import ProductShell from "@/components/product/ProductShell";
 
 type Result = {
   ok: boolean;
-  currentSignerMode?: string;
+  signerMode?: string;
   litNetwork?: string;
-  expectedLitSigner?: string;
+  expectedSigner?: string;
   actionCid?: string;
   attendanceAuthorization?: {
     recovered: string;
@@ -48,10 +48,10 @@ export function LitSignerTestClient() {
       <section className="space-y-8">
         <div className="max-w-3xl space-y-3">
           <p className="product-kicker">Development check</p>
-          <h1 className="product-page-title">Lit signer</h1>
+          <h1 className="product-page-title">Managed signer</h1>
           <p className="max-w-xl text-[var(--signal-muted)]">
             Sign one test attendance authorization and verify that it came from the
-            configured PKP.
+            configured managed account.
           </p>
         </div>
 
@@ -74,10 +74,10 @@ export function LitSignerTestClient() {
 
           {result.ok && (
             <>
-              <SummaryRow label="Current app signer mode" value={result.currentSignerMode ?? "-"} />
-              <SummaryRow label="Lit network" value={result.litNetwork ?? "-"} />
-              <SummaryRow label="Expected Lit signer" value={result.expectedLitSigner ?? "-"} />
-              <SummaryRow label="Action CID" value={result.actionCid ?? "-"} />
+              <SummaryRow label="Current app signer mode" value={result.signerMode ?? "-"} />
+              {result.litNetwork && <SummaryRow label="Lit network" value={result.litNetwork} />}
+              <SummaryRow label="Expected signer" value={result.expectedSigner ?? "-"} />
+              {result.actionCid && <SummaryRow label="Action CID" value={result.actionCid} />}
               <SummaryRow
                 label="Authorization signer"
                 value={result.attendanceAuthorization?.recovered ?? "-"}

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "cdp:provision": "tsx scripts/provision-cdp.ts",
     "insert-event": "tsx scripts/insert-event.ts",
     "seed:school": "tsx scripts/seed-school.ts"
   },

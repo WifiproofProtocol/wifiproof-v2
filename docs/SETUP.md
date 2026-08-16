@@ -152,20 +152,21 @@ Reference: [Create an EAS schema](https://docs.attest.org/docs/tutorials/create-
 
 CDP policies support account scope, address/network/value criteria, and `evmData` function restrictions. See [Policy Engine](https://docs.cdp.coinbase.com/api-reference/v2/rest-api/policy-engine/policy-engine) and [server smart accounts](https://docs.cdp.coinbase.com/server-wallets/v2/using-the-wallet-api/managing-accounts).
 
-## 9. Configure the current Lit signer
+## 9. Configure the managed CDP authorizer
 
-Do not reuse the old Naga/EOA setup for production. Follow `docs/LIT_MIGRATION.md` after the V2 contract address is known. The short version is:
+WiFiProof uses two separate CDP accounts: an EOA that signs only the
+`AttendanceAuthorization` EIP-712 payload and a smart account that relays only
+`claimAttendanceFor` calls. Configure the CDP API key and Wallet Secret, then run:
 
-1. Create and fund a Chipotle account.
-2. Create one PKP.
-3. Put the final contract address into `packages/web/lit-actions/sign-attendance.js`.
-4. Pin that exact file to IPFS and copy its CID.
-5. Create a Group containing only that CID and PKP.
-6. Create an execute-only usage key scoped to that Group; never use wildcard group `0`.
-7. Set `LIT_NETWORK=chipotle`, `LIT_USAGE_API_KEY`, `LIT_PKP_ID`, `LIT_PKP_SIGNER_ADDRESS`, and `LIT_ACTION_IPFS_CID`.
-8. Set the contract authorizer to the PKP signer address through the Safe.
+```bash
+cd packages/web
+pnpm cdp:provision
+```
 
-Reference: [Lit Chipotle quickstart](https://developer.litprotocol.com/quickstart).
+Save the printed `CDP_AUTHORIZER_ADDRESS` and `CDP_RELAY_ADDRESS`. Set
+`ATTENDANCE_AUTHORIZER_ADDRESS` to the former and `CDP_RELAY_ADDRESS` to the
+latter for the V2 deployment. Lit is documented in `docs/LIT_MIGRATION.md` as an
+optional later signer tier, not a V2 launch dependency.
 
 ## 10. Deploy WiFiProofV2 on Base Sepolia
 
@@ -175,7 +176,7 @@ Reference: [Lit Chipotle quickstart](https://developer.litprotocol.com/quickstar
    - `EAS_ADDRESS`
    - Base Sepolia `USDC_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e`
    - `TREASURY_ADDRESS`
-   - `ATTENDANCE_AUTHORIZER_ADDRESS` (Lit PKP signer)
+   - `ATTENDANCE_AUTHORIZER_ADDRESS` (CDP authorizer EOA)
    - `CDP_RELAY_ADDRESS`
    - `OWNER_ADDRESS` (2-of-3 Safe)
    - `WIFIPROOF_V2_SCHEMA`

@@ -160,23 +160,7 @@ bytes32 eventId,bytes32 attendanceNullifier,bytes32 policyHash,bytes32 evidenceC
 
 5. Save its UID as `WIFIPROOF_V2_SCHEMA`. Base Sepolia's EAS contract is `0x4200000000000000000000000000000000000021`.
 
-## 8. Provision Lit phase A
-
-1. Open the current Lit Chipotle Dashboard.
-2. Create an account, copy the account key once, and store it in a password manager. Do not deploy the account key.
-3. Fund the Lit account.
-4. Create a PKP named `wifiproof-sepolia-authorizer`.
-5. Save the PKP ID and signer address:
-
-```text
-LIT_PKP_ID=
-LIT_PKP_SIGNER_ADDRESS=
-ATTENDANCE_AUTHORIZER_ADDRESS=the same PKP signer address
-```
-
-Do not create the final Action CID yet; its source must contain the deployed WiFiProofV2 address.
-
-## 9. Provision the CDP relay phase A
+## 8. Provision the CDP authorizer and relay
 
 1. Create a dedicated CDP project.
 2. Create a Secret API Key and Wallet Secret and store:
@@ -187,15 +171,23 @@ CDP_API_KEY_SECRET=
 CDP_WALLET_SECRET=
 ```
 
-3. Create or obtain the named owner and smart account used by the application:
+3. Configure the account names and run the idempotent provisioning command:
 
 ```text
+CDP_AUTHORIZER_ACCOUNT_NAME=wifiproof-v2-authorizer
 CDP_RELAY_OWNER_NAME=wifiproof-relay-owner
 CDP_RELAY_ACCOUNT_NAME=wifiproof-attendance-relay
 ```
 
-4. Save the smart-account address as `CDP_RELAY_ADDRESS` for contract deployment.
-5. The final restrictive policy is added after the protocol contract address exists.
+```bash
+cd packages/web
+pnpm cdp:provision
+```
+
+4. Save the EOA as `CDP_AUTHORIZER_ADDRESS` and the smart account as
+   `CDP_RELAY_ADDRESS` for contract deployment.
+5. The authorizer and relay owner must be different accounts.
+6. The final restrictive relay policy is added after the protocol contract address exists.
 
 ## 10. Fund test accounts
 
@@ -216,7 +208,7 @@ Create an uncommitted `packages/contracts/.env.local` containing:
 EAS_ADDRESS=0x4200000000000000000000000000000000000021
 USDC_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
 TREASURY_ADDRESS=YOUR_SAFE
-ATTENDANCE_AUTHORIZER_ADDRESS=YOUR_LIT_PKP_SIGNER
+ATTENDANCE_AUTHORIZER_ADDRESS=YOUR_CDP_AUTHORIZER_EOA
 CDP_RELAY_ADDRESS=YOUR_CDP_SMART_ACCOUNT
 OWNER_ADDRESS=YOUR_SAFE
 WIFIPROOF_V2_SCHEMA=YOUR_SCHEMA_UID
@@ -243,26 +235,16 @@ cd ../..
 
 Save the emitted HonkVerifier and WiFiProofV2 addresses. Put the V2 address into both `NEXT_PUBLIC_WIFIPROOF_V2_ADDRESS` and `WIFIPROOF_V2_ADDRESS`.
 
-## 12. Finish Lit phase B
+## 12. Verify CDP authorization signing
 
-1. Open `packages/web/lit-actions/sign-attendance.js`.
-2. Set `ALLOWED_CHAIN_ID` to `84532` for Base Sepolia.
-3. Replace the zero address in `ALLOWED_VERIFYING_CONTRACT` with the deployed WiFiProofV2 address.
-4. Review the exact final file, then pin that immutable file to IPFS.
-5. Register the CID in Lit.
-6. Create one group containing only this CID and the Sepolia PKP.
-7. Create a usage key whose only permission is execution in that exact group. Do not use wildcard group `0`.
-8. Set:
-
-```text
-SIGNER_MODE=lit
-LIT_NETWORK=chipotle
-LIT_API_BASE_URL=https://api.chipotle.litprotocol.com/core/v1
-LIT_USAGE_API_KEY=
-LIT_ACTION_IPFS_CID=
-```
-
-9. Enable `ENABLE_DEV_TEST_PAGES=true` only on a protected staging deployment, open `/dev/lit-signer-test`, and confirm the recovered signer equals `LIT_PKP_SIGNER_ADDRESS`. Disable the page afterward.
+1. Set `SIGNER_MODE=cdp`, `CDP_AUTHORIZER_ACCOUNT_NAME`, and
+   `CDP_AUTHORIZER_ADDRESS` in the server environment.
+2. Sign a known `AttendanceAuthorization` through CDP.
+3. Recover the EIP-712 signer locally and require it to equal
+   `CDP_AUTHORIZER_ADDRESS`.
+4. Confirm the deployed contract's `authorizer()` equals that same address.
+5. Confirm a malformed or differently-scoped typed-data payload is never sent by
+   the WiFiProof API. Lit remains an optional later tier documented separately.
 
 ## 13. Finish the CDP policy
 

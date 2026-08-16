@@ -7,7 +7,8 @@ import {
   toBytes,
 } from "viem";
 
-import { signTypedDataWithLit, type TypedDataPayload } from "@/lib/lit-signer";
+import type { TypedDataPayload } from "@/lib/lit-signer";
+import { signAttendanceAuthorization } from "@/lib/signer";
 
 function isEnabled() {
   return process.env.NODE_ENV === "development" || process.env.ENABLE_DEV_TEST_PAGES === "true";
@@ -17,11 +18,17 @@ function getChainId() {
   return Number(process.env.CHAIN_ID?.trim() || "84532");
 }
 
-function getLitExpectedSignerAddress(): `0x${string}` {
-  const value = process.env.LIT_PKP_SIGNER_ADDRESS?.trim();
+function getExpectedSignerAddress(): `0x${string}` {
+  const mode = process.env.SIGNER_MODE?.trim().toLowerCase();
+  const value =
+    mode === "cdp"
+      ? process.env.CDP_AUTHORIZER_ADDRESS?.trim()
+      : process.env.LIT_PKP_SIGNER_ADDRESS?.trim();
 
   if (!value) {
-    throw new Error("Missing LIT_PKP_SIGNER_ADDRESS");
+    throw new Error(
+      mode === "cdp" ? "Missing CDP_AUTHORIZER_ADDRESS" : "Missing LIT_PKP_SIGNER_ADDRESS",
+    );
   }
 
   return getAddress(value) as `0x${string}`;
@@ -84,23 +91,37 @@ export async function GET() {
 
   try {
     const typedData = buildAttendanceAuthorizationTypedData();
-    const signature = await signTypedDataWithLit({
-      typedData,
+    const signature = await signAttendanceAuthorization({
       chainId: getChainId(),
+      verifyingContract: getV2Address(),
+      eventId: typedData.message.eventId as `0x${string}`,
+      attendanceNullifier: typedData.message.attendanceNullifier as `0x${string}`,
+      factorBitmap: Number(typedData.message.factorBitmap),
+      evidenceCommitment: typedData.message.evidenceCommitment as `0x${string}`,
+      publicInputsHash: typedData.message.publicInputsHash as `0x${string}`,
+      policyHash: typedData.message.policyHash as `0x${string}`,
+      deadline: Number(typedData.message.deadline),
     });
     const recovered = await recoverTypedDataSigner(typedData, signature);
 
-    const expectedLitSigner = getLitExpectedSignerAddress();
+    const expectedSigner = getExpectedSignerAddress();
+    const signerMode = process.env.SIGNER_MODE?.trim().toLowerCase() || "key";
 
     return NextResponse.json({
       ok: true,
-      currentSignerMode: process.env.SIGNER_MODE?.trim().toLowerCase() || "key",
-      litNetwork: process.env.LIT_NETWORK?.trim().toLowerCase() || "chipotle",
-      expectedLitSigner,
-      actionCid: process.env.LIT_ACTION_IPFS_CID?.trim() || "not configured",
+      signerMode,
+      expectedSigner,
+      litNetwork:
+        signerMode === "lit"
+          ? process.env.LIT_NETWORK?.trim().toLowerCase() || "chipotle"
+          : undefined,
+      actionCid:
+        signerMode === "lit"
+          ? process.env.LIT_ACTION_IPFS_CID?.trim() || "not configured"
+          : undefined,
       attendanceAuthorization: {
         recovered,
-        matchesExpected: recovered === expectedLitSigner,
+        matchesExpected: recovered === expectedSigner,
         signature,
       },
     });

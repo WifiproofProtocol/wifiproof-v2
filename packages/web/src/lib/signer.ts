@@ -1,9 +1,10 @@
 import { type Hex, keccak256, toBytes } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
+import { signTypedDataWithCdp } from "@/lib/cdp-signer";
 import { signTypedDataWithLit, type TypedDataPayload } from "@/lib/lit-signer";
 
-type SignerMode = "key" | "lit";
+type SignerMode = "cdp" | "key" | "lit";
 
 type BaseTypedDataInput = {
   chainId: number;
@@ -38,7 +39,9 @@ export type AttendanceAuthorizationInput = BaseTypedDataInput & {
 };
 
 function getSignerMode(): SignerMode {
-  return process.env.SIGNER_MODE?.trim().toLowerCase() === "lit" ? "lit" : "key";
+  const mode = process.env.SIGNER_MODE?.trim().toLowerCase();
+  if (mode === "cdp" || mode === "lit") return mode;
+  return "key";
 }
 
 function shouldFallbackToKey() {
@@ -73,8 +76,11 @@ async function signTypedData(params: {
   chainId: number;
   keyEnvNames: string[];
 }): Promise<Hex> {
-  if (process.env.NODE_ENV === "production" && getSignerMode() !== "lit") {
-    throw new Error("Production authorization signing requires the managed Lit signer");
+  if (process.env.NODE_ENV === "production" && getSignerMode() === "key") {
+    throw new Error("Production authorization signing requires a managed signer");
+  }
+  if (getSignerMode() === "cdp") {
+    return signTypedDataWithCdp({ typedData: params.typedData });
   }
   if (getSignerMode() === "lit") {
     try {
