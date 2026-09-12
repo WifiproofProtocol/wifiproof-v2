@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ArrowUpRight,
   CalendarDays,
@@ -138,11 +138,6 @@ export default function OrganizerDashboardClient() {
     return () => window.clearInterval(interval);
   }, [fetchDashboard, walletAddress, walletReady]);
 
-  const latestClaimCopy = useMemo(
-    () => (data?.summary.latestClaimedAt ? formatTimestamp(data.summary.latestClaimedAt) : "No claims yet"),
-    [data?.summary.latestClaimedAt]
-  );
-
   async function handleCopyCheckInLink(eventId: string) {
     try {
       const origin = typeof window === "undefined" ? "" : window.location.origin;
@@ -157,54 +152,29 @@ export default function OrganizerDashboardClient() {
 
   if (!walletReady || !walletAddress) {
     return (
-      <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-        <div className="rounded-[2rem] border border-[#cfe1ff] bg-white/88 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.08)] md:p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
-            Organizer dashboard
-          </p>
-          <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#10233f] md:text-4xl">
-            Connect your organizer wallet.
+      <div className="product-panel max-w-2xl p-6 md:p-8">
+          <h2 className="text-2xl font-semibold tracking-[-0.03em] md:text-3xl">
+            Connect your wallet
           </h2>
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-[#52637e] md:text-base">
+          <p className="mt-3 text-sm leading-7 text-[var(--signal-muted)]">
             View events, claims, and check-in links.
           </p>
 
           <div className="mt-6">
             <WalletCard walletAddress={walletAddress} onReady={handleWalletReady} />
           </div>
-        </div>
-
-        <div className="ink-panel rounded-[2rem] p-6 md:p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d6e7ff]">
-            Dashboard
-          </p>
-          <div className="mt-6 space-y-4 text-sm leading-7 text-[#d6e7ff]">
-            <div className="rounded-[1.5rem] border border-white/10 bg-white/5 px-4 py-4">
-              Live event status.
-            </div>
-            <div className="rounded-[1.5rem] border border-white/10 bg-white/5 px-4 py-4">
-              Recent claims.
-            </div>
-            <div className="rounded-[1.5rem] border border-white/10 bg-white/5 px-4 py-4">
-              Check-in links.
-            </div>
-          </div>
-        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-[2rem] border border-[#cfe1ff] bg-white/88 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.08)] md:flex-row md:items-end md:justify-between md:p-8">
+      <div className="flex flex-col gap-4 border-b border-[var(--signal-line)] pb-6 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
-            Organizer dashboard
-          </p>
-          <h2 className="display-type mt-3 text-3xl leading-tight tracking-[-0.03em] text-[#10233f] md:text-4xl">
-            Monitor event activity.
+          <h2 className="text-2xl font-semibold tracking-[-0.03em] md:text-3xl">
+            Event activity
           </h2>
-          <p className="mt-3 text-sm leading-7 text-[#52637e] md:text-base">
+          <p className="mt-2 text-sm text-[var(--signal-muted)]">
             Connected as {formatWallet(walletAddress)}.
           </p>
         </div>
@@ -212,7 +182,7 @@ export default function OrganizerDashboardClient() {
         <div className="flex flex-wrap gap-3">
           <Link
             href="/organizer/setup"
-            className="inline-flex items-center justify-center rounded-full bg-[#2563eb] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#1d4ed8]"
+            className="signal-button signal-button-primary"
           >
             Create another event
           </Link>
@@ -220,7 +190,7 @@ export default function OrganizerDashboardClient() {
             type="button"
             onClick={() => void fetchDashboard()}
             disabled={isLoading}
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-[#c9daf5] bg-white px-5 py-3 text-sm font-semibold text-[#10233f] transition hover:bg-[#eef4ff] disabled:cursor-not-allowed disabled:text-[#8da2c1]"
+            className="signal-button signal-button-secondary disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Refresh
@@ -234,44 +204,11 @@ export default function OrganizerDashboardClient() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-[1.5rem] border border-[#cfe1ff] bg-white/88 p-5 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
-            Events
-          </p>
-          <p className="mt-3 text-3xl font-semibold text-[#10233f]">
-            {data?.summary.totalEvents ?? 0}
-          </p>
-          <p className="mt-2 text-sm text-[#6a7891]">
-            {data?.summary.liveEvents ?? 0} live right now
-          </p>
-        </div>
-        <div className="rounded-[1.5rem] border border-[#cfe1ff] bg-white/88 p-5 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
-            Attendance claims
-          </p>
-          <p className="mt-3 text-3xl font-semibold text-[#10233f]">
-            {data?.summary.totalClaims ?? 0}
-          </p>
-          <p className="mt-2 text-sm text-[#6a7891]">Total claims</p>
-        </div>
-        <div className="rounded-[1.5rem] border border-[#cfe1ff] bg-white/88 p-5 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
-            Unique attendees
-          </p>
-          <p className="mt-3 text-3xl font-semibold text-[#10233f]">
-            {data?.summary.totalAttendees ?? 0}
-          </p>
-          <p className="mt-2 text-sm text-[#6a7891]">Distinct wallets</p>
-        </div>
-        <div className="rounded-[1.5rem] border border-[#cfe1ff] bg-white/88 p-5 shadow-[0_18px_50px_rgba(37,99,235,0.08)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5e7ca8]">
-            Latest claim
-          </p>
-          <p className="mt-3 text-sm font-semibold leading-6 text-[#10233f]">
-            {latestClaimCopy}
-          </p>
-        </div>
+      <div className="flex flex-wrap gap-x-10 gap-y-4 border-b border-[var(--signal-line)] pb-6 text-sm">
+        <p><span className="font-semibold">{data?.summary.totalEvents ?? 0}</span> <span className="text-[var(--signal-muted)]">events</span></p>
+        <p><span className="font-semibold">{data?.summary.liveEvents ?? 0}</span> <span className="text-[var(--signal-muted)]">live</span></p>
+        <p><span className="font-semibold">{data?.summary.totalClaims ?? 0}</span> <span className="text-[var(--signal-muted)]">claims</span></p>
+        <p><span className="font-semibold">{data?.summary.totalAttendees ?? 0}</span> <span className="text-[var(--signal-muted)]">attendees</span></p>
       </div>
 
       {isLoading && !data ? (
@@ -303,7 +240,7 @@ export default function OrganizerDashboardClient() {
           {data.events.map((event) => (
             <article
               key={event.eventId}
-              className="rounded-[1.9rem] border border-[#cfe1ff] bg-white/88 p-6 shadow-[0_24px_70px_rgba(37,99,235,0.1)]"
+              className="product-panel p-6"
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>

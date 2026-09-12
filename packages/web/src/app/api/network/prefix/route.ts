@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getTrustedClientIp } from "@/lib/trusted-ip";
+import { exactCidrForIp, normalizeIpAddress } from "@/lib/ip-cidr";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,10 +14,6 @@ type PrefixResponse = {
   family: "ipv4" | "ipv6" | "unknown";
   scope: "private" | "public" | "loopback" | "unknown";
 };
-
-function normalizeIp(ip: string) {
-  return ip.replace(/^::ffff:/i, "").trim();
-}
 
 function isIpv4(ip: string) {
   return /^\d{1,3}(?:\.\d{1,3}){3}$/.test(ip);
@@ -49,20 +46,6 @@ function describeScope(ip: string): PrefixResponse["scope"] {
   return "unknown";
 }
 
-function buildSuggestedPrefix(ip: string): string {
-  if (isIpv4(ip)) {
-    const parts = ip.split(".");
-    return `${parts[0]}.${parts[1]}.${parts[2]}.`;
-  }
-
-  if (isIpv6(ip)) {
-    const parts = ip.split(":").filter(Boolean);
-    return parts.length >= 4 ? `${parts.slice(0, 4).join(":")}:` : ip;
-  }
-
-  return ip;
-}
-
 async function fetchPublicIpv4() {
   const response = await fetch("https://api.ipify.org?format=json", {
     cache: "no-store",
@@ -76,20 +59,21 @@ async function fetchPublicIpv4() {
     throw new Error("ipify response missing ip");
   }
 
-  return normalizeIp(body.ip);
+  return normalizeIpAddress(body.ip);
 }
 
 export async function GET(request: Request) {
   try {
     let source: PrefixResponse["source"] = "request";
-    let ip = getTrustedClientIp(request);
+    const requestIp = getTrustedClientIp(request);
+    let ip: string;
 
-    if (!ip || isLoopback(ip)) {
+    if (!requestIp || isLoopback(requestIp)) {
       ip = await fetchPublicIpv4();
       source = "ipify";
+    } else {
+      ip = normalizeIpAddress(requestIp);
     }
-
-    ip = normalizeIp(ip);
 
     const family: PrefixResponse["family"] = isIpv4(ip)
       ? "ipv4"
@@ -100,7 +84,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       ok: true,
       ip,
-      suggestedPrefix: buildSuggestedPrefix(ip),
+      suggestedPrefix: exactCidrForIp(ip),
       source,
       family,
       scope: describeScope(ip),

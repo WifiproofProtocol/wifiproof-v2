@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { signRequest } from "@worldcoin/idkit/signing";
 
+import { eventScopedWorldAction, requireBytes32 } from "@/lib/world";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type RpContextRequest = {
-  action?: string;
+  eventId?: string;
 };
 
 export async function POST(request: Request) {
@@ -27,18 +29,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing RP_SIGNING_KEY" }, { status: 500 });
     }
 
-    const envAction =
-      process.env.WORLD_ACTION_ID?.trim() ?? process.env.NEXT_PUBLIC_WORLD_ACTION_ID?.trim();
-    const action = body.action?.trim() || envAction;
-
-    if (!action) {
-      return NextResponse.json({ error: "Missing action" }, { status: 500 });
-    }
+    const eventId = requireBytes32(body.eventId ?? "");
+    const action = eventScopedWorldAction(eventId);
 
     const ttl = Number(process.env.WORLD_RP_TTL_SECONDS ?? 300);
     const signature = signRequest(action, signingKey, Number.isFinite(ttl) ? ttl : 300);
 
     return NextResponse.json({
+      action,
       rp_context: {
         rp_id: rpId,
         nonce: signature.nonce,

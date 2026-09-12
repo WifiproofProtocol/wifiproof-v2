@@ -1,4 +1,4 @@
--- Add missing event metadata columns used by API routes
+-- Events database: add metadata columns used by API routes.
 alter table events
   add column if not exists venue_lat double precision,
   add column if not exists venue_lon double precision,

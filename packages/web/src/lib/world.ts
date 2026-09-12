@@ -59,6 +59,16 @@ export function requireBytes32(value: string): `0x${string}` {
   return normalized;
 }
 
+export function eventScopedWorldAction(eventIdInput: string) {
+  const eventId = requireBytes32(eventIdInput);
+  const baseAction =
+    process.env.WORLD_ACTION_ID?.trim() ??
+    process.env.NEXT_PUBLIC_WORLD_ACTION_ID?.trim() ??
+    "wifiproof-attendance";
+  const safeBase = baseAction.toLowerCase().replace(/[^a-z0-9_-]/g, "-").slice(0, 28);
+  return `${safeBase}-${eventId.slice(2, 18)}`;
+}
+
 function getWorldVerifyTargetId(): string {
   return (
     process.env.RP_ID?.trim() ??
@@ -139,6 +149,10 @@ export async function verifyWorldResultOnServer(params: {
   }
 
   const firstResponse = extractFirstResponse(params.idkitResult);
+  const expectedAction = eventScopedWorldAction(params.eventId);
+  if (params.idkitResult.action !== expectedAction) {
+    throw new Error("World proof action does not match this event");
+  }
   if (typeof firstResponse.nullifier !== "string") {
     throw new Error("World result missing nullifier");
   }

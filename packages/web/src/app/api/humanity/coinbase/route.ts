@@ -256,11 +256,15 @@ export async function POST(request: Request) {
         { status: 403 }
       );
     }
+    if (!success.value.ok) {
+      return NextResponse.json({ error: "Coinbase verification failed" }, { status: 403 });
+    }
 
     const { token, claims } = issueHumanityToken({
       wallet,
       eventId,
       provider: "coinbase",
+      subject: success.value.attestationUid,
     });
 
     return NextResponse.json({

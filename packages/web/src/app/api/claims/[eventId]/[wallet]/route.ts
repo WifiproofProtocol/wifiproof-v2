@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getEventsSupabaseAdmin } from "@/lib/supabase-admin";
 
 const ADDRESS_RE = /^0x[0-9a-f]{40}$/;
 const BYTES32_RE = /^0x[0-9a-f]{64}$/;
@@ -27,7 +27,7 @@ export async function GET(
       return NextResponse.json({ error: "Invalid eventId or wallet" }, { status: 400 });
     }
 
-    const supabase = getSupabaseAdmin();
+    const supabase = getEventsSupabaseAdmin();
     const { data, error } = await supabase
       .from("attendance_artifacts")
       .select(

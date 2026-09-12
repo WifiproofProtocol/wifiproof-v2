@@ -10,8 +10,18 @@ export type HumanityTokenClaims = {
   wallet: `0x${string}`;
   eventId: `0x${string}`;
   provider: HumanityProvider;
+  subjectHash: `0x${string}`;
   iat: number;
   exp: number;
+};
+
+export type HumanityReceipt = {
+  provider: HumanityProvider;
+  wallet: `0x${string}`;
+  eventId: `0x${string}`;
+  subjectHash: `0x${string}`;
+  verifiedAt: number;
+  expiresAt: number;
 };
 
 function getHumanityTokenSecret(): string {
@@ -31,6 +41,7 @@ export function issueHumanityToken(input: {
   wallet: string;
   eventId: string;
   provider: HumanityProvider;
+  subject: string;
   ttlSeconds?: number;
 }): { token: string; claims: HumanityTokenClaims } {
   const now = Math.floor(Date.now() / 1000);
@@ -39,10 +50,15 @@ export function issueHumanityToken(input: {
       ? Number(input.ttlSeconds)
       : Number(process.env.HUMANITY_TOKEN_TTL_SECONDS ?? DEFAULT_TOKEN_TTL_SECONDS);
 
+  const eventId = requireBytes32(input.eventId);
+  const subjectHash = `0x${createHmac("sha256", getHumanityTokenSecret())
+    .update(`${input.provider}:${eventId}:${input.subject}`)
+    .digest("hex")}` as `0x${string}`;
   const claims: HumanityTokenClaims = {
     wallet: requireAddress(input.wallet),
-    eventId: requireBytes32(input.eventId),
+    eventId,
     provider: input.provider,
+    subjectHash,
     iat: now,
     exp: now + ttlSeconds,
   };
@@ -92,6 +108,7 @@ export function verifyHumanityToken(token: string): HumanityTokenClaims | null {
 
     const wallet = requireAddress(claims.wallet);
     const eventId = requireBytes32(claims.eventId);
+    const subjectHash = requireBytes32(claims.subjectHash);
 
     if (
       typeof claims.iat !== "number" ||
@@ -111,6 +128,7 @@ export function verifyHumanityToken(token: string): HumanityTokenClaims | null {
       wallet,
       eventId,
       provider: claims.provider,
+      subjectHash,
       iat: claims.iat,
       exp: claims.exp,
     };

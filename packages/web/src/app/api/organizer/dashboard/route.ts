@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getEventsSupabaseAdmin } from "@/lib/supabase-admin";
 
 type EventRow = {
   event_id: string;
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const organizer = normalizeAddress(url.searchParams.get("wallet") ?? "");
-    const supabase = getSupabaseAdmin();
+    const supabase = getEventsSupabaseAdmin();
 
     const { data: events, error: eventsError } = await supabase
       .from("events")

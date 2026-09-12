@@ -1,21 +1,15 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
+import { getEventsSupabaseSecretKey, getEventsSupabaseUrl } from "@/lib/supabase-config";
+
 type AdminClient = SupabaseClient;
 
 let adminClient: AdminClient | null = null;
 
-export function getSupabaseAdmin(): AdminClient {
+export function getEventsSupabaseAdmin(): AdminClient {
   if (adminClient) return adminClient;
 
-  const supabaseUrl =
-    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Supabase admin env missing");
-  }
-
-  adminClient = createClient(supabaseUrl, serviceRoleKey, {
+  adminClient = createClient(getEventsSupabaseUrl(), getEventsSupabaseSecretKey(), {
     auth: { persistSession: false },
   });
 

@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { verifyEventMetadataToken } from "@/lib/event-metadata-token";
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getEventsSupabaseAdmin } from "@/lib/supabase-admin";
 import {
   computeVenueHashFromMetadata,
   verifyEventCreationTransaction,
 } from "@/lib/wifiproof-chain";
+import { normalizeCidrs } from "@/lib/ip-cidr";
 
 type CreateEventBody = {
   organizer: string;
@@ -68,8 +69,9 @@ export async function POST(request: Request) {
     const normalizedVenueName = typeof venueName === "string" ? venueName.trim() : "";
     const normalizedEventDescription =
       typeof eventDescription === "string" ? eventDescription.trim() : "";
-    const normalizedSubnetPrefix =
-      typeof subnetPrefix === "string" ? subnetPrefix.trim() : "";
+    const normalizedSubnetPrefix = normalizeCidrs(
+      typeof subnetPrefix === "string" ? subnetPrefix : "",
+    )[0];
     const normalizedPosterImageUrl =
       typeof posterImageUrl === "string" ? posterImageUrl.trim() : "";
 
@@ -143,12 +145,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = getSupabaseAdmin();
+    const supabase = getEventsSupabaseAdmin();
     const eventRow = {
       organizer: normalizedOrganizer,
       event_id: normalizedEventId,
       venue_hash: normalizedVenueHash,
       subnet_prefix: normalizedSubnetPrefix,
+      venue_cidrs: [normalizedSubnetPrefix],
       start_time: startTime,
       end_time: endTime,
       venue_name: normalizedVenueName,

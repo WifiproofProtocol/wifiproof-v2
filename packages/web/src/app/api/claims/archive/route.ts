@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getEventsSupabaseAdmin } from "@/lib/supabase-admin";
 import {
   uploadAttendanceArtifact,
   type AttendanceArtifactPayload,
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       timestamp: Math.floor(Date.now() / 1000),
     };
 
-    const supabase = getSupabaseAdmin();
+    const supabase = getEventsSupabaseAdmin();
     const { data: existingEvent, error: eventLookupError } = await supabase
       .from("events")
       .select("event_id")

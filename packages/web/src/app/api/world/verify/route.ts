@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import { hashSignal } from "@worldcoin/idkit/hashing";
 
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getEventsSupabaseAdmin } from "@/lib/supabase-admin";
 import { issueHumanityToken } from "@/lib/humanity";
 import {
+  eventScopedWorldAction,
   verifyWorldResultOnServer,
   type WorldIDKitResult,
 } from "@/lib/world";
@@ -51,13 +53,14 @@ export async function POST(request: Request) {
       }
     }
 
-    const supabase = getSupabaseAdmin();
+    const supabase = getEventsSupabaseAdmin();
     const insertPayload = {
       event_id: eventId,
       wallet,
       nullifier_hash: verification.nullifierHash,
       verification_level: verification.verificationLevel,
-      proof_json: body.idkitResult,
+      event_action: eventScopedWorldAction(eventId),
+      proof_hash: createHash("sha256").update(JSON.stringify(body.idkitResult)).digest("hex"),
     };
 
     const { error: insertError } = await supabase
@@ -102,6 +105,7 @@ export async function POST(request: Request) {
       wallet,
       eventId,
       provider: "world",
+      subject: verification.nullifierHash,
       ttlSeconds: tokenTtlSeconds,
     });
 
